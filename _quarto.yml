@@ -8,6 +8,7 @@ website:
     - text: "Hands-on Exercises"
       menu:
         - text: "Hands-on Exercise 1"
+          href: HandsOnEx/HE1/HE1.qmd
         - text: "Hands-on Exercise 2"
         - text: "Hands-on Exercise 3"
     right:
@@ -17,7 +18,7 @@ website:
 
 format:
   html:
-    theme: solar
+    theme: united
     css: styles.css
     toc: true
 
