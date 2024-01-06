@@ -5,13 +5,19 @@ website:
   title: "IS415"
   navbar:
     left:
+    - text: "Hands-on Exercises"
+      menu:
+        - text: "Hands-on Exercise 1"
+        - text: "Hands-on Exercise 2"
+        - text: "Hands-on Exercise 3"
+    right:
       - href: index.qmd
         text: Home
       - about.qmd
 
 format:
   html:
-    theme: cosmo
+    theme: solar
     css: styles.css
     toc: true
 
