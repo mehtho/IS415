@@ -4,10 +4,4 @@ title: "IS415"
 
 Matthew Ho's Quarto Website hosted on Netlify for IS415 Geospatial Analytics and Applications.
 
-This is a Quarto website.
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
-
-```{r}
-1 + 1
-```
