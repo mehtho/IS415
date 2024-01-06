@@ -2,61 +2,180 @@
 title: "IS415 Hands-On Exercise 1"
 ---
 
-Hello!
+Use `pacman::p_load` to install and load sf and tidyverse
 
 ```{r}
 pacman::p_load(sf, tidyverse)
+```
+
+---
+
+`st_read` to open and import the **shapefile**.
+
+-   Path to **shapefile**
+
+-   **Shapefile** without the file extension
+
+```{r}
 mpsz = st_read(dsn = "data/geospatial", 
                layer = "MP14_SUBZONE_WEB_PL")
-cyclingpath = st_read(dsn = "data/geospatial", 
-                      layer = "CyclingPathGazette")
+cyclingpath = st_read(dsn = "data/geospatial", layer = "CyclingPathGazette")
 preschool = st_read("data/geospatial/PreSchoolsLocation.kml")
+```
+
+---
+
+`st_geometry` prints basic info on the feature class
+
+```{r}
 st_geometry(mpsz)
+```
+
+---
+
+`glimpse` shows the associated attribute info
+
+```{r}
 glimpse(mpsz)
+```
 
+---
+
+`head` shows complete info on feature object
+
+```{r}
 head(mpsz, n=5)  
+```
 
+---
+
+`plot` a multi-plot of all attributes (default for sf object)
+
+```{r}
 plot(mpsz, max.plot = 15)
+```
 
-plot(st_geometry(mpsz))
+---
+
+Plot just the geometry
+
+```{r}
 plot(mpsz["PLN_AREA_N"])
+```
 
+---
+
+Show the **EPSG** code of simple feature data frame (See last, CS, section). It is 9001.
+
+```{r}
 st_crs(mpsz)
+```
 
+---
+
+Change it to **SVY21** (3414)
+
+```{r}
 mpsz3414 <- st_transform(mpsz, 3414)
 st_crs(mpsz3414)
-
-preschool3414 <- st_transform(preschool, 
-                              crs = 3414)
+preschool3414 <- st_transform(preschool, crs = 3414)
 st_crs(preschool3414)
+```
 
+---
+
+**Aspatial** data: not geospatial data.
+
+```{r}
 listings <- read_csv("data/aspatial/listings.csv")
 list(listings) 
+```
 
+---
+
+Convert the longitude and latitude columns from **WGS84** to **SVY21**.
+
+```{r}
 listings_sf <- st_as_sf(listings, 
                         coords = c("longitude", "latitude"),
                         crs=4326) %>%
   st_transform(crs = 3414)
 
 glimpse(listings_sf)
+```
 
+---
+
+**Buffering**: Add space along the side.
+
+-   5 Meter buffers
+
+```{r}
 buffer_cycling <- st_buffer(cyclingpath, 
                             dist=5, nQuadSegs = 30)
+```
+
+---
+
+Find the area of the buffers, i.e. see how much space is needed.
+
+```{r}
 buffer_cycling$AREA <- st_area(buffer_cycling)
 sum(buffer_cycling$AREA)
+```
 
+---
+
+**Point in Polygon Count**: How many points in a polygon. E.g. count preschools in each zone.
+
+-   Use `st_intersects` for this
+
+-   NOT `st_intersection`
+
+```{r}
 mpsz3414$`PreSch Count`<- lengths(st_intersects(mpsz3414, preschool3414))
-summary(mpsz3414$`PreSch Count`)
-top_n(mpsz3414, 1, `PreSch Count`)
+```
 
+---
+
+Print the summary stats
+
+```{r}
+summary(mpsz3414$`PreSch Count`)
+```
+
+---
+
+`top_n` to show the rows with the highest values in a column
+
+```{r}
+top_n(mpsz3414, 3, `PreSch Count`)
+```
+
+---
+
+Calculate area of each subzone and **mutate** to compute density
+
+```{r}
 mpsz3414$Area <- mpsz3414 %>%
   st_area()
 mpsz3414 <- mpsz3414 %>%
   mutate(`PreSch Density` = `PreSch Count`/Area * 1000000)
-head(mpsz3414, 1, `PreSch Count`)
+```
 
+---
+
+EDA Histogram
+
+```{r}
 hist(mpsz3414$`PreSch Density`)
+```
 
+---
+
+`ggplot2` makes cooler graphics
+
+```{r}
 ggplot(data=mpsz3414, 
        aes(x= as.numeric(`PreSch Density`)))+
   geom_histogram(bins=20, 
@@ -66,7 +185,13 @@ ggplot(data=mpsz3414,
        subtitle= "There are many planning sub-zones with a single pre-school, on the other hand, \nthere are two planning sub-zones with at least 20 pre-schools",
        x = "Pre-school density (per km sq)",
        y = "Frequency")
+```
 
+---
+
+Scatterplot of pre-school count vs pre-school density
+
+```{r}
 ggplot(data=mpsz3414, 
        aes(y = `PreSch Count`, 
            x= as.numeric(`PreSch Density`))) +
