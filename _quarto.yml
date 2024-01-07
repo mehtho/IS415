@@ -2,7 +2,7 @@ project:
   type: website
 
 website:
-  title: "IS415"
+  title: "Matt's IS415 Experience"
   navbar:
     left:
     - text: "Hands-on Exercises"
@@ -11,6 +11,16 @@ website:
           href: HandsOnEx/HE1/HE1.qmd
         - text: "Hands-on Exercise 2"
         - text: "Hands-on Exercise 3"
+    - text: "Take-home Exercises"
+      menu:
+        - text: "Take-home Exercise 1"
+        - text: "Take-home Exercise 2"
+        - text: "Take-home Exercise 3"
+    - text: "In-class Exercises"
+      menu:
+        - text: "In-class Exercises 1"
+        - text: "In-class Exercises 2"
+        - text: "In-class Exercises 3"
     right:
       - href: index.qmd
         text: Home

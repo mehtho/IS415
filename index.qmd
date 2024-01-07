@@ -1,7 +1,7 @@
 ---
-title: "IS415"
+title: "Behold, My Stuff"
+listing:
+  categories: true
+  sort: "date desc"
 ---
-
-Matthew Ho's Quarto Website hosted on Netlify for IS415 Geospatial Analytics and Applications.
-
-
+My posts conveniently sorted and displayed with quarto. Really nice.

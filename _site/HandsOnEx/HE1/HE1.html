@@ -6,8 +6,11 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Matthew Ho">
+<meta name="dcterms.date" content="2023-01-07">
+<meta name="description" content="This is my first go at R programming. I tried out pacman, sf, tidyverse and ggplot2. I’m going to be using ggplot2 more, it makes really cool graphics.">
 
-<title>IS415 - IS415 Hands-On Exercise 1</title>
+<title>Matt’s IS415 Experience - Hands-On Exercise 1: Geospatial Data Science with R</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -113,7 +116,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="../../index.html">
-    <span class="navbar-title">IS415</span>
+    <span class="navbar-title">Matt’s IS415 Experience</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -135,6 +138,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="dropdown-header">Hands-on Exercise 3</li>
     </ul>
   </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-take-home-exercises" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Take-home Exercises</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-take-home-exercises">    
+        <li class="dropdown-header">Take-home Exercise 1</li>
+        <li class="dropdown-header">Take-home Exercise 2</li>
+        <li class="dropdown-header">Take-home Exercise 3</li>
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-in-class-exercises" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">In-class Exercises</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-in-class-exercises">    
+        <li class="dropdown-header">In-class Exercises 1</li>
+        <li class="dropdown-header">In-class Exercises 2</li>
+        <li class="dropdown-header">In-class Exercises 3</li>
+    </ul>
+  </li>
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
@@ -153,21 +176,74 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">1.0 Overview</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">2.0 Setup</a>
+  <ul class="collapse">
+  <li><a href="#requirements" id="toc-requirements" class="nav-link" data-scroll-target="#requirements">2.1 Requirements</a></li>
+  <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data">2.2 Data</a></li>
+  <li><a href="#importing-data-and-packages" id="toc-importing-data-and-packages" class="nav-link" data-scroll-target="#importing-data-and-packages">2.3 Importing Data and Packages</a></li>
+  </ul></li>
+  <li><a href="#basic-content-checking-methods" id="toc-basic-content-checking-methods" class="nav-link" data-scroll-target="#basic-content-checking-methods">3.0 Basic Content Checking Methods</a>
+  <ul class="collapse">
+  <li><a href="#checking-the-contents-of-simple-feature-data-frames" id="toc-checking-the-contents-of-simple-feature-data-frames" class="nav-link" data-scroll-target="#checking-the-contents-of-simple-feature-data-frames">3.1 Checking the Contents of Simple Feature Data Frames</a></li>
+  <li><a href="#coordinate-reference-systems" id="toc-coordinate-reference-systems" class="nav-link" data-scroll-target="#coordinate-reference-systems">3.2 Coordinate Reference Systems</a></li>
+  </ul></li>
+  <li><a href="#basic-geoprocessing-with-sf" id="toc-basic-geoprocessing-with-sf" class="nav-link" data-scroll-target="#basic-geoprocessing-with-sf">4.0 Basic Geoprocessing with sf</a>
+  <ul class="collapse">
+  <li><a href="#buffering" id="toc-buffering" class="nav-link" data-scroll-target="#buffering">4.1 Buffering</a></li>
+  <li><a href="#point-in-polygon-count" id="toc-point-in-polygon-count" class="nav-link" data-scroll-target="#point-in-polygon-count">4.2 Point in Polygon Count</a></li>
+  <li><a href="#summary-statistics" id="toc-summary-statistics" class="nav-link" data-scroll-target="#summary-statistics">4.3 Summary Statistics</a></li>
+  <li><a href="#top_n" id="toc-top_n" class="nav-link" data-scroll-target="#top_n">4.4 top_n</a></li>
+  <li><a href="#mutate" id="toc-mutate" class="nav-link" data-scroll-target="#mutate">4.5 mutate</a></li>
+  </ul></li>
+  <li><a href="#visualisations" id="toc-visualisations" class="nav-link" data-scroll-target="#visualisations">5.0 Visualisations</a>
+  <ul class="collapse">
+  <li><a href="#default-histograms" id="toc-default-histograms" class="nav-link" data-scroll-target="#default-histograms">5.1 Default Histograms</a></li>
+  <li><a href="#ggplot2" id="toc-ggplot2" class="nav-link" data-scroll-target="#ggplot2">5.2 ggplot2</a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">IS415 Hands-On Exercise 1</h1>
-</div>
+<h1 class="title">Hands-On Exercise 1: Geospatial Data Science with R</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">Hands-On Exercise</div>
+    <div class="quarto-category">tidyverse</div>
+    <div class="quarto-category">sf</div>
+    <div class="quarto-category">ggplot2</div>
+  </div>
+  </div>
 
+<div>
+  <div class="description">
+    <p>This is my first go at R programming. I tried out pacman, sf, tidyverse and ggplot2. I’m going to be using ggplot2 more, it makes really cool graphics.</p>
+  </div>
+</div>
 
 
 <div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p><a href="https://www.linkedin.com/in/matthewhoyiwen/">Matthew Ho</a> </p>
+          </div>
+  </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 7, 2023</p>
+    </div>
+  </div>
   
     
   </div>
@@ -177,15 +253,44 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">1.0 Overview</h2>
+<p>In this exercise, I learn to handle geospatial data files and some basic data science tasks with <code>sf</code>.</p>
 <p>Use <code>pacman::p_load</code> to install and load sf and tidyverse</p>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">2.0 Setup</h2>
+<section id="requirements" class="level3">
+<h3 class="anchored" data-anchor-id="requirements">2.1 Requirements</h3>
+<ul>
+<li><strong>sf</strong>: Simple features access for R. Includes importing, managing and processing data.</li>
+<li><strong>tidyverse</strong>: A set of R packages for data science, which includes visualisation</li>
+</ul>
+</section>
+<section id="data" class="level3">
+<h3 class="anchored" data-anchor-id="data">2.2 Data</h3>
+<ul>
+<li>Master Plan 2014 Subzone Boundary (Web) from data.gov.sg</li>
+<li>Pre-Schools Location from data.gov.sg</li>
+<li>Cycling Path from LTADataMall</li>
+<li>Latest version of Singapore Airbnb listing data from Inside Airbnb</li>
+</ul>
+</section>
+<section id="importing-data-and-packages" class="level3">
+<h3 class="anchored" data-anchor-id="importing-data-and-packages">2.3 Importing Data and Packages</h3>
+<section id="pacman-to-import-sf-and-tidyverse" class="level4">
+<h4 class="anchored" data-anchor-id="pacman-to-import-sf-and-tidyverse">Pacman to import sf and tidyverse</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <hr>
+</section>
+<section id="open-and-import-shapefiles" class="level4">
+<h4 class="anchored" data-anchor-id="open-and-import-shapefiles">Open and import Shapefiles</h4>
 <p><code>st_read</code> to open and import the <strong>shapefile</strong>.</p>
 <ul>
-<li><p>Path to <strong>shapefile</strong></p></li>
-<li><p><strong>Shapefile</strong> without the file extension</p></li>
+<li>Path to <strong>shapefile</strong></li>
+<li><strong>Shapefile</strong> without the file extension</li>
 </ul>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>mpsz <span class="ot">=</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/geospatial"</span>, </span>
@@ -225,6 +330,15 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 <hr>
+</section>
+</section>
+</section>
+<section id="basic-content-checking-methods" class="level2">
+<h2 class="anchored" data-anchor-id="basic-content-checking-methods">3.0 Basic Content Checking Methods</h2>
+<section id="checking-the-contents-of-simple-feature-data-frames" class="level3">
+<h3 class="anchored" data-anchor-id="checking-the-contents-of-simple-feature-data-frames">3.1 Checking the Contents of Simple Feature Data Frames</h3>
+<section id="st_geometry" class="level4">
+<h4 class="anchored" data-anchor-id="st_geometry">st_geometry</h4>
 <p><code>st_geometry</code> prints basic info on the feature class</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_geometry</span>(mpsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -253,6 +367,9 @@ First 5 geometries:</code></pre>
 </div>
 </div>
 <hr>
+</section>
+<section id="glimpse" class="level4">
+<h4 class="anchored" data-anchor-id="glimpse">glimpse</h4>
 <p><code>glimpse</code> shows the associated attribute info</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(mpsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -278,6 +395,9 @@ $ geometry   &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((31495.56 30..., MULTIPOLYG
 </div>
 </div>
 <hr>
+</section>
+<section id="head" class="level4">
+<h4 class="anchored" data-anchor-id="head">head</h4>
 <p><code>head</code> shows complete info on feature object</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(mpsz, <span class="at">n=</span><span class="dv">5</span>)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -308,6 +428,9 @@ Projected CRS: SVY21
 </div>
 </div>
 <hr>
+</section>
+<section id="plot" class="level4">
+<h4 class="anchored" data-anchor-id="plot">plot</h4>
 <p><code>plot</code> a multi-plot of all attributes (default for sf object)</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mpsz, <span class="at">max.plot =</span> <span class="dv">15</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -332,7 +455,14 @@ Projected CRS: SVY21
 </div>
 </div>
 <hr>
+</section>
+</section>
+<section id="coordinate-reference-systems" class="level3">
+<h3 class="anchored" data-anchor-id="coordinate-reference-systems">3.2 Coordinate Reference Systems</h3>
+<section id="coordinate-reference-system-transformation" class="level4">
+<h4 class="anchored" data-anchor-id="coordinate-reference-system-transformation">Coordinate Reference System Transformation</h4>
 <p>Show the <strong>EPSG</strong> code of simple feature data frame (See last, CS, section). It is 9001.</p>
+<p>CRS: Coordinate Reference System</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(mpsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -378,6 +508,7 @@ PROJCRS["SVY21",
 </div>
 <hr>
 <p>Change it to <strong>SVY21</strong> (3414)</p>
+<p>SVY21: Projected coordinate system for Singapore, a CRS</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>mpsz3414 <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(mpsz, <span class="dv">3414</span>)</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(mpsz3414)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -540,7 +671,14 @@ $ geometry                       &lt;POINT [m]&gt; POINT (41972.5 36390.05), POI
 </div>
 </div>
 <hr>
-<p><strong>Buffering</strong>: Add space along the side.</p>
+</section>
+</section>
+</section>
+<section id="basic-geoprocessing-with-sf" class="level2">
+<h2 class="anchored" data-anchor-id="basic-geoprocessing-with-sf">4.0 Basic Geoprocessing with sf</h2>
+<section id="buffering" class="level3">
+<h3 class="anchored" data-anchor-id="buffering">4.1 Buffering</h3>
+<p><strong>Buffering</strong>: Add space along the side of a line, e.g.&nbsp;width of a path + clearance needed</p>
 <ul>
 <li>5 Meter buffers</li>
 </ul>
@@ -558,6 +696,9 @@ $ geometry                       &lt;POINT [m]&gt; POINT (41972.5 36390.05), POI
 </div>
 </div>
 <hr>
+</section>
+<section id="point-in-polygon-count" class="level3">
+<h3 class="anchored" data-anchor-id="point-in-polygon-count">4.2 Point in Polygon Count</h3>
 <p><strong>Point in Polygon Count</strong>: How many points in a polygon. E.g. count preschools in each zone.</p>
 <ul>
 <li><p>Use <code>st_intersects</code> for this</p></li>
@@ -567,6 +708,9 @@ $ geometry                       &lt;POINT [m]&gt; POINT (41972.5 36390.05), POI
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>mpsz3414<span class="sc">$</span><span class="st">`</span><span class="at">PreSch Count</span><span class="st">`</span><span class="ot">&lt;-</span> <span class="fu">lengths</span>(<span class="fu">st_intersects</span>(mpsz3414, preschool3414))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <hr>
+</section>
+<section id="summary-statistics" class="level3">
+<h3 class="anchored" data-anchor-id="summary-statistics">4.3 Summary Statistics</h3>
 <p>Print the summary stats</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mpsz3414<span class="sc">$</span><span class="st">`</span><span class="at">PreSch Count</span><span class="st">`</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -576,6 +720,9 @@ $ geometry                       &lt;POINT [m]&gt; POINT (41972.5 36390.05), POI
 </div>
 </div>
 <hr>
+</section>
+<section id="top_n" class="level3">
+<h3 class="anchored" data-anchor-id="top_n">4.4 top_n</h3>
 <p><code>top_n</code> to show the rows with the highest values in a column</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">top_n</span>(mpsz3414, <span class="dv">3</span>, <span class="st">`</span><span class="at">PreSch Count</span><span class="st">`</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -600,7 +747,10 @@ Projected CRS: SVY21 / Singapore TM
 </div>
 </div>
 <hr>
-<p>Calculate area of each subzone and <strong>mutate</strong> to compute density</p>
+</section>
+<section id="mutate" class="level3">
+<h3 class="anchored" data-anchor-id="mutate">4.5 mutate</h3>
+<p>Calculate area of each subzone and <strong>mutate</strong> to compute density. Creates a PreSch Density field based on the PreSch Count and Area fields.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>mpsz3414<span class="sc">$</span>Area <span class="ot">&lt;-</span> mpsz3414 <span class="sc">%&gt;%</span></span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_area</span>()</span>
@@ -608,6 +758,12 @@ Projected CRS: SVY21 / Singapore TM
 <span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">PreSch Density</span><span class="st">`</span> <span class="ot">=</span> <span class="st">`</span><span class="at">PreSch Count</span><span class="st">`</span><span class="sc">/</span>Area <span class="sc">*</span> <span class="dv">1000000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <hr>
+</section>
+</section>
+<section id="visualisations" class="level2">
+<h2 class="anchored" data-anchor-id="visualisations">5.0 Visualisations</h2>
+<section id="default-histograms" class="level3">
+<h3 class="anchored" data-anchor-id="default-histograms">5.1 Default Histograms</h3>
 <p>EDA Histogram</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(mpsz3414<span class="sc">$</span><span class="st">`</span><span class="at">PreSch Density</span><span class="st">`</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -620,6 +776,9 @@ Projected CRS: SVY21 / Singapore TM
 </div>
 </div>
 <hr>
+</section>
+<section id="ggplot2" class="level3">
+<h3 class="anchored" data-anchor-id="ggplot2">5.2 ggplot2</h3>
 <p><code>ggplot2</code> makes cooler graphics</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>mpsz3414, </span>
@@ -665,6 +824,8 @@ Projected CRS: SVY21 / Singapore TM
 </div>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

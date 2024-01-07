@@ -1,19 +1,53 @@
 ---
-title: "IS415 Hands-On Exercise 1"
+title: "Hands-On Exercise 1: Geospatial Data Science with R"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-07-2023
+description: |
+  This is my first go at R programming. I tried out pacman, sf, tidyverse and ggplot2. I'm going to be using ggplot2 more, it makes really cool graphics.
+categories:
+  - Hands-On Exercise
+  - tidyverse
+  - sf
+  - ggplot2
+format:
+  html:
+    toc: true
 ---
+
+## 1.0 Overview
+
+In this exercise, I learn to handle geospatial data files and some basic data science tasks with `sf`.
 
 Use `pacman::p_load` to install and load sf and tidyverse
 
+## 2.0 Setup
+
+### 2.1 Requirements
+
+-   **sf**: Simple features access for R. Includes importing, managing and processing data.
+-   **tidyverse**: A set of R packages for data science, which includes visualisation
+
+### 2.2 Data 
+- Master Plan 2014 Subzone Boundary (Web) from data.gov.sg
+- Pre-Schools Location from data.gov.sg
+- Cycling Path from LTADataMall
+- Latest version of Singapore Airbnb listing data from Inside Airbnb
+
+### 2.3 Importing Data and Packages
+
+#### Pacman to import sf and tidyverse
 ```{r}
 pacman::p_load(sf, tidyverse)
 ```
 
----
+------------------------------------------------------------------------
 
+#### Open and import Shapefiles
 `st_read` to open and import the **shapefile**.
 
 -   Path to **shapefile**
-
 -   **Shapefile** without the file extension
 
 ```{r}
@@ -23,39 +57,45 @@ cyclingpath = st_read(dsn = "data/geospatial", layer = "CyclingPathGazette")
 preschool = st_read("data/geospatial/PreSchoolsLocation.kml")
 ```
 
----
+------------------------------------------------------------------------
 
+## 3.0 Basic Content Checking Methods
+### 3.1 Checking the Contents of Simple Feature Data Frames
+#### st_geometry 
 `st_geometry` prints basic info on the feature class
 
 ```{r}
 st_geometry(mpsz)
 ```
 
----
+------------------------------------------------------------------------
 
+#### glimpse 
 `glimpse` shows the associated attribute info
 
 ```{r}
 glimpse(mpsz)
 ```
 
----
+------------------------------------------------------------------------
 
+#### head 
 `head` shows complete info on feature object
 
 ```{r}
 head(mpsz, n=5)  
 ```
 
----
+------------------------------------------------------------------------
 
+#### plot
 `plot` a multi-plot of all attributes (default for sf object)
 
 ```{r}
 plot(mpsz, max.plot = 15)
 ```
 
----
+------------------------------------------------------------------------
 
 Plot just the geometry
 
@@ -63,17 +103,23 @@ Plot just the geometry
 plot(mpsz["PLN_AREA_N"])
 ```
 
----
+------------------------------------------------------------------------
 
+### 3.2 Coordinate Reference Systems
+#### Coordinate Reference System Transformation
 Show the **EPSG** code of simple feature data frame (See last, CS, section). It is 9001.
+
+CRS: Coordinate Reference System
 
 ```{r}
 st_crs(mpsz)
 ```
 
----
+------------------------------------------------------------------------
 
 Change it to **SVY21** (3414)
+
+SVY21: Projected coordinate system for Singapore, a CRS
 
 ```{r}
 mpsz3414 <- st_transform(mpsz, 3414)
@@ -82,7 +128,7 @@ preschool3414 <- st_transform(preschool, crs = 3414)
 st_crs(preschool3414)
 ```
 
----
+------------------------------------------------------------------------
 
 **Aspatial** data: not geospatial data.
 
@@ -91,7 +137,7 @@ listings <- read_csv("data/aspatial/listings.csv")
 list(listings) 
 ```
 
----
+------------------------------------------------------------------------
 
 Convert the longitude and latitude columns from **WGS84** to **SVY21**.
 
@@ -104,9 +150,11 @@ listings_sf <- st_as_sf(listings,
 glimpse(listings_sf)
 ```
 
----
+------------------------------------------------------------------------
 
-**Buffering**: Add space along the side.
+## 4.0 Basic Geoprocessing with sf
+### 4.1 Buffering
+**Buffering**: Add space along the side of a line, e.g. width of a path + clearance needed
 
 -   5 Meter buffers
 
@@ -115,7 +163,7 @@ buffer_cycling <- st_buffer(cyclingpath,
                             dist=5, nQuadSegs = 30)
 ```
 
----
+------------------------------------------------------------------------
 
 Find the area of the buffers, i.e. see how much space is needed.
 
@@ -124,8 +172,9 @@ buffer_cycling$AREA <- st_area(buffer_cycling)
 sum(buffer_cycling$AREA)
 ```
 
----
+------------------------------------------------------------------------
 
+### 4.2 Point in Polygon Count
 **Point in Polygon Count**: How many points in a polygon. E.g. count preschools in each zone.
 
 -   Use `st_intersects` for this
@@ -136,25 +185,28 @@ sum(buffer_cycling$AREA)
 mpsz3414$`PreSch Count`<- lengths(st_intersects(mpsz3414, preschool3414))
 ```
 
----
+------------------------------------------------------------------------
 
+### 4.3 Summary Statistics
 Print the summary stats
 
 ```{r}
 summary(mpsz3414$`PreSch Count`)
 ```
 
----
+------------------------------------------------------------------------
 
+### 4.4 top_n
 `top_n` to show the rows with the highest values in a column
 
 ```{r}
 top_n(mpsz3414, 3, `PreSch Count`)
 ```
 
----
+------------------------------------------------------------------------
 
-Calculate area of each subzone and **mutate** to compute density
+### 4.5 mutate
+Calculate area of each subzone and **mutate** to compute density. Creates a PreSch Density field based on the PreSch Count and Area fields.
 
 ```{r}
 mpsz3414$Area <- mpsz3414 %>%
@@ -163,16 +215,19 @@ mpsz3414 <- mpsz3414 %>%
   mutate(`PreSch Density` = `PreSch Count`/Area * 1000000)
 ```
 
----
+------------------------------------------------------------------------
 
+## 5.0 Visualisations
+### 5.1 Default Histograms
 EDA Histogram
 
 ```{r}
 hist(mpsz3414$`PreSch Density`)
 ```
 
----
+------------------------------------------------------------------------
 
+### 5.2 ggplot2
 `ggplot2` makes cooler graphics
 
 ```{r}
@@ -187,7 +242,7 @@ ggplot(data=mpsz3414,
        y = "Frequency")
 ```
 
----
+------------------------------------------------------------------------
 
 Scatterplot of pre-school count vs pre-school density
 

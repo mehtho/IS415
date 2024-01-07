@@ -1,0 +1,17 @@
+---
+title: "About me"
+description: |
+  "I'm Matthew Ho, a Y3 CS student in the Cyberphysical Systems track. I hope to learn about geospatial analytics and apply this to distributed IoT systems."
+date: 01-06-2023
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+categories:
+  - Others
+---
+
+## About Me
+I'm Matthew Ho, a Y3 CS student in the Cyberphysical Systems track. I hope to learn about geospatial analytics and apply this to distributed IoT systems.
+
+## This Website
+This website provides more visually appealing and consolidated insights into my geospatial analytics learnings. 
