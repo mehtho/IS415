@@ -19,6 +19,7 @@ website:
     - text: "In-class Exercises"
       menu:
         - text: "In-class Exercises 1"
+          href: InClassEx/ICE1/ICE1.qmd
         - text: "In-class Exercises 2"
         - text: "In-class Exercises 3"
     right:
