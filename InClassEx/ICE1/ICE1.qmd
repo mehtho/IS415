@@ -1,0 +1,14 @@
+---
+title: "In-Class Exercise 1: "
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-08-2023
+description: |
+  In-class exercise 1 description
+categories:
+  - In-class Exercise
+format:
+  html:
+    toc: true
+---
