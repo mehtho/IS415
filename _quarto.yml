@@ -10,6 +10,7 @@ website:
         - text: "Hands-on Exercise 1"
           href: HandsOnEx/HE1/HE1.qmd
         - text: "Hands-on Exercise 2"
+          href: HandsOnEx/HE2/HE2.qmd
         - text: "Hands-on Exercise 3"
     - text: "Take-home Exercises"
       menu:

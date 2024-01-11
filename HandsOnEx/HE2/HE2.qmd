@@ -1,0 +1,89 @@
+---
+title: "Hands-On Exercise 2: GeoVisualisation and Analytical Mapping"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-11-2023
+description: |
+  I'm going to learn how to plot meaningfully annotated maps called choropleth maps.
+categories:
+  - Hands-On Exercise
+  - tidyverse
+  - sf
+  - tmap
+format:
+  html:
+    toc: true
+---
+
+## 1.0 Overview
+
+I'm going to learn how to plot meaningfully annotated maps called choropleth maps.
+
+### 1.1 Readings
+
+#### [Proportional Symbols](https://www.axismaps.com/guide/proportional-symbols)
+
+I can use proportional symbols, shapes with attributes proportionate to a variable, to annotate maps. This is easier than counting a lot of little dots. It also preserves the location of the measured phenomena.
+
+Some things to keep in mind when I use them is to make sure the sizes of each symbols are managed such that they do not crowd the map. I also need to keep the scale of the shapes in mind. This is because for a given circle, doubling the radius would actually increase the area by 4 times.
+
+Proportional symbols are very useful since I can display multiple related variables on points in a map as long as I keep readability in mind.
+
+#### [Chorophleth Maps](https://en.wikipedia.org/wiki/Choropleth_map)
+
+Proportional symbols use shapes and sizes to display information while choropleth maps focus on colours. Instead of using shape sizes, we can use a scale of colours to display information for a region.
+
+In this case, we need to be aware that aggregation districts (like borders of countries on a map) may not correlate with the actual area studied, it may only be a small part.
+
+Choropleth maps should be used to depict quantitative data that applies to the whole of a given region on the map.
+
+Normalisation lets us depict variables independent of a given region's size. Normalisation should be done carefully on certain variables to more clearly express a narrative or idea.
+
+Ensure color progressions are chosen to clearly express information, perhaps drawing on existing preconceptions and association. E.g. blue is cold, red is hot for a average temperature map
+
+#### [Data Classification](https://www.axismaps.com/guide/data-classification)
+
+Be careful while deciding where to split numerical data into different classes.
+
+ - Equal Interval: For evenly, generally spread data across the whole range without gaps or largely skewed data. Beware of over/unused ranges
+ - Quantiles: Evenly distribute the number of observations per class. May group very different observations together for evenness.
+ - Natural Breaks: Break at dips in the histogram of observations. Optimal for the dataset but makes it difficult to compare to other datasets.
+ - Manual: If all else fails, it can be reasonable to set the breaks yourself.
+ 
+#### [Choropleth Mapping with Exploratory Data Analysis](https://www.directionsmag.com/article/3363)
+
+EDA will help us choose the most appropriate choropleth map parameters. 
+- Normal distribution: SD Classification
+- Uniform distribution: Even Class Width Classification
+
+Consider when checking histograms:
+- Include record with zero or missing values?
+- Distributions
+- Sample sizes
+
+Choropleth maps are good with summarised data, namely totals or ratios. May or may not involve area. 
+
+Kolmogorov-Sminov test: Checks for uniform distribution. Ensure significance level is over 0.05 
+
+Consider making more than 1 map on the same data to allow readers to compare them.
+
+Consider removing outliers and extreme values because they can impact distributions. Define outliers with z values, e.g. +-3
+
+
+## 2.0 Setup
+
+### 2.1 Requirements
+
+-   **sf**: Simple features access for R. Includes importing, managing and processing data.
+-   **tidyverse**: A set of R packages for data science, which includes visualisation
+
+### 2.2 Data
+
+-   Master Plan 2014 Subzone Boundary (Web) from data.gov.sg
+-   Pre-Schools Location from data.gov.sg
+-   Cycling Path from LTADataMall
+-   Latest version of Singapore Airbnb listing data from Inside Airbnb
+
+### 2.3 Importing Data and Packages
+

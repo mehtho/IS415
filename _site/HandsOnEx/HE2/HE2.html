@@ -7,10 +7,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Matthew Ho">
-<meta name="dcterms.date" content="2023-01-08">
-<meta name="description" content="In-class exercise 1 description">
+<meta name="dcterms.date" content="2023-01-11">
+<meta name="description" content="I’m going to learn how to plot meaningfully annotated maps called choropleth maps.">
 
-<title>Matt’s IS415 Experience - In-Class Exercise 1:</title>
+<title>Matt’s IS415 Experience - Hands-On Exercise 2: GeoVisualisation and Analytical Mapping</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -22,40 +22,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -134,7 +100,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../../HandsOnEx/HE1/HE1.html">
  <span class="dropdown-text">Hands-on Exercise 1</span></a>
   </li>  
-        <li class="dropdown-header">Hands-on Exercise 2</li>
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE2/HE2.html">
+ <span class="dropdown-text">Hands-on Exercise 2</span></a>
+  </li>  
         <li class="dropdown-header">Hands-on Exercise 3</li>
     </ul>
   </li>
@@ -183,10 +152,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">1.0 Overview</a></li>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">1.0 Overview</a>
+  <ul class="collapse">
+  <li><a href="#readings" id="toc-readings" class="nav-link" data-scroll-target="#readings">1.1 Readings</a></li>
+  </ul></li>
   <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">2.0 Setup</a>
   <ul class="collapse">
-  <li><a href="#dependencies" id="toc-dependencies" class="nav-link" data-scroll-target="#dependencies">2.1 Dependencies</a></li>
+  <li><a href="#requirements" id="toc-requirements" class="nav-link" data-scroll-target="#requirements">2.1 Requirements</a></li>
+  <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data">2.2 Data</a></li>
+  <li><a href="#importing-data-and-packages" id="toc-importing-data-and-packages" class="nav-link" data-scroll-target="#importing-data-and-packages">2.3 Importing Data and Packages</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -196,15 +170,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">In-Class Exercise 1:</h1>
+<h1 class="title">Hands-On Exercise 2: GeoVisualisation and Analytical Mapping</h1>
   <div class="quarto-categories">
-    <div class="quarto-category">In-class Exercise</div>
+    <div class="quarto-category">Hands-On Exercise</div>
+    <div class="quarto-category">tidyverse</div>
+    <div class="quarto-category">sf</div>
+    <div class="quarto-category">tmap</div>
   </div>
   </div>
 
 <div>
   <div class="description">
-    <p>In-class exercise 1 description</p>
+    <p>I’m going to learn how to plot meaningfully annotated maps called choropleth maps.</p>
   </div>
 </div>
 
@@ -221,7 +198,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 8, 2023</p>
+      <p class="date">January 11, 2023</p>
     </div>
   </div>
   
@@ -235,14 +212,64 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">1.0 Overview</h2>
+<p>I’m going to learn how to plot meaningfully annotated maps called choropleth maps.</p>
+<section id="readings" class="level3">
+<h3 class="anchored" data-anchor-id="readings">1.1 Readings</h3>
+<section id="proportional-symbols" class="level4">
+<h4 class="anchored" data-anchor-id="proportional-symbols"><a href="https://www.axismaps.com/guide/proportional-symbols">Proportional Symbols</a></h4>
+<p>I can use proportional symbols, shapes with attributes proportionate to a variable, to annotate maps. This is easier than counting a lot of little dots. It also preserves the location of the measured phenomena.</p>
+<p>Some things to keep in mind when I use them is to make sure the sizes of each symbols are managed such that they do not crowd the map. I also need to keep the scale of the shapes in mind. This is because for a given circle, doubling the radius would actually increase the area by 4 times.</p>
+<p>Proportional symbols are very useful since I can display multiple related variables on points in a map as long as I keep readability in mind.</p>
+</section>
+<section id="chorophleth-maps" class="level4">
+<h4 class="anchored" data-anchor-id="chorophleth-maps"><a href="https://en.wikipedia.org/wiki/Choropleth_map">Chorophleth Maps</a></h4>
+<p>Proportional symbols use shapes and sizes to display information while choropleth maps focus on colours. Instead of using shape sizes, we can use a scale of colours to display information for a region.</p>
+<p>In this case, we need to be aware that aggregation districts (like borders of countries on a map) may not correlate with the actual area studied, it may only be a small part.</p>
+<p>Choropleth maps should be used to depict quantitative data that applies to the whole of a given region on the map.</p>
+<p>Normalisation lets us depict variables independent of a given region’s size. Normalisation should be done carefully on certain variables to more clearly express a narrative or idea.</p>
+<p>Ensure color progressions are chosen to clearly express information, perhaps drawing on existing preconceptions and association. E.g. blue is cold, red is hot for a average temperature map</p>
+</section>
+<section id="data-classification" class="level4">
+<h4 class="anchored" data-anchor-id="data-classification"><a href="https://www.axismaps.com/guide/data-classification">Data Classification</a></h4>
+<p>Be careful while deciding where to split numerical data into different classes.</p>
+<ul>
+<li>Equal Interval: For evenly, generally spread data across the whole range without gaps or largely skewed data. Beware of over/unused ranges</li>
+<li>Quantiles: Evenly distribute the number of observations per class. May group very different observations together for evenness.</li>
+<li>Natural Breaks: Break at dips in the histogram of observations. Optimal for the dataset but makes it difficult to compare to other datasets.</li>
+<li>Manual: If all else fails, it can be reasonable to set the breaks yourself.</li>
+</ul>
+</section>
+<section id="choropleth-mapping-with-exploratory-data-analysis" class="level4">
+<h4 class="anchored" data-anchor-id="choropleth-mapping-with-exploratory-data-analysis"><a href="https://www.directionsmag.com/article/3363">Choropleth Mapping with Exploratory Data Analysis</a></h4>
+<p>EDA will help us choose the most appropriate choropleth map parameters. - Normal distribution: SD Classification - Uniform distribution: Even Class Width Classification</p>
+<p>Consider when checking histograms: - Include record with zero or missing values? - Distributions - Sample sizes</p>
+<p>Choropleth maps are good with summarised data, namely totals or ratios. May or may not involve area.</p>
+<p>Kolmogorov-Sminov test: Checks for uniform distribution. Ensure significance level is over 0.05</p>
+<p>Consider making more than 1 map on the same data to allow readers to compare them.</p>
+<p>Consider removing outliers and extreme values because they can impact distributions. Define outliers with z values, e.g.&nbsp;+-3</p>
+</section>
+</section>
 </section>
 <section id="setup" class="level2">
 <h2 class="anchored" data-anchor-id="setup">2.0 Setup</h2>
-<section id="dependencies" class="level3">
-<h3 class="anchored" data-anchor-id="dependencies">2.1 Dependencies</h3>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(arrow, lubridate, tidyverse, sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
+<section id="requirements" class="level3">
+<h3 class="anchored" data-anchor-id="requirements">2.1 Requirements</h3>
+<ul>
+<li><strong>sf</strong>: Simple features access for R. Includes importing, managing and processing data.</li>
+<li><strong>tidyverse</strong>: A set of R packages for data science, which includes visualisation</li>
+</ul>
+</section>
+<section id="data" class="level3">
+<h3 class="anchored" data-anchor-id="data">2.2 Data</h3>
+<ul>
+<li>Master Plan 2014 Subzone Boundary (Web) from data.gov.sg</li>
+<li>Pre-Schools Location from data.gov.sg</li>
+<li>Cycling Path from LTADataMall</li>
+<li>Latest version of Singapore Airbnb listing data from Inside Airbnb</li>
+</ul>
+</section>
+<section id="importing-data-and-packages" class="level3">
+<h3 class="anchored" data-anchor-id="importing-data-and-packages">2.3 Importing Data and Packages</h3>
 
 
 </section>

@@ -12,3 +12,10 @@ format:
   html:
     toc: true
 ---
+## 1.0 Overview
+## 2.0 Setup
+### 2.1 Dependencies
+```{r}
+pacman::p_load(arrow, lubridate, tidyverse, sf)
+```
+
