@@ -34,6 +34,7 @@ pacman::p_load(arrow, lubridate, tidyverse, sf, tmap)
 ```
 
 ### 2.2 Importing Data
+
 #### Read the first parquet files
 
 ```{r}
@@ -42,37 +43,39 @@ df <- read_parquet("data/GrabPosisi/part-00000-8bbff892-97d2-4011-9961-703e38972
 ```
 
 #### Import Master Plan 2019 Planning Subzone Boundary
+
 ```{r}
 mpsz2019 <- st_read("data/dataGov/MPSZ2019.kml") %>%
   st_transform(crs = 3414)
 ```
 
 ### 2.3 Data Wrangling
+
 #### Convert the ping timestamp to datetime
-as_datetime is a lubridate function. 
-Replace the column with the reformatted version.
+
+as_datetime is a lubridate function. Replace the column with the reformatted version.
 
 lubridate helps to handle datetime data.
+
 ```{r}
 df$pingtimestamp <- as_datetime(df$pingtimestamp)
 ```
 
 #### Write the parquet data to rds
+
 ```{r}
 write_rds(df, "data/rds/part0.rds")
 ```
 
 #### Check the dataframe
+
 ```{r}
 head(df)
 ```
 
 #### Extract trip-start locations (Origins)
 
-trj_id is a duplicated field, referring to the trip. Group by trip.
-sort by time stamp
-Filter out the origin in the first row
-Use mutate to create new columns
+trj_id is a duplicated field, referring to the trip. Group by trip. sort by time stamp Filter out the origin in the first row Use mutate to create new columns
 
 ```{r}
 origin_df <- df %>%
@@ -85,7 +88,6 @@ origin_df <- df %>%
          start_hr = factor(hour(pingtimestamp)),
          day = factor(mday(pingtimestamp)))
 ```
-
 
 #### Extract trip-end locations (Destinations)
 
@@ -105,7 +107,9 @@ destination_df <- df %>%
 ```
 
 #### Important: Saving data, saving memory
+
 Dataframes are large and the raw ones have many entries. Save the intermediate dataframes.
+
 ```{r}
 # #|eval: FALSE - Show the code without evaluating
 # #|echo: false - Code will not appear to the reader
@@ -114,7 +118,9 @@ write_rds(origin_df, "data/rds/origin_df.rds")
 ```
 
 #### Reimporting data
+
 The old files are no longer needed, but we can keep it to show our process.
+
 ```{r}
 destination_df <- read_rds("data/rds/destination_df.rds")
 origin_df <- read_rds("data/rds/origin_df.rds")

@@ -8,9 +8,9 @@ website:
     - text: "Hands-on Exercises"
       menu:
         - text: "Hands-on Exercise 1"
-          href: HandsOnEx/HE1/HE1.qmd
+          href: HandsOnEx/HE1/HE1.html
         - text: "Hands-on Exercise 2"
-          href: HandsOnEx/HE2/HE2.qmd
+          href: HandsOnEx/HE2/HE2.html
         - text: "Hands-on Exercise 3"
     - text: "Take-home Exercises"
       menu:
@@ -19,10 +19,8 @@ website:
         - text: "Take-home Exercise 3"
     - text: "In-class Exercises"
       menu:
-        - text: "In-class Exercises 1"
-          href: InClassEx/ICE1/ICE1.qmd
         - text: "In-class Exercises 2"
-          href: InclassEx/ICE2/ICE2.qmd
+          href: InclassEx/ICE2/ICE2.html
         - text: "In-class Exercises 3"
     right:
       - href: index.qmd
