@@ -1,8 +1,8 @@
 ---
-title: "Behold, My Stuff"
+title: "Geospatial Analytics and Applications"
 listing:
   categories: true
   sort: "date desc"
 ---
 
-My posts conveniently sorted and displayed with quarto. Really nice.
+Welcome to my IS415 Geospatial Analytics and Applications website! This website documents my weekly learning, progress and notes. I hope this will be as useful to you as it was to me!
