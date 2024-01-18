@@ -1,0 +1,27 @@
+---
+title: "1st & 2nd Order Spatial Point Patterns Analysis Methods"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-11-2023
+description: |
+  I'm going to learn how to plot meaningfully annotated maps called choropleth maps.
+categories:
+  - Hands-On Exercise
+  - tidyverse
+  - sf
+  - tmap
+format:
+  html:
+    toc: true
+---
+
+## 1.0 Overview
+
+Thematic mapping: Use map symbols to represent otherwise elusive variables and make use of human pattern-recognition
+
+### 1.1 Readings
+
+#### [Chapter 7 Spatial Point Pattern Analysis ](https://link-springer-com.libproxy.smu.edu.sg/chapter/10.1007/978-1-4614-7618-4_7)
+
+

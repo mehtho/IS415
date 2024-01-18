@@ -1,1 +1,37 @@
-/* css styles */
+/* Reset some default styles */
+body, h1, h2, p, ul, li {
+    margin: 0;
+    padding: 0;
+}
+
+/* Set background color for the whole page */
+body {
+    background-color: #f8f8f8; /* Light gray background */
+    font-family: Arial, sans-serif; /* Change font family if needed */
+}
+
+/* Navigation bar styles */
+nav {
+    background-color: #ff69b4; /* Pink color for the navigation bar */
+    padding: 10px;
+}
+
+nav ul {
+    list-style: none;
+}
+
+nav ul li {
+    display: inline;
+    margin-right: 20px; /* Adjust the spacing between menu items */
+}
+
+nav a {
+    text-decoration: none;
+    color: #fff; /* White text color for links */
+    font-weight: bold;
+}
+
+/* Change link color on hover */
+nav a:hover {
+    color: #ffcccb; /* Lighter pink color on hover */
+}

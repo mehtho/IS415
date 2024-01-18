@@ -12,6 +12,7 @@ website:
         - text: "Hands-on Exercise 2"
           href: HandsOnEx/HE2/HE2.html
         - text: "Hands-on Exercise 3"
+          href: HandsOnEx/HE3/HE3.html
     - text: "Take-home Exercises"
       menu:
         - text: "Take-home Exercise 1"
@@ -28,8 +29,9 @@ website:
 
 format:
   html:
-    theme: united
-    css: styles.css
+    theme: 
+     - united
+     - custom.scss
     toc: true
 
 editor: visual

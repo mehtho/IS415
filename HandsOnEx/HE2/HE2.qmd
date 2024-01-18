@@ -469,10 +469,13 @@ tm_shape(mpsz_pop2020[mpsz_pop2020$REGION_N=="CENTRAL REGION", ])+
             frame = FALSE) +
   tm_borders(alpha = 0.5)
 ```
+
 #### Some Experimentation
+
 ```{r}
 head(mpsz_pop2020)
 ```
+
 ```{r}
 tm_shape(mpsz_pop2020[mpsz_pop2020$PLN_AREA_N=="YISHUN", ])+
   tm_fill("DEPENDENCY", 
