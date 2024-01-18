@@ -14,6 +14,10 @@ categories:
 format:
   html:
     toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
 ---
 
 ## 1.0 Overview
@@ -195,9 +199,9 @@ L Function
 
 Consider the distribution of the points in space and consider if there may be interactions between them.
 
-The former is an easier descriptive analysis. 
+The former is an easier descriptive analysis.
 
-CSR is useful when there is no obvious regular or clustered pattern. 
+CSR is useful when there is no obvious regular or clustered pattern.
 
 F function is the distance from a point to the nearest event. AKA empty space function because it measure the aveage space left between events.
 
@@ -205,14 +209,14 @@ G function is the distance to the nearest event; distribution of the distances f
 
 Homogeneous Poisson Process represents a point process where all events are independently and uniformly distributed in its region. Considered stationary and isotropic.
 
-Stationary: Intensity is constant and second-order intensity only depends on direction and distance of 2 points. 
+Stationary: Intensity is constant and second-order intensity only depends on direction and distance of 2 points.
 
 Isotropic: Second order intensity is invariant to rotation.
 
-1.    The number of events within the area is Poisson distributed with mean $\lambda|A|$ where $lambda$ is the constant intensity of the point process
-2.    The $n$ observed events in the region are uniformly distributed
+1.  The number of events within the area is Poisson distributed with mean $\lambda|A|$ where $lambda$ is the constant intensity of the point process
+2.  The $n$ observed events in the region are uniformly distributed
 
-Inhomogenous Poisson Process: Non-constant intensity. Described with $lambda(x)$ that varies spatially. 
+Inhomogenous Poisson Process: Non-constant intensity. Described with $lambda(x)$ that varies spatially.
 
 #### [Chapter 7 Spatial Point Pattern Analysis](https://link-springer-com.libproxy.smu.edu.sg/chapter/10.1007/978-1-4614-7618-4_7)
 
@@ -220,18 +224,13 @@ Caution: Aggregated (Clustered) or dispersed structures can also be obtained wit
 
 Ripley's K function: A cumulative function that gives the average number of points at a distance less than or equal to a radius. Standardised by the process intensity $\frac{n}{|W|}$, assumed homogeneous.
 
-Compare $\hat{K}(r)$ and $K_{}pois(r)$
--   Random: =
--   Aggregate: >
--   Regular:    <
+Compare $\hat{K}(r)$ and $K_{}pois(r)$ - Random: = - Aggregate: \> - Regular: \<
 
 L Function
 
 Only distance-based methods can be used to detect exactly at what distance attraction or dispersion are observable without scale bias in a zone.
 
-D Function
-$D(r)=K_{cas}(r)-K_{controls}(r)$
-Compare two subpopulation's distributions
+D Function $D(r)=K_{cas}(r)-K_{controls}(r)$ Compare two subpopulation's distributions
 
 ## 2.0 Setup
 
@@ -245,6 +244,11 @@ Compare two subpopulation's distributions
 
 ### 2.2 Data
 
+-   CHILDCARE from data.gov.sg
+
+-   MP14_SUBZONE_WEB_PL from data.gov.sg
+
+-   CostalOutline from SLA
 
 ### 2.3 Importing Data and Packages
 
@@ -254,11 +258,15 @@ pacman::p_load(maptools, sf, raster, spatstat, tmap)
 
 ------------------------------------------------------------------------
 
+Import the data and correct the CRS of the data to 3414
+
 ```{r}
 childcare_sf <- st_read("data/geospatial/child-care-services-geojson.geojson") %>%
   st_transform(crs=3414)
+
 sg_sf <- st_read(dsn = "data/geospatial", layer="CostalOutline") %>% 
   st_transform(crs=3414)
+
 mpsz_sf <- st_read(dsn = "data/geospatial", 
                 layer = "MP14_SUBZONE_WEB_PL") %>% 
   st_transform(crs=3414)
@@ -266,11 +274,17 @@ mpsz_sf <- st_read(dsn = "data/geospatial",
 
 ### 2.4 Wrangling Data
 
+#### Checking CRS
+
+Confirm the data's CRS is correct
 ```{r}
+st_crs(childcare_sf)
 st_crs(sg_sf)
 st_crs(mpsz_sf)
 ```
 
+#### Initial plots
+Plot all 3 datasets to observe obvious spatial patterns. 
 ```{r}
 tm_shape(sg_sf) + 
   tm_polygons() + 
@@ -280,24 +294,33 @@ tm_shape(sg_sf) +
   tm_dots()
 ```
 
+This code prepares an interactive pin map.
 ```{r}
 # tmap_mode('view')
 # tm_shape(childcare_sf)+
 #   tm_dots()
 # tmap_mode('plot')
 ```
-  
+
+#### Convert to sp's Spatial* class
+
+Use sf's as_Spatial method to convert them
+
 ```{r}
 childcare <- as_Spatial(childcare_sf)
 mpsz <- as_Spatial(mpsz_sf)
 sg <- as_Spatial(sg_sf)
 ```
 
+Checking the conversion
 ```{r}
 childcare
 mpsz
 sg
 ```
+
+#### Convert Spatial* into generic sp format
+We cannot convert directly to ppp, so we convert to generic spatial first
 
 ```{r}
 childcare_sp <- as(childcare, "SpatialPoints")
@@ -307,28 +330,34 @@ mpsz
 sg
 ```
 
+#### Convert generic sp to spatstat's ppp format
 ```{r}
 childcare_ppp <- as(childcare_sp, "ppp")
 childcare_ppp
 plot(childcare_ppp)
 ```
 
+While plotting the new ppp object, we get a warning that it contains duplicated points
 ```{r}
 plot(childcare_ppp)
 ```
 
+We confirm with with any(duplicated())
 ```{r}
 any(duplicated(childcare_ppp))
 ```
 
+multiplicity() shows us which points are duplicated
 ```{r}
 multiplicity(childcare_ppp)
 ```
 
+sum() the number of duplicated points
 ```{r}
 sum(multiplicity(childcare_ppp) > 1)
 ```
 
+In the interactive map, darker spots have duplicated data
 ```{r}
 # tmap_mode('view')
 # tm_shape(childcare) +
@@ -337,7 +366,10 @@ sum(multiplicity(childcare_ppp) > 1)
 
 # tmap_mode('plot')
 ```
- 
+
+#### Jittering
+
+Jittering: Slightly shift duplicate points such that they no longer occur at the same point to make them unique. After that, confirm that there are no longer any duplicates with any(duplicated())
 ```{r}
 childcare_ppp_jit <- rjitter(childcare_ppp, 
                              retry=TRUE, 
@@ -347,23 +379,34 @@ childcare_ppp_jit <- rjitter(childcare_ppp,
 any(duplicated(childcare_ppp_jit))
 ```
 
+#### owin
+owin: A geographical boundary to confine our analysis. 
 ```{r}
 sg_owin <- as(sg_sp, "owin")
 plot(sg_owin)
 summary(sg_owin)
 ```
 
+#### Extracting events to our boundary (owin)
+
+Looks a bit like python, will be very useful in the future. Couples the polygon with the events within it into one entity.
 ```{r}
 childcareSG_ppp = childcare_ppp[sg_owin]
 summary(childcareSG_ppp)
 ```
 
+#### Ploting events within the boundary
+Plot the new ppp object
 ```{r}
 plot(childcareSG_ppp)
 ```
 
 ## 3.0 First-order Spatial Point Patterns Analysis
 
+### 3.1 Kernel Density Estimation (KDE)
+
+#### Automatic bandwidth selection
+In this case, the method is diggle. The smothing kernel is gaussian and we enable edge bias correction.
 ```{r}
 kde_childcareSG.bw <- density(childcareSG_ppp,
                               sigma=bw.diggle,
@@ -372,11 +415,16 @@ kde_childcareSG.bw <- density(childcareSG_ppp,
 plot(kde_childcareSG.bw)
 ```
 
+In the previous plot, the density values of the output range are unacceptably low and difficult to interpret. 
+
+#### Check the selected bandwidth
 ```{r}
 bw <- bw.diggle(childcareSG_ppp)
 bw
 ```
 
+#### Rescaling KDE values
+Rescale with a conversion factor of 1000, calling it 'KM'. The name is optional.
 ```{r}
 childcareSG_ppp.km <- rescale(childcareSG_ppp, 1000, "km")
 kde_childcareSG.bw <- density(childcareSG_ppp.km,
@@ -386,6 +434,11 @@ kde_childcareSG.bw <- density(childcareSG_ppp.km,
 plot(kde_childcareSG.bw)
 ```
 
+We fixed the density values of the output!
+
+### 3.2 Different bandwidth selection methods
+
+#### Four Spatstat bandwidth calculation functions
 ```{r}
 bw.CvL(childcareSG_ppp.km)
 bw.scott(childcareSG_ppp.km)
@@ -393,6 +446,9 @@ bw.ppl(childcareSG_ppp.km)
 bw.diggle(childcareSG_ppp.km)
 ```
 
+
+#### Comparing diggle and ppl
+par(mfrow=c(1,2)) Will be useful in the future for comparing multiple representations
 ```{r}
 kde_childcareSG.ppl <- density(childcareSG_ppp.km, 
                                sigma=bw.ppl, 
@@ -403,7 +459,8 @@ plot(kde_childcareSG.bw, main = "bw.diggle")
 plot(kde_childcareSG.ppl, main = "bw.ppl")
 ```
 
-
+### 3.3 Applying different bandwidth selection methods
+In each method, the differences are quite subtle. Should experiment with more than 1 method when trying to plot KDE.
 ```{r}
 par(mfrow=c(2,2))
 plot(density(childcareSG_ppp.km, 
@@ -428,14 +485,211 @@ plot(density(childcareSG_ppp.km,
      main="Disc")
 ```
 
+## 4.0 Fixed and Adaptive KDE
+### 4.1 Fixed Bandwidth
+
+In this example, sigma is set to 0.6. With respect to the unit, kilometers, this represents 600m or 0.6 KM.
 ```{r}
 kde_childcareSG_600 <- density(childcareSG_ppp.km, sigma=0.6, edge=TRUE, kernel="gaussian")
 plot(kde_childcareSG_600)
 ```
 
+### 4.2 Adaptive bandwidth
+Fixed bandwidth is sensitive to highly skewed distributions of spatial points. Using Adaptive bandwidth solves this issue.
+```{r}
+kde_childcareSG_adaptive <- adaptive.density(childcareSG_ppp.km, method="kernel")
+plot(kde_childcareSG_adaptive)
+```
+
+#### Comparing fixed and adaptive bandwidth
+```{r}
+par(mfrow=c(1,2))
+plot(kde_childcareSG.bw, main = "Fixed bandwidth")
+plot(kde_childcareSG_adaptive, main = "Adaptive bandwidth")
+```
+
+### 4.3 KDE output to grid object
+```{r}
+gridded_kde_childcareSG_bw <- as.SpatialGridDataFrame.im(kde_childcareSG.bw)
+spplot(gridded_kde_childcareSG_bw)
+```
+
+#### Conversion to raster
+The gridded KDE object can be converted into a raster layer. Remember to set the CRS.
+
+```{r}
+kde_childcareSG_bw_raster <- raster(gridded_kde_childcareSG_bw)
+kde_childcareSG_bw_raster
+```
+
+```{r}
+projection(kde_childcareSG_bw_raster) <- CRS("+init=EPSG:3414")
+kde_childcareSG_bw_raster
+```
 
 
+### 4.4 tmap visualisation
+Raster values are coded onto raster pixels in the v field.
+```{r}
+tm_shape(kde_childcareSG_bw_raster) + 
+  tm_raster("v") +
+  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)
+```
+
+### 4.5 Comparing spatial point patterns with KDE
+
+#### Extracting study areas
+
+Important process: Remember this syntax to extract study areas.
+
+```{r}
+pg = mpsz[mpsz@data$PLN_AREA_N == "PUNGGOL",]
+tm = mpsz[mpsz@data$PLN_AREA_N == "TAMPINES",]
+ck = mpsz[mpsz@data$PLN_AREA_N == "CHOA CHU KANG",]
+jw = mpsz[mpsz@data$PLN_AREA_N == "JURONG WEST",]
+```
 
 
+Plot the areas to confirm
+```{r}
+par(mfrow=c(2,2))
+plot(pg, main = "Punggol")
+plot(tm, main = "Tampines")
+plot(ck, main = "Choa Chu Kang")
+plot(jw, main = "Jurong West")
+```
 
+Convert the areas into generic sp
+```{r}
+pg_sp = as(pg, "SpatialPolygons")
+tm_sp = as(tm, "SpatialPolygons")
+ck_sp = as(ck, "SpatialPolygons")
+jw_sp = as(jw, "SpatialPolygons")
+```
+
+Then into owin
+```{r}
+pg_owin = as(pg_sp, "owin")
+tm_owin = as(tm_sp, "owin")
+ck_owin = as(ck_sp, "owin")
+jw_owin = as(jw_sp, "owin")
+```
+
+Use the same python-like syntax to extract only events within the respective areas
+```{r}
+childcare_pg_ppp = childcare_ppp_jit[pg_owin]
+childcare_tm_ppp = childcare_ppp_jit[tm_owin]
+childcare_ck_ppp = childcare_ppp_jit[ck_owin]
+childcare_jw_ppp = childcare_ppp_jit[jw_owin]
+```
+
+
+Rescale like we did before to transform the unit from meter to kilometer
+```{r}
+childcare_pg_ppp.km = rescale(childcare_pg_ppp, 1000, "km")
+childcare_tm_ppp.km = rescale(childcare_tm_ppp, 1000, "km")
+childcare_ck_ppp.km = rescale(childcare_ck_ppp, 1000, "km")
+childcare_jw_ppp.km = rescale(childcare_jw_ppp, 1000, "km")
+```
+
+#### Plot multiple study areas
+
+```{r}
+par(mfrow=c(2,2))
+plot(childcare_pg_ppp.km, main="Punggol")
+plot(childcare_tm_ppp.km, main="Tampines")
+plot(childcare_ck_ppp.km, main="Choa Chu Kang")
+plot(childcare_jw_ppp.km, main="Jurong West")
+```
+
+#### Compute KDE for each study region (Automatic bandwidth).
+
+In this example, we use diggle, edge bias correction and a gaussian smoothing kernel.
+```{r}
+par(mfrow=c(2,2))
+plot(density(childcare_pg_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Punggol")
+plot(density(childcare_tm_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Tampines")
+plot(density(childcare_ck_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Choa Chu Kang")
+plot(density(childcare_jw_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Jurong West")
+```
+
+
+#### Compute KDE for each study region (Fixed bandwidth).
+
+Bandwidth set to 250m
+```{r}
+par(mfrow=c(2,2))
+plot(density(childcare_ck_ppp.km, 
+             sigma=0.25, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Chou Chu Kang")
+plot(density(childcare_jw_ppp.km, 
+             sigma=0.25, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="JUrong West")
+plot(density(childcare_pg_ppp.km, 
+             sigma=0.25, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Punggol")
+plot(density(childcare_tm_ppp.km, 
+             sigma=0.25, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Tampines")
+```
+
+
+### 4.6 Nearest Neighbour Analysis
+The Clark-Evans test of aggregation.
+
+H0: Random distribution
+
+H1: Not randomly distributed
+```{r}
+clarkevans.test(childcareSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                nsim=99)
+```
+From the above result, the R value indicates clustering. the p-value shows that this is a statistically significant result
+
+#### Clark Evans test on CCK
+```{r}
+clarkevans.test(childcare_ck_ppp,
+                correction="none",
+                clipregion=NULL,
+                alternative=c("two.sided"),
+                nsim=999)
+```
+The p value indicates that we cannot reject the null hypothesis
+
+#### Clark Evans test on Tampines
+```{r}
+clarkevans.test(childcare_tm_ppp,
+                correction="none",
+                clipregion=NULL,
+                alternative=c("two.sided"),
+                nsim=999)
+```
+The R value indicates clustering and the P value indicates that this is a statistically significant result. 
 
