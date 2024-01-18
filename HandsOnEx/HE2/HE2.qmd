@@ -3,7 +3,7 @@ title: "Hands-On Exercise 2: GeoVisualisation and Analytical Mapping"
 author:
   - name: Matthew Ho
     url: https://www.linkedin.com/in/matthewhoyiwen/
-date: 01-11-2023
+date: 01-11-2024
 description: |
   I'm going to learn how to plot meaningfully annotated maps called choropleth maps.
 categories:

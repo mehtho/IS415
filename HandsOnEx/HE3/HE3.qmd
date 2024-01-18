@@ -3,9 +3,9 @@ title: "1st & 2nd Order Spatial Point Patterns Analysis Methods"
 author:
   - name: Matthew Ho
     url: https://www.linkedin.com/in/matthewhoyiwen/
-date: 01-11-2023
+date: 01-18-2024
 description: |
-  I'm going to learn how to plot meaningfully annotated maps called choropleth maps.
+  1st & 2nd Order Spatial Point Patterns Analysis Methods.
 categories:
   - Hands-On Exercise
   - tidyverse
@@ -18,10 +18,154 @@ format:
 
 ## 1.0 Overview
 
-Thematic mapping: Use map symbols to represent otherwise elusive variables and make use of human pattern-recognition
+1st & 2nd Order Spatial Point Patterns Analysis Methods
 
 ### 1.1 Readings
 
-#### [Chapter 7 Spatial Point Pattern Analysis ](https://link-springer-com.libproxy.smu.edu.sg/chapter/10.1007/978-1-4614-7618-4_7)
+#### Lesson 3 Slides
+
+Spatial point patterns use points as events.
+
+When dealing with their locations, consider if the points are randomly located or patterned.
+
+If these locations are associated with a value, they may follow a marked point pattern (Point patterns with a mark, which is a categorical or numerical label). They may also be random or patterned.
+
+When considering points on a plane, these points can be imagined to occur on an isotropic (Measurement direction does not affect magnitude) plane. (Perfectly flat and homogeneous 2D space).
+
+In a set of observed points, they generally follow 3 spatial distributions: Random, Aggregate (Clustered) and Regular (Uniform)
+
+$X = \{x∈D\}$ where D is the study region, or a subset of $R^n$, where n is the dimensions of the Euclidean space, probably 2 in most cases.
+
+First-order analysis of spatial point patterns: Observations vary based on location due to variations in [underlying properties]{.underline}
+
+Second order analysis of spatial point patterns: Observations vary based on location due to [interaction effects between observations]{.underline}
+
+2 Kinds of First order spatial point patterns analysis techniques
+
+1.  Density Based
+    -   Kernel density estimation (KDE)
+
+        -   $\hat{\lambda}_\tau(s)=\frac{1}{\sigma_\tau(s)} \sum_{i=1}^{n} \frac{1}{\tau^2}k(\frac{s-s_i}{\tau})$
+
+        -   $k(\frac{s-s_i}{\tau})$ Is the kernel, which can have different equations for the function k. The above is the uniform kernel.
+
+        -   $\tau$ is the bandwidth, or radius
+
+        -   The centre is called the "regression point"
+
+        -   Adaptive bandwidth: Adjust bandwidth (radius) based on data density. i.e shorter for dense, longer for sparse. Can use nearest-neighbour for this
+
+        -   Fixed bandwidth: May produce large variances for sparse data and hide subtle local variation for sparse data. May not be able to calibrate in local areas where data is too sparse.
+
+    -   Quadrat analysis
+
+        -   Divide the study area $R$ into equally-sized subregions. Often but not necessarily square.
+
+        -   Count events per subregion
+
+        -   Calculate intensity of events in each region. Intensity is denoted with $\lambda$, $n$ is the number of events. $A$ is the area of each quadrat. $\lambda=\frac{n}{A}$
+
+        -   Perform the Complete Spatial Randomness Test (CSR)
+
+        -   Variance-Mean Ratio (VMR): For uniform, expect close to 0. For random, expect close to 1. For cluster, expect more than 1
+
+        -   CSR/IRP (independent random process): Any event has equal probability of being in any location \[1st order\]. Location of an event is indepent of the location of another \[2nd order\].
+
+        -   Quadrat weaknesses
+
+            -   Sensitive to quadrat size since the number of points will vary.
+
+            -   Measure of dispersion rather than pattern
+
+            -   Single measure for entire distribution, variation with whole region is not recognised.
+2.  Distance-based
+    1.  Nearest neighbour index
+        -   Euclidean distance from a point to nearest neighbour. Expressed as a ratio of observed mean distance to expected mean distance.
+
+        -   $NNI=\frac{\bar{d}}{E(\bar{d})}$
+
+        -   $\bar{d}=\frac{\sum_{i=1}^{n}d_i}{n}$
+
+        -   $E(\bar{d})=0.5\sqrt{\frac{A}{n}}$
+
+        -   If index \< 1, clustering
+
+        -   If index == 1, random
+
+        -   If index \> 1, Dispersion or competition
+
+        -   Consider the test statistic Z: $Z=\frac{\bar{d}-E(\bar{d})}{Std.error}$
+
+        -   Reject the null hypothesis if z-score is large and p-value is smaller than alpha value (0.05)
+
+Density based measures:
+
+-   Global density: The density of points in the whole region
+
+-   Local density: Density of points within a subregion
+
+G Function 
+
+- $G(r)=\frac{|r_{min}(s_i|)<r}{|R|}$ 
+- n is the number of points in the study area 
+- Tells us the way events are spaced in a point pattern 
+
+- Clustered: G increases rapidly over short distance 
+- Evenness: G increases slow up to the distance where most events are space before increasing rapidly 
+- Evaluate with simulated confidence envelopes
+
+Monte Carlo simulation test of CSR 
+
+- Do m independent simulations of n events in the study region 
+- For every simulated point pattern, estimate $G(r)$ and use 5th and 95th percentiles of the function to define upper and lower simulation envelopes. 
+- If the estimated $G(r)$ falls outside these bounds, it is statistically significant 
+- Simply put: Spray n events m times and calculate $G(r)$. Draw bounds based on the 0.05 and 1-0.05 percentiles and compare to assess the chance of the $G(r)$ being a random coincidence
+
+F Function 
+
+- Select some random point locations within $R$ 
+- Find min distance from each point to any event in $R$ 
+- 3 Steps 
+
+  1.    Randomly select m points where $m=(p_1,p_2,...,p_n)$ 
+  2.    Calculate $d_{min}(p_i,s)$ 
+  3.    Calculate $F(d)$ where $F(d)=\frac{|d_{min}(p_i,s) < d|}{m}$
+
+-   If clustered, F(r) rises slowly at first before rising rapidly at longer distances
+-   If evenness, F(r) rises rapidly at first then slowly at longer distances
+-   Like G function, calculate the envelopes and check if it falls outside
+
+K Function 
+
+-   Consider the limit of NN distance. It only uses nearest distance. 
+-   K function uses more points 
+-   Estimate of spatial dependence over a wider range 
+-   Uses every distance between events in $R$ 
+-   Assumed isotropy (identical values of a property in all directions) 
+-   Calculation 
+-   Construct circle $c$ of radius $h$ around each point $e_i$ 
+-   Count $|e_j|=|{c \cap e}|$ 
+-   Repeat previous steps for every $e_i \in e$ 
+-   Slowly increment $h$ and repeat calculations
+
+-   $\hat{K}(h)=\frac{R}{n^2}\sum\sum_{i \ne j\frac{I_h(d_{id})}{W_{}ij}}$
+-   $R$ is the area of study area. $n$ is number of points. $I_h(d_{id})$ is a dummy variable, 1 if $d_{id}\le h$ else 0. $W_{ij}$ is edge correction, the proportionate of the circumference of the circle centered on i containing  point j. =1 if the whole circle is within the study area. 
+-   The K function can be used as a CSR test. Plot $K(h)$ against different $h$ values.
+-   If CSR, $K(h)=\pi h^2$
+-   $K(h)$ under low if regular
+-   $K(h)$ over hi clustered
+-   Consider envelope for significance, else CSR.
 
 
+L Function 
+
+- Normally normalised to get benchmark of 0. $L(r)=\sqrt{\frac{K(r)}{\pi}}$ 
+- If $L_{obs}$ above $L_{hi}$ and $L_{theo}$, clustering is statistically significant 
+- If $L_{hi} > L_{obs} > L_{lo}$, spatial clustering/dispersion not statistically significant 
+- If $L_{lo} > L_{obs}$, spatial dispersion for that distance is statistically significant
+
+-   $L(r) = \sqrt{\frac{K(r)}{\pi}}-r$
+
+#### [Chapter 4: Spatial distribution of points](https://www.insee.fr/en/statistiques/fichier/3635545/imet131-h-chapitre-4.pdf)
+
+#### [Chapter 7 Spatial Point Pattern Analysis](https://link-springer-com.libproxy.smu.edu.sg/chapter/10.1007/978-1-4614-7618-4_7)

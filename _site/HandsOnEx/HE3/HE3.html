@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Matthew Ho">
-<meta name="dcterms.date" content="2023-01-11">
-<meta name="description" content="I’m going to learn how to plot meaningfully annotated maps called choropleth maps.">
+<meta name="dcterms.date" content="2024-01-18">
+<meta name="description" content="1st &amp; 2nd Order Spatial Point Patterns Analysis Methods.">
 
 <title>Matt’s IS415 Experience - 1st &amp; 2nd Order Spatial Point Patterns Analysis Methods</title>
 <style>
@@ -70,6 +70,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -176,7 +205,7 @@ ul.task-list li input[type="checkbox"] {
 
 <div>
   <div class="description">
-    <p>I’m going to learn how to plot meaningfully annotated maps called choropleth maps.</p>
+    <p>1st &amp; 2nd Order Spatial Point Patterns Analysis Methods.</p>
   </div>
 </div>
 
@@ -193,7 +222,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 11, 2023</p>
+      <p class="date">January 18, 2024</p>
     </div>
   </div>
   
@@ -207,9 +236,131 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">1.0 Overview</h2>
-<p>Thematic mapping: Use map symbols to represent otherwise elusive variables and make use of human pattern-recognition</p>
+<p>1st &amp; 2nd Order Spatial Point Patterns Analysis Methods</p>
 <section id="readings" class="level3">
 <h3 class="anchored" data-anchor-id="readings">1.1 Readings</h3>
+<section id="lesson-3-slides" class="level4">
+<h4 class="anchored" data-anchor-id="lesson-3-slides">Lesson 3 Slides</h4>
+<p>Spatial point patterns use points as events.</p>
+<p>When dealing with their locations, consider if the points are randomly located or patterned.</p>
+<p>If these locations are associated with a value, they may follow a marked point pattern (Point patterns with a mark, which is a categorical or numerical label). They may also be random or patterned.</p>
+<p>When considering points on a plane, these points can be imagined to occur on an isotropic (Measurement direction does not affect magnitude) plane. (Perfectly flat and homogeneous 2D space).</p>
+<p>In a set of observed points, they generally follow 3 spatial distributions: Random, Aggregate (Clustered) and Regular (Uniform)</p>
+<p><span class="math inline">\(X = \{x∈D\}\)</span> where D is the study region, or a subset of <span class="math inline">\(R^n\)</span>, where n is the dimensions of the Euclidean space, probably 2 in most cases.</p>
+<p>First-order analysis of spatial point patterns: Observations vary based on location due to variations in <u>underlying properties</u></p>
+<p>Second order analysis of spatial point patterns: Observations vary based on location due to <u>interaction effects between observations</u></p>
+<p>2 Kinds of First order spatial point patterns analysis techniques</p>
+<ol type="1">
+<li>Density Based
+<ul>
+<li><p>Kernel density estimation (KDE)</p>
+<ul>
+<li><p><span class="math inline">\(\hat{\lambda}_\tau(s)=\frac{1}{\sigma_\tau(s)} \sum_{i=1}^{n} \frac{1}{\tau^2}k(\frac{s-s_i}{\tau})\)</span></p></li>
+<li><p><span class="math inline">\(k(\frac{s-s_i}{\tau})\)</span> Is the kernel, which can have different equations for the function k. The above is the uniform kernel.</p></li>
+<li><p><span class="math inline">\(\tau\)</span> is the bandwidth, or radius</p></li>
+<li><p>The centre is called the “regression point”</p></li>
+<li><p>Adaptive bandwidth: Adjust bandwidth (radius) based on data density. i.e shorter for dense, longer for sparse. Can use nearest-neighbour for this</p></li>
+<li><p>Fixed bandwidth: May produce large variances for sparse data and hide subtle local variation for sparse data. May not be able to calibrate in local areas where data is too sparse.</p></li>
+</ul></li>
+<li><p>Quadrat analysis</p>
+<ul>
+<li><p>Divide the study area <span class="math inline">\(R\)</span> into equally-sized subregions. Often but not necessarily square.</p></li>
+<li><p>Count events per subregion</p></li>
+<li><p>Calculate intensity of events in each region. Intensity is denoted with <span class="math inline">\(\lambda\)</span>, <span class="math inline">\(n\)</span> is the number of events. <span class="math inline">\(A\)</span> is the area of each quadrat. <span class="math inline">\(\lambda=\frac{n}{A}\)</span></p></li>
+<li><p>Perform the Complete Spatial Randomness Test (CSR)</p></li>
+<li><p>Variance-Mean Ratio (VMR): For uniform, expect close to 0. For random, expect close to 1. For cluster, expect more than 1</p></li>
+<li><p>CSR/IRP (independent random process): Any event has equal probability of being in any location [1st order]. Location of an event is indepent of the location of another [2nd order].</p></li>
+<li><p>Quadrat weaknesses</p>
+<ul>
+<li><p>Sensitive to quadrat size since the number of points will vary.</p></li>
+<li><p>Measure of dispersion rather than pattern</p></li>
+<li><p>Single measure for entire distribution, variation with whole region is not recognised.</p></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li>Distance-based
+<ol type="1">
+<li>Nearest neighbour index
+<ul>
+<li><p>Euclidean distance from a point to nearest neighbour. Expressed as a ratio of observed mean distance to expected mean distance.</p></li>
+<li><p><span class="math inline">\(NNI=\frac{\bar{d}}{E(\bar{d})}\)</span></p></li>
+<li><p><span class="math inline">\(\bar{d}=\frac{\sum_{i=1}^{n}d_i}{n}\)</span></p></li>
+<li><p><span class="math inline">\(E(\bar{d})=0.5\sqrt{\frac{A}{n}}\)</span></p></li>
+<li><p>If index &lt; 1, clustering</p></li>
+<li><p>If index == 1, random</p></li>
+<li><p>If index &gt; 1, Dispersion or competition</p></li>
+<li><p>Consider the test statistic Z: <span class="math inline">\(Z=\frac{\bar{d}-E(\bar{d})}{Std.error}\)</span></p></li>
+<li><p>Reject the null hypothesis if z-score is large and p-value is smaller than alpha value (0.05)</p></li>
+</ul></li>
+</ol></li>
+</ol>
+<p>Density based measures:</p>
+<ul>
+<li><p>Global density: The density of points in the whole region</p></li>
+<li><p>Local density: Density of points within a subregion</p></li>
+</ul>
+<p>G Function</p>
+<ul>
+<li><p><span class="math inline">\(G(r)=\frac{|r_{min}(s_i|)&lt;r}{|R|}\)</span></p></li>
+<li><p>n is the number of points in the study area</p></li>
+<li><p>Tells us the way events are spaced in a point pattern</p></li>
+<li><p>Clustered: G increases rapidly over short distance</p></li>
+<li><p>Evenness: G increases slow up to the distance where most events are space before increasing rapidly</p></li>
+<li><p>Evaluate with simulated confidence envelopes</p></li>
+</ul>
+<p>Monte Carlo simulation test of CSR</p>
+<ul>
+<li>Do m independent simulations of n events in the study region</li>
+<li>For every simulated point pattern, estimate <span class="math inline">\(G(r)\)</span> and use 5th and 95th percentiles of the function to define upper and lower simulation envelopes.</li>
+<li>If the estimated <span class="math inline">\(G(r)\)</span> falls outside these bounds, it is statistically significant</li>
+<li>Simply put: Spray n events m times and calculate <span class="math inline">\(G(r)\)</span>. Draw bounds based on the 0.05 and 1-0.05 percentiles and compare to assess the chance of the <span class="math inline">\(G(r)\)</span> being a random coincidence</li>
+</ul>
+<p>F Function</p>
+<ul>
+<li><p>Select some random point locations within <span class="math inline">\(R\)</span></p></li>
+<li><p>Find min distance from each point to any event in <span class="math inline">\(R\)</span></p></li>
+<li><p>3 Steps</p>
+<ol type="1">
+<li>Randomly select m points where <span class="math inline">\(m=(p_1,p_2,...,p_n)\)</span></li>
+<li>Calculate <span class="math inline">\(d_{min}(p_i,s)\)</span></li>
+<li>Calculate <span class="math inline">\(F(d)\)</span> where <span class="math inline">\(F(d)=\frac{|d_{min}(p_i,s) &lt; d|}{m}\)</span></li>
+</ol></li>
+<li><p>If clustered, F(r) rises slowly at first before rising rapidly at longer distances</p></li>
+<li><p>If evenness, F(r) rises rapidly at first then slowly at longer distances</p></li>
+<li><p>Like G function, calculate the envelopes and check if it falls outside</p></li>
+</ul>
+<p>K Function</p>
+<ul>
+<li><p>Consider the limit of NN distance. It only uses nearest distance.</p></li>
+<li><p>K function uses more points</p></li>
+<li><p>Estimate of spatial dependence over a wider range</p></li>
+<li><p>Uses every distance between events in <span class="math inline">\(R\)</span></p></li>
+<li><p>Assumed isotropy (identical values of a property in all directions)</p></li>
+<li><p>Calculation</p></li>
+<li><p>Construct circle <span class="math inline">\(c\)</span> of radius <span class="math inline">\(h\)</span> around each point <span class="math inline">\(e_i\)</span></p></li>
+<li><p>Count <span class="math inline">\(|e_j|=|{c \cap e}|\)</span></p></li>
+<li><p>Repeat previous steps for every <span class="math inline">\(e_i \in e\)</span></p></li>
+<li><p>Slowly increment <span class="math inline">\(h\)</span> and repeat calculations</p></li>
+<li><p><span class="math inline">\(\hat{K}(h)=\frac{R}{n^2}\sum\sum_{i \ne j\frac{I_h(d_{id})}{W_{}ij}}\)</span></p></li>
+<li><p><span class="math inline">\(R\)</span> is the area of study area. <span class="math inline">\(n\)</span> is number of points. <span class="math inline">\(I_h(d_{id})\)</span> is a dummy variable, 1 if <span class="math inline">\(d_{id}\le h\)</span> else 0. <span class="math inline">\(W_{ij}\)</span> is edge correction, the proportionate of the circumference of the circle centered on i containing point j. =1 if the whole circle is within the study area.</p></li>
+<li><p>The K function can be used as a CSR test. Plot <span class="math inline">\(K(h)\)</span> against different <span class="math inline">\(h\)</span> values.</p></li>
+<li><p>If CSR, <span class="math inline">\(K(h)=\pi h^2\)</span></p></li>
+<li><p><span class="math inline">\(K(h)\)</span> under low if regular</p></li>
+<li><p><span class="math inline">\(K(h)\)</span> over hi clustered</p></li>
+<li><p>Consider envelope for significance, else CSR.</p></li>
+</ul>
+<p>L Function</p>
+<ul>
+<li><p>Normally normalised to get benchmark of 0. <span class="math inline">\(L(r)=\sqrt{\frac{K(r)}{\pi}}\)</span></p></li>
+<li><p>If <span class="math inline">\(L_{obs}\)</span> above <span class="math inline">\(L_{hi}\)</span> and <span class="math inline">\(L_{theo}\)</span>, clustering is statistically significant</p></li>
+<li><p>If <span class="math inline">\(L_{hi} &gt; L_{obs} &gt; L_{lo}\)</span>, spatial clustering/dispersion not statistically significant</p></li>
+<li><p>If <span class="math inline">\(L_{lo} &gt; L_{obs}\)</span>, spatial dispersion for that distance is statistically significant</p></li>
+<li><p><span class="math inline">\(L(r) = \sqrt{\frac{K(r)}{\pi}}-r\)</span></p></li>
+</ul>
+</section>
+<section id="chapter-4-spatial-distribution-of-points" class="level4">
+<h4 class="anchored" data-anchor-id="chapter-4-spatial-distribution-of-points"><a href="https://www.insee.fr/en/statistiques/fichier/3635545/imet131-h-chapitre-4.pdf">Chapter 4: Spatial distribution of points</a></h4>
+</section>
 <section id="chapter-7-spatial-point-pattern-analysis" class="level4">
 <h4 class="anchored" data-anchor-id="chapter-7-spatial-point-pattern-analysis"><a href="https://link-springer-com.libproxy.smu.edu.sg/chapter/10.1007/978-1-4614-7618-4_7">Chapter 7 Spatial Point Pattern Analysis</a></h4>
 

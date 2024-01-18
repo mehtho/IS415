@@ -3,7 +3,7 @@ title: "In-Class Exercise 2"
 author:
   - name: Matthew Ho
     url: https://www.linkedin.com/in/matthewhoyiwen/
-date: 01-15-2023
+date: 01-15-2024
 description: |
   In-class exercise 2 description
 categories:
