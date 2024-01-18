@@ -104,68 +104,338 @@ Density based measures:
 
 -   Local density: Density of points within a subregion
 
-G Function 
+G Function
 
-- $G(r)=\frac{|r_{min}(s_i|)<r}{|R|}$ 
-- n is the number of points in the study area 
-- Tells us the way events are spaced in a point pattern 
+-   $G(r)=\frac{|r_{min}(s_i|)<r}{|R|}$
 
-- Clustered: G increases rapidly over short distance 
-- Evenness: G increases slow up to the distance where most events are space before increasing rapidly 
-- Evaluate with simulated confidence envelopes
+-   n is the number of points in the study area
 
-Monte Carlo simulation test of CSR 
+-   Tells us the way events are spaced in a point pattern
 
-- Do m independent simulations of n events in the study region 
-- For every simulated point pattern, estimate $G(r)$ and use 5th and 95th percentiles of the function to define upper and lower simulation envelopes. 
-- If the estimated $G(r)$ falls outside these bounds, it is statistically significant 
-- Simply put: Spray n events m times and calculate $G(r)$. Draw bounds based on the 0.05 and 1-0.05 percentiles and compare to assess the chance of the $G(r)$ being a random coincidence
+-   Clustered: G increases rapidly over short distance
 
-F Function 
+-   Evenness: G increases slow up to the distance where most events are space before increasing rapidly
 
-- Select some random point locations within $R$ 
-- Find min distance from each point to any event in $R$ 
-- 3 Steps 
+-   Evaluate with simulated confidence envelopes
 
-  1.    Randomly select m points where $m=(p_1,p_2,...,p_n)$ 
-  2.    Calculate $d_{min}(p_i,s)$ 
-  3.    Calculate $F(d)$ where $F(d)=\frac{|d_{min}(p_i,s) < d|}{m}$
+Monte Carlo simulation test of CSR: A significance test
+
+-   Do m independent simulations of n events in the study region
+-   For every simulated point pattern, estimate $G(r)$ and use 5th and 95th percentiles of the function to define upper and lower simulation envelopes.
+-   If the estimated $G(r)$ falls outside these bounds, it is statistically significant
+-   Simply put: Spray n events m times and calculate $G(r)$. Draw bounds based on the 0.05 and 1-0.05 percentiles and compare to assess the chance of the $G(r)$ being a random coincidence
+
+F Function
+
+-   Select some random point locations within $R$
+
+-   Find min distance from each point to any event in $R$
+
+-   3 Steps
+
+    1.  Randomly select m points where $m=(p_1,p_2,...,p_n)$
+    2.  Calculate $d_{min}(p_i,s)$
+    3.  Calculate $F(d)$ where $F(d)=\frac{|d_{min}(p_i,s) < d|}{m}$
 
 -   If clustered, F(r) rises slowly at first before rising rapidly at longer distances
+
 -   If evenness, F(r) rises rapidly at first then slowly at longer distances
+
 -   Like G function, calculate the envelopes and check if it falls outside
 
-K Function 
+K Function
 
--   Consider the limit of NN distance. It only uses nearest distance. 
--   K function uses more points 
--   Estimate of spatial dependence over a wider range 
--   Uses every distance between events in $R$ 
--   Assumed isotropy (identical values of a property in all directions) 
--   Calculation 
--   Construct circle $c$ of radius $h$ around each point $e_i$ 
--   Count $|e_j|=|{c \cap e}|$ 
--   Repeat previous steps for every $e_i \in e$ 
+-   Consider the limit of NN distance. It only uses nearest distance.
+
+-   K function uses more points
+
+-   Estimate of spatial dependence over a wider range
+
+-   Uses every distance between events in $R$
+
+-   Assumed isotropy (identical values of a property in all directions)
+
+-   Calculation
+
+-   Construct circle $c$ of radius $h$ around each point $e_i$
+
+-   Count $|e_j|=|{c \cap e}|$
+
+-   Repeat previous steps for every $e_i \in e$
+
 -   Slowly increment $h$ and repeat calculations
 
 -   $\hat{K}(h)=\frac{R}{n^2}\sum\sum_{i \ne j\frac{I_h(d_{id})}{W_{}ij}}$
--   $R$ is the area of study area. $n$ is number of points. $I_h(d_{id})$ is a dummy variable, 1 if $d_{id}\le h$ else 0. $W_{ij}$ is edge correction, the proportionate of the circumference of the circle centered on i containing  point j. =1 if the whole circle is within the study area. 
+
+-   $R$ is the area of study area. $n$ is number of points. $I_h(d_{id})$ is a dummy variable, 1 if $d_{id}\le h$ else 0. $W_{ij}$ is edge correction, the proportionate of the circumference of the circle centered on i containing point j. =1 if the whole circle is within the study area.
+
 -   The K function can be used as a CSR test. Plot $K(h)$ against different $h$ values.
+
 -   If CSR, $K(h)=\pi h^2$
+
 -   $K(h)$ under low if regular
+
 -   $K(h)$ over hi clustered
+
 -   Consider envelope for significance, else CSR.
 
+L Function
 
-L Function 
+-   Normally normalised to get benchmark of 0. $L(r)=\sqrt{\frac{K(r)}{\pi}}$
 
-- Normally normalised to get benchmark of 0. $L(r)=\sqrt{\frac{K(r)}{\pi}}$ 
-- If $L_{obs}$ above $L_{hi}$ and $L_{theo}$, clustering is statistically significant 
-- If $L_{hi} > L_{obs} > L_{lo}$, spatial clustering/dispersion not statistically significant 
-- If $L_{lo} > L_{obs}$, spatial dispersion for that distance is statistically significant
+-   If $L_{obs}$ above $L_{hi}$ and $L_{theo}$, clustering is statistically significant
+
+-   If $L_{hi} > L_{obs} > L_{lo}$, spatial clustering/dispersion not statistically significant
+
+-   If $L_{lo} > L_{obs}$, spatial dispersion for that distance is statistically significant
 
 -   $L(r) = \sqrt{\frac{K(r)}{\pi}}-r$
 
 #### [Chapter 4: Spatial distribution of points](https://www.insee.fr/en/statistiques/fichier/3635545/imet131-h-chapitre-4.pdf)
 
+Consider the distribution of the points in space and consider if there may be interactions between them.
+
+The former is an easier descriptive analysis. 
+
+CSR is useful when there is no obvious regular or clustered pattern. 
+
+F function is the distance from a point to the nearest event. AKA empty space function because it measure the aveage space left between events.
+
+G function is the distance to the nearest event; distribution of the distances from an event to its nearest other.
+
+Homogeneous Poisson Process represents a point process where all events are independently and uniformly distributed in its region. Considered stationary and isotropic.
+
+Stationary: Intensity is constant and second-order intensity only depends on direction and distance of 2 points. 
+
+Isotropic: Second order intensity is invariant to rotation.
+
+1.    The number of events within the area is Poisson distributed with mean $\lambda|A|$ where $lambda$ is the constant intensity of the point process
+2.    The $n$ observed events in the region are uniformly distributed
+
+Inhomogenous Poisson Process: Non-constant intensity. Described with $lambda(x)$ that varies spatially. 
+
 #### [Chapter 7 Spatial Point Pattern Analysis](https://link-springer-com.libproxy.smu.edu.sg/chapter/10.1007/978-1-4614-7618-4_7)
+
+Caution: Aggregated (Clustered) or dispersed structures can also be obtained with an IPP, where the intensity of the process varies in space.
+
+Ripley's K function: A cumulative function that gives the average number of points at a distance less than or equal to a radius. Standardised by the process intensity $\frac{n}{|W|}$, assumed homogeneous.
+
+Compare $\hat{K}(r)$ and $K_{}pois(r)$
+-   Random: =
+-   Aggregate: >
+-   Regular:    <
+
+L Function
+
+Only distance-based methods can be used to detect exactly at what distance attraction or dispersion are observable without scale bias in a zone.
+
+D Function
+$D(r)=K_{cas}(r)-K_{controls}(r)$
+Compare two subpopulation's distributions
+
+## 2.0 Setup
+
+### 2.1 Requirements
+
+-   **sf**: Simple features access for R. Includes importing, managing and processing data.
+-   **spatstat**: For point to point analysis, 1st and 2nd order spatial point patterns analysis and KDE.
+-   **raster**: Handles gridding spatial data
+-   **maptools**: Convert spatial objects into spatstat's ppp format
+-   **tmap**: Thematic map library
+
+### 2.2 Data
+
+
+### 2.3 Importing Data and Packages
+
+```{r}
+pacman::p_load(maptools, sf, raster, spatstat, tmap)
+```
+
+------------------------------------------------------------------------
+
+```{r}
+childcare_sf <- st_read("data/geospatial/child-care-services-geojson.geojson") %>%
+  st_transform(crs=3414)
+sg_sf <- st_read(dsn = "data/geospatial", layer="CostalOutline") %>% 
+  st_transform(crs=3414)
+mpsz_sf <- st_read(dsn = "data/geospatial", 
+                layer = "MP14_SUBZONE_WEB_PL") %>% 
+  st_transform(crs=3414)
+```
+
+### 2.4 Wrangling Data
+
+```{r}
+st_crs(sg_sf)
+st_crs(mpsz_sf)
+```
+
+```{r}
+tm_shape(sg_sf) + 
+  tm_polygons() + 
+  tm_shape(mpsz_sf) + 
+  tm_polygons()+ 
+  tm_shape(childcare_sf)+ 
+  tm_dots()
+```
+
+```{r}
+# tmap_mode('view')
+# tm_shape(childcare_sf)+
+#   tm_dots()
+# tmap_mode('plot')
+```
+  
+```{r}
+childcare <- as_Spatial(childcare_sf)
+mpsz <- as_Spatial(mpsz_sf)
+sg <- as_Spatial(sg_sf)
+```
+
+```{r}
+childcare
+mpsz
+sg
+```
+
+```{r}
+childcare_sp <- as(childcare, "SpatialPoints")
+sg_sp <- as(sg, "SpatialPolygons")
+childcare
+mpsz
+sg
+```
+
+```{r}
+childcare_ppp <- as(childcare_sp, "ppp")
+childcare_ppp
+plot(childcare_ppp)
+```
+
+```{r}
+plot(childcare_ppp)
+```
+
+```{r}
+any(duplicated(childcare_ppp))
+```
+
+```{r}
+multiplicity(childcare_ppp)
+```
+
+```{r}
+sum(multiplicity(childcare_ppp) > 1)
+```
+
+```{r}
+# tmap_mode('view')
+# tm_shape(childcare) +
+#   tm_dots(alpha=0.4, 
+#          size=0.05)
+
+# tmap_mode('plot')
+```
+ 
+```{r}
+childcare_ppp_jit <- rjitter(childcare_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+any(duplicated(childcare_ppp_jit))
+```
+
+```{r}
+sg_owin <- as(sg_sp, "owin")
+plot(sg_owin)
+summary(sg_owin)
+```
+
+```{r}
+childcareSG_ppp = childcare_ppp[sg_owin]
+summary(childcareSG_ppp)
+```
+
+```{r}
+plot(childcareSG_ppp)
+```
+
+## 3.0 First-order Spatial Point Patterns Analysis
+
+```{r}
+kde_childcareSG.bw <- density(childcareSG_ppp,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(kde_childcareSG.bw)
+```
+
+```{r}
+bw <- bw.diggle(childcareSG_ppp)
+bw
+```
+
+```{r}
+childcareSG_ppp.km <- rescale(childcareSG_ppp, 1000, "km")
+kde_childcareSG.bw <- density(childcareSG_ppp.km,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(kde_childcareSG.bw)
+```
+
+```{r}
+bw.CvL(childcareSG_ppp.km)
+bw.scott(childcareSG_ppp.km)
+bw.ppl(childcareSG_ppp.km)
+bw.diggle(childcareSG_ppp.km)
+```
+
+```{r}
+kde_childcareSG.ppl <- density(childcareSG_ppp.km, 
+                               sigma=bw.ppl, 
+                               edge=TRUE,
+                               kernel="gaussian")
+par(mfrow=c(1,2))
+plot(kde_childcareSG.bw, main = "bw.diggle")
+plot(kde_childcareSG.ppl, main = "bw.ppl")
+```
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(density(childcareSG_ppp.km, 
+             sigma=bw.ppl, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="Gaussian")
+plot(density(childcareSG_ppp.km, 
+             sigma=bw.ppl, 
+             edge=TRUE, 
+             kernel="epanechnikov"), 
+     main="Epanechnikov")
+plot(density(childcareSG_ppp.km, 
+             sigma=bw.ppl, 
+             edge=TRUE, 
+             kernel="quartic"), 
+     main="Quartic")
+plot(density(childcareSG_ppp.km, 
+             sigma=bw.ppl, 
+             edge=TRUE, 
+             kernel="disc"), 
+     main="Disc")
+```
+
+```{r}
+kde_childcareSG_600 <- density(childcareSG_ppp.km, sigma=0.6, edge=TRUE, kernel="gaussian")
+plot(kde_childcareSG_600)
+```
+
+
+
+
+
+
+
