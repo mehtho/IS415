@@ -1,0 +1,107 @@
+---
+title: "Take-Home Exercise 1"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-19-2024
+description: |
+  Take-Home Exercise 1
+categories:
+  - Take-Home Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+## 1.0 Overview
+
+### 1.1 Objectives
+
+1.  Using appropriate function of sf and tidyverse, preparing the following geospatial data layer in sf tibble data.frames:
+
+-   Grab taxi location points either by origins or destinations.
+
+-   Road layer within Singapore excluding outer islands.
+
+-   Singapore boundary layer excluding outer islands
+
+2.  Using the extracted data, derive traditional Kernel Density Estimation layers.
+3.  Using the extracted data, derive either Network Kernel Density Estimation (NKDE) or Temporal Network Kernel Density Estimation (TNKDE) Using appropriate tmap functions, display the kernel density layers on openstreetmap of Singapore.
+4.  Describe the spatial patterns revealed by the kernel density maps.
+
+### 1.2 Approach
+
+## 2.0 Setup
+
+### 2.1 Dependencies
+
+```{r}
+pacman::p_load(arrow, lubridate, tidyverse, sf, tmap)
+```
+
+### 2.2 Datasets
+
+#### Aspatial data
+
+Grab-Posisi Singapore dataset
+
+#### Geospatial data
+
+1.  Road data set from Geofabrik's OpenStreetMap.
+
+-   Although the dataset includes all of Malaysia, Singapore, and Brunei, only Singapore's data will required.
+
+2.  Master Plan 2019 Subzone Boundary (No Sea) from Data.gov.sg.
+
+## 3.0 Data Wrangling
+
+### 3.1 Importing Data
+
+#### Reading the Grab-Posisi Parquet Files
+```{r}
+grabp <- open_dataset("data/aspatial/GrabPosisi/") %>% as.data.frame()
+head(grabp)
+```
+
+```{r}
+grabp$pingtimestamp <- as_datetime(grabp$pingtimestamp)
+```
+
+```{r}
+origin_df <- grabp %>%
+  group_by(trj_id) %>%
+  arrange(pingtimestamp) %>%
+  filter(row_number()==1) %>%
+  mutate(weekday = wday(pingtimestamp,
+                        label=TRUE,
+                        abbr=TRUE),
+         start_hr = factor(hour(pingtimestamp)),
+         day = factor(mday(pingtimestamp)))
+
+destination_df <- grabp %>%
+  group_by(trj_id) %>%
+  arrange(desc(pingtimestamp)) %>%
+  filter(row_number()==1) %>%
+  mutate(weekday = wday(pingtimestamp,
+                        label=TRUE,
+                        abbr=TRUE),
+         end_hr = factor(hour(pingtimestamp)),
+         day = factor(mday(pingtimestamp)))
+
+head(origin_df)
+```
+
+```{r}
+# write_rds(origin_df, "data/rds/origin.rds")
+# write_rds(destination_df, "data/rds/destination.rds")
+```
+
+### 3.2 Basic preprocessing
+
+### 3.3 CRS Adjustments and Verification
+
+### 3.4 Simple Visualisations
