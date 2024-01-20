@@ -40,7 +40,7 @@ execute:
 ### 2.1 Dependencies
 
 ```{r}
-pacman::p_load(arrow, lubridate, tidyverse, sf, tmap)
+pacman::p_load(arrow, lubridate, tidyverse, sf, tmap, maptools)
 ```
 
 ### 2.2 Datasets
@@ -63,15 +63,30 @@ Grab-Posisi Singapore dataset
 
 #### Reading the Grab-Posisi Parquet Files
 ```{r}
+#|eval: FALSE
 grabp <- open_dataset("data/aspatial/GrabPosisi/") %>% as.data.frame()
+```
+
+#### Opening the geospatial data
+```{r}
+mpsz = st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson")
+osm = st_read("data/geospatial/osm.shp.zip", layer="gis_osm_roads_free_1")
+```
+
+### 3.2 Basic preprocessing
+
+```{r}
+#|eval: FALSE
 head(grabp)
 ```
 
 ```{r}
+#|eval: FALSE
 grabp$pingtimestamp <- as_datetime(grabp$pingtimestamp)
 ```
 
 ```{r}
+#|eval: FALSE
 origin_df <- grabp %>%
   group_by(trj_id) %>%
   arrange(pingtimestamp) %>%
@@ -80,7 +95,10 @@ origin_df <- grabp %>%
                         label=TRUE,
                         abbr=TRUE),
          start_hr = factor(hour(pingtimestamp)),
-         day = factor(mday(pingtimestamp)))
+         day = factor(mday(pingtimestamp))) %>%
+  st_as_sf(coords = c("rawlng", "rawlat"),
+                      crs = 4326) %>%
+  st_transform(crs = 3414)
 
 destination_df <- grabp %>%
   group_by(trj_id) %>%
@@ -90,18 +108,109 @@ destination_df <- grabp %>%
                         label=TRUE,
                         abbr=TRUE),
          end_hr = factor(hour(pingtimestamp)),
-         day = factor(mday(pingtimestamp)))
+         day = factor(mday(pingtimestamp))) %>%
+  st_as_sf(coords = c("rawlng", "rawlat"),
+                      crs = 4326) %>%
+  st_transform(crs = 3414)
 
 head(origin_df)
+head(destination_df)
 ```
 
 ```{r}
-# write_rds(origin_df, "data/rds/origin.rds")
-# write_rds(destination_df, "data/rds/destination.rds")
+#|eval: FALSE
+origin_df <- origin_df %>% select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'start_hr', 'day', 'geometry')
+destination_df <- destination_df %>% select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'end_hr', 'day', 'geometry')
 ```
 
-### 3.2 Basic preprocessing
+```{r}
+#|eval: FALSE
+write_rds(origin_df, "data/rds/origin.rds")
+write_rds(destination_df, "data/rds/destination.rds")
+```
+
+```{r}
+destination_df <- read_rds("data/rds/destination.rds")
+origin_df <- read_rds("data/rds/origin.rds")
+```
+
+```{r}
+head(osm)
+```
+
+```{r}
+length(which(st_is_valid(mpsz) == FALSE))
+mpsz[which(st_is_valid(mpsz) == FALSE), ]
+
+mpsz <- st_make_valid(mpsz)
+```
 
 ### 3.3 CRS Adjustments and Verification
+```{r}
+st_crs(mpsz)
+st_crs(osm)
+```
+
+```{r}
+mpsz <- st_transform(mpsz, crs = 3414)
+osm <- st_transform(osm, crs = 3414)
+```
+
+```{r}
+st_crs(mpsz)
+st_crs(osm)
+```
+
+```{r}
+osm <- osm %>% select('osm_id', 'fclass')
+```
+
+```{r}
+plot(st_geometry(mpsz))
+```
+
+#### Outer Island:
+An island in Singapore inaccessible by road
+
+Therefore, Coney Island, Jurong Island and Sentosa are not outer islands.
+
+Pulau Ubin and Pulau Tekong are examples of outer islands.
+
+```{r}
+merged_sg <- st_union(mpsz) %>%
+    st_cast("POLYGON")
+
+merged_sg <- merged_sg[c(10, 45)]
+merged_sg <- st_as_sf(merged_sg)
+par(1,2)
+plot(st_geometry(mpsz))
+plot(st_geometry(merged_sg))
+```
+
+```{r}
+merged_st <- as_Spatial(merged_sg)
+merged_sg_sp <- as(merged_st, "SpatialPolygons")
+merged_sg_owin <- as(merged_sg_sp, "owin")
+```
+
+```{r}
+osm_sg <- st_intersection(osm, merged_sg)
+```
+
+```{r}
+write_rds(osm_sg, "data/rds/osm_sg.rds")
+```
+
+```{r}
+osm_sg<- read_rds("data/rds/osm_sg.rds")
+plot(osm_sg)
+```
+
+```{r}
+#grabp_sg <- grabp[merged_sg_owin]
+```
 
 ### 3.4 Simple Visualisations
+
+#### 4.0 KDE
+
