@@ -1,5 +1,5 @@
 ---
-title: "1st & 2nd Order Spatial Point Patterns Analysis Methods"
+title: "Hands-On Exercise 3: 1st & 2nd Order Spatial Point Patterns Analysis Methods"
 author:
   - name: Matthew Ho
     url: https://www.linkedin.com/in/matthewhoyiwen/
@@ -385,12 +385,12 @@ In the interactive map, darker spots have duplicated data
 Jittering: Slightly shift duplicate points such that they no longer occur at the same point to make them unique. After that, confirm that there are no longer any duplicates with any(duplicated())
 
 ```{r}
-childcare_ppp_jit <- rjitter(childcare_ppp, 
+childcare_ppp <- rjitter(childcare_ppp, 
                              retry=TRUE, 
                              nsim=1, 
                              drop=TRUE)
 
-any(duplicated(childcare_ppp_jit))
+any(duplicated(childcare_ppp))
 ```
 
 #### owin
@@ -409,7 +409,7 @@ Looks a bit like python, will be very useful in the future. Couples the polygon 
 
 ```{r}
 childcareSG_ppp = childcare_ppp[sg_owin]
-summary(childcareSG_ppp)
+head(childcareSG_ppp)
 ```
 
 #### Ploting events within the boundary
@@ -426,7 +426,7 @@ plot(childcareSG_ppp)
 
 #### Automatic bandwidth selection
 
-In this case, the method is diggle. The smothing kernel is gaussian and we enable edge bias correction.
+In this case, the method is diggle. The smoothing kernel is gaussian and we enable edge bias correction.
 
 ```{r}
 kde_childcareSG.bw <- density(childcareSG_ppp,
@@ -616,10 +616,10 @@ jw_owin = as(jw_sp, "owin")
 Use the same python-like syntax to extract only events within the respective areas
 
 ```{r}
-childcare_pg_ppp = childcare_ppp_jit[pg_owin]
-childcare_tm_ppp = childcare_ppp_jit[tm_owin]
-childcare_ck_ppp = childcare_ppp_jit[ck_owin]
-childcare_jw_ppp = childcare_ppp_jit[jw_owin]
+childcare_pg_ppp = childcare_ppp[pg_owin]
+childcare_tm_ppp = childcare_ppp[tm_owin]
+childcare_ck_ppp = childcare_ppp[ck_owin]
+childcare_jw_ppp = childcare_ppp[jw_owin]
 ```
 
 Rescale like we did before to transform the unit from meter to kilometer

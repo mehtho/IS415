@@ -10,7 +10,7 @@
 <meta name="dcterms.date" content="2024-01-18">
 <meta name="description" content="Exploring spatial point patterns and methods to identify and analyse these patterns. First-order methods include kernel density estimation and bandwidth selection methods while second-order methods include F, G, K and L functions.">
 
-<title>Matt’s IS415 Experience - 1st &amp; 2nd Order Spatial Point Patterns Analysis Methods</title>
+<title>Matt’s IS415 Experience - Hands-On Exercise 3: 1st &amp; 2nd Order Spatial Point Patterns Analysis Methods</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -257,7 +257,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">1st &amp; 2nd Order Spatial Point Patterns Analysis Methods</h1>
+<h1 class="title">Hands-On Exercise 3: 1st &amp; 2nd Order Spatial Point Patterns Analysis Methods</h1>
   <div class="quarto-categories">
     <div class="quarto-category">Hands-On Exercise</div>
     <div class="quarto-category">sf</div>
@@ -1056,12 +1056,12 @@ window: rectangle = [11810.03, 45404.24] x [25596.33, 49300.88] units</code></pr
 <h4 class="anchored" data-anchor-id="jittering">Jittering</h4>
 <p>Jittering: Slightly shift duplicate points such that they no longer occur at the same point to make them unique. After that, confirm that there are no longer any duplicates with any(duplicated())</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>childcare_ppp_jit <span class="ot">&lt;-</span> <span class="fu">rjitter</span>(childcare_ppp, </span>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>childcare_ppp <span class="ot">&lt;-</span> <span class="fu">rjitter</span>(childcare_ppp, </span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>                             <span class="at">retry=</span><span class="cn">TRUE</span>, </span>
 <span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nsim=</span><span class="dv">1</span>, </span>
 <span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>                             <span class="at">drop=</span><span class="cn">TRUE</span>)</span>
 <span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(childcare_ppp_jit))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(childcare_ppp))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] FALSE</code></pre>
 </div>
@@ -1177,103 +1177,11 @@ Fraction of frame area: 0.422</code></pre>
 <p>Looks a bit like python, will be very useful in the future. Couples the polygon with the events within it into one entity.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>childcareSG_ppp <span class="ot">=</span> childcare_ppp[sg_owin]</span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(childcareSG_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(childcareSG_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Planar point pattern:  1925 points
-Average intensity 2.461811e-06 points per square unit
-
-*Pattern contains duplicated points*
-
-Coordinates are given to 3 decimal places
-i.e. rounded to the nearest multiple of 0.001 units
-
-Window: polygonal boundary
-80 separate polygons (35 holes)
-                  vertices         area relative.area
-polygon 1                4  9.47108e+01      1.21e-07
-polygon 2               37  1.29481e+04      1.66e-05
-polygon 3               30  4.28933e+03      5.49e-06
-polygon 4              145  9.61782e+05      1.23e-03
-polygon 5              227  1.10308e+06      1.41e-03
-polygon 6               19  3.09221e+04      3.95e-05
-polygon 7               10  6.60195e+03      8.44e-06
-polygon 8              234  2.08755e+06      2.67e-03
-polygon 9               22  6.74651e+03      8.63e-06
-polygon 10              71  5.63061e+03      7.20e-06
-polygon 11              10  1.99717e+02      2.55e-07
-polygon 12           14663  6.97996e+08      8.93e-01
-polygon 13 (hole)        3 -2.05920e-03     -2.63e-12
-polygon 14 (hole)        3 -2.89050e-05     -3.70e-14
-polygon 15 (hole)        3 -2.83151e-01     -3.62e-10
-polygon 16 (hole)        3 -3.99521e-02     -5.11e-11
-polygon 17 (hole)        3 -4.95057e-02     -6.33e-11
-polygon 18 (hole)        3 -3.65501e-03     -4.67e-12
-polygon 19 (hole)        4 -2.05611e-02     -2.63e-11
-polygon 20 (hole)        3 -1.68316e-04     -2.15e-13
-polygon 21 (hole)       26 -1.25665e+03     -1.61e-06
-polygon 22 (hole)        3 -2.18000e-06     -2.79e-15
-polygon 23 (hole)        3 -6.62377e-01     -8.47e-10
-polygon 24 (hole)        3 -2.09065e-03     -2.67e-12
-polygon 25 (hole)       36 -7.79904e+03     -9.97e-06
-polygon 26 (hole)        3 -8.83647e-03     -1.13e-11
-polygon 27 (hole)        3 -2.21090e+00     -2.83e-09
-polygon 28 (hole)       40 -6.00381e+03     -7.68e-06
-polygon 29 (hole)        7 -1.40545e-01     -1.80e-10
-polygon 30 (hole)       20 -4.39069e+00     -5.62e-09
-polygon 31 (hole)       28 -1.99862e+01     -2.56e-08
-polygon 32 (hole)       48 -1.38338e+02     -1.77e-07
-polygon 33 (hole)      351 -1.21433e+03     -1.55e-06
-polygon 34 (hole)       12 -8.36709e+01     -1.07e-07
-polygon 35 (hole)      317 -5.11280e+04     -6.54e-05
-polygon 36 (hole)       36 -4.01660e+04     -5.14e-05
-polygon 37              30  2.80002e+04      3.58e-05
-polygon 38              27  1.50315e+04      1.92e-05
-polygon 39              15  4.03300e+04      5.16e-05
-polygon 40            1045  4.44510e+06      5.68e-03
-polygon 41 (hole)       13 -3.91907e+02     -5.01e-07
-polygon 42              47  3.82087e+04      4.89e-05
-polygon 43              65  8.42861e+04      1.08e-04
-polygon 44             478  2.06120e+06      2.64e-03
-polygon 45             266  1.50631e+06      1.93e-03
-polygon 46             234  4.72886e+05      6.05e-04
-polygon 47              14  5.86546e+03      7.50e-06
-polygon 48              83  5.28920e+03      6.76e-06
-polygon 49              75  1.73526e+04      2.22e-05
-polygon 50             148  3.10395e+03      3.97e-06
-polygon 51             142  3.22293e+03      4.12e-06
-polygon 52              45  2.51218e+03      3.21e-06
-polygon 53              40  1.38607e+04      1.77e-05
-polygon 54              10  4.90942e+02      6.28e-07
-polygon 55              95  5.96187e+04      7.62e-05
-polygon 56 (hole)        4 -1.86410e-02     -2.38e-11
-polygon 57              64  3.43149e+04      4.39e-05
-polygon 58 (hole)        3 -1.98390e-03     -2.54e-12
-polygon 59 (hole)        3 -5.55856e-03     -7.11e-12
-polygon 60 (hole)        3 -5.12482e-03     -6.55e-12
-polygon 61 (hole)        3 -1.96410e-03     -2.51e-12
-polygon 62 (hole)        4 -1.13774e-02     -1.46e-11
-polygon 63             155  2.67502e+05      3.42e-04
-polygon 64             106  3.04104e+03      3.89e-06
-polygon 65            1027  1.27782e+06      1.63e-03
-polygon 66 (hole)        3 -3.23310e-04     -4.13e-13
-polygon 67 (hole)        3 -1.16959e-03     -1.50e-12
-polygon 68 (hole)        3 -1.46474e-03     -1.87e-12
-polygon 69             211  4.70521e+05      6.02e-04
-polygon 70               4  2.69313e+02      3.44e-07
-polygon 71             132  9.53357e+04      1.22e-04
-polygon 72               6  4.50259e+02      5.76e-07
-polygon 73             285  1.61128e+06      2.06e-03
-polygon 74              91  1.49663e+04      1.91e-05
-polygon 75              71  8.18750e+03      1.05e-05
-polygon 76             668  5.40368e+07      6.91e-02
-polygon 77              77  3.29939e+05      4.22e-04
-polygon 78             711  1.28815e+07      1.65e-02
-polygon 79 (hole)        3 -3.41405e-01     -4.37e-10
-polygon 80              44  2.26577e+03      2.90e-06
-enclosing rectangle: [2667.54, 56396.44] x [15748.72, 50256.33] units
-                     (53730 x 34510 units)
-Window area = 781945000 square units
-Fraction of frame area: 0.422</code></pre>
+<pre><code>Planar point pattern: 6 points
+window: polygonal boundary
+enclosing rectangle: [2667.54, 56396.44] x [15748.72, 50256.33] units</code></pre>
 </div>
 </div>
 </section>
@@ -1299,7 +1207,7 @@ Fraction of frame area: 0.422</code></pre>
 <h3 class="anchored" data-anchor-id="kernel-density-estimation-kde">3.1 Kernel Density Estimation (KDE)</h3>
 <section id="automatic-bandwidth-selection" class="level4">
 <h4 class="anchored" data-anchor-id="automatic-bandwidth-selection">Automatic bandwidth selection</h4>
-<p>In this case, the method is diggle. The smothing kernel is gaussian and we enable edge bias correction.</p>
+<p>In this case, the method is diggle. The smoothing kernel is gaussian and we enable edge bias correction.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>kde_childcareSG.bw <span class="ot">&lt;-</span> <span class="fu">density</span>(childcareSG_ppp,</span>
 <span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>                              <span class="at">sigma=</span>bw.diggle,</span>
@@ -1323,7 +1231,7 @@ Fraction of frame area: 0.422</code></pre>
 <span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>bw</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   sigma 
-295.4419 </code></pre>
+303.8831 </code></pre>
 </div>
 </div>
 </section>
@@ -1355,23 +1263,23 @@ Fraction of frame area: 0.422</code></pre>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bw.CvL</span>(childcareSG_ppp.km)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  sigma 
-4.54311 </code></pre>
+<pre><code>   sigma 
+4.830569 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bw.scott</span>(childcareSG_ppp.km)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code> sigma.x  sigma.y 
-2.159749 1.396455 </code></pre>
+2.160569 1.395324 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bw.ppl</span>(childcareSG_ppp.km)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    sigma 
-0.3897017 </code></pre>
+0.2483881 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bw.diggle</span>(childcareSG_ppp.km)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    sigma 
-0.2954419 </code></pre>
+0.3038831 </code></pre>
 </div>
 </div>
 </section>
@@ -1505,7 +1413,7 @@ extent     : 2.667538, 56.39644, 15.74872, 50.25633  (xmin, xmax, ymin, ymax)
 crs        : NA 
 source     : memory
 names      : v 
-values     : -1.175862e-14, 37.27443  (min, max)</code></pre>
+values     : -1.10545e-14, 37.61129  (min, max)</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -1519,7 +1427,7 @@ extent     : 2.667538, 56.39644, 15.74872, 50.25633  (xmin, xmax, ymin, ymax)
 crs        : +proj=tmerc +lat_0=1.36666666666667 +lon_0=103.833333333333 +k=1 +x_0=28001.642 +y_0=38744.572 +ellps=WGS84 +units=m +no_defs 
 source     : memory
 names      : v 
-values     : -1.175862e-14, 37.27443  (min, max)</code></pre>
+values     : -1.10545e-14, 37.61129  (min, max)</code></pre>
 </div>
 </div>
 </section>
@@ -1582,10 +1490,10 @@ values     : -1.175862e-14, 37.27443  (min, max)</code></pre>
 </div>
 <p>Use the same python-like syntax to extract only events within the respective areas</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>childcare_pg_ppp <span class="ot">=</span> childcare_ppp_jit[pg_owin]</span>
-<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>childcare_tm_ppp <span class="ot">=</span> childcare_ppp_jit[tm_owin]</span>
-<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>childcare_ck_ppp <span class="ot">=</span> childcare_ppp_jit[ck_owin]</span>
-<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>childcare_jw_ppp <span class="ot">=</span> childcare_ppp_jit[jw_owin]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>childcare_pg_ppp <span class="ot">=</span> childcare_ppp[pg_owin]</span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>childcare_tm_ppp <span class="ot">=</span> childcare_ppp[tm_owin]</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>childcare_ck_ppp <span class="ot">=</span> childcare_ppp[ck_owin]</span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>childcare_jw_ppp <span class="ot">=</span> childcare_ppp[jw_owin]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Rescale like we did before to transform the unit from meter to kilometer</p>
 <div class="cell">
@@ -1699,7 +1607,7 @@ values     : -1.175862e-14, 37.27443  (min, max)</code></pre>
     Z-test
 
 data:  childcareSG_ppp
-R = 0.49534, p-value &lt; 2.2e-16
+R = 0.51323, p-value &lt; 2.2e-16
 alternative hypothesis: clustered (R &lt; 1)</code></pre>
 </div>
 </div>
@@ -1719,7 +1627,7 @@ alternative hypothesis: clustered (R &lt; 1)</code></pre>
     Z-test
 
 data:  childcare_ck_ppp
-R = 0.90371, p-value = 0.1131
+R = 0.83087, p-value = 0.005382
 alternative hypothesis: two-sided</code></pre>
 </div>
 </div>
@@ -1740,7 +1648,7 @@ alternative hypothesis: two-sided</code></pre>
     Z-test
 
 data:  childcare_tm_ppp
-R = 0.67138, p-value = 1.045e-11
+R = 0.66979, p-value = 8.317e-12
 alternative hypothesis: two-sided</code></pre>
 </div>
 </div>

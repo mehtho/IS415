@@ -63,30 +63,35 @@ Grab-Posisi Singapore dataset
 
 #### Reading the Grab-Posisi Parquet Files
 ```{r}
-#|eval: FALSE
+
 grabp <- open_dataset("data/aspatial/GrabPosisi/") %>% as.data.frame()
 ```
 
 #### Opening the geospatial data
 ```{r}
+
 mpsz = st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson")
+```
+
+```{r}
+
 osm = st_read("data/geospatial/osm.shp.zip", layer="gis_osm_roads_free_1")
 ```
 
 ### 3.2 Basic preprocessing
 
 ```{r}
-#|eval: FALSE
+
 head(grabp)
 ```
 
 ```{r}
-#|eval: FALSE
+
 grabp$pingtimestamp <- as_datetime(grabp$pingtimestamp)
 ```
 
 ```{r}
-#|eval: FALSE
+
 origin_df <- grabp %>%
   group_by(trj_id) %>%
   arrange(pingtimestamp) %>%
@@ -118,54 +123,67 @@ head(destination_df)
 ```
 
 ```{r}
-#|eval: FALSE
-origin_df <- origin_df %>% select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'start_hr', 'day', 'geometry')
-destination_df <- destination_df %>% select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'end_hr', 'day', 'geometry')
+
+origin_df <- origin_df %>% dplyr::select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'start_hr', 'day', 'geometry')
+destination_df <- destination_df %>% dplyr::select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'end_hr', 'day', 'geometry')
 ```
 
 ```{r}
-#|eval: FALSE
+
 write_rds(origin_df, "data/rds/origin.rds")
 write_rds(destination_df, "data/rds/destination.rds")
 ```
 
 ```{r}
+
 destination_df <- read_rds("data/rds/destination.rds")
 origin_df <- read_rds("data/rds/origin.rds")
 ```
 
 ```{r}
+
 head(osm)
 ```
 
 ```{r}
+
 length(which(st_is_valid(mpsz) == FALSE))
 mpsz[which(st_is_valid(mpsz) == FALSE), ]
 
 mpsz <- st_make_valid(mpsz)
+mpsz <- st_zm(mpsz)
 ```
 
 ### 3.3 CRS Adjustments and Verification
 ```{r}
+
 st_crs(mpsz)
 st_crs(osm)
 ```
 
 ```{r}
-mpsz <- st_transform(mpsz, crs = 3414)
+
 osm <- st_transform(osm, crs = 3414)
 ```
 
 ```{r}
+
+mpsz <- st_transform(mpsz, crs = 3414)
+```
+
+```{r}
+
 st_crs(mpsz)
 st_crs(osm)
 ```
 
 ```{r}
-osm <- osm %>% select('osm_id', 'fclass')
+
+osm <- osm %>% dplyr::select('osm_id', 'fclass')
 ```
 
 ```{r}
+
 plot(st_geometry(mpsz))
 ```
 
@@ -177,6 +195,7 @@ Therefore, Coney Island, Jurong Island and Sentosa are not outer islands.
 Pulau Ubin and Pulau Tekong are examples of outer islands.
 
 ```{r}
+
 merged_sg <- st_union(mpsz) %>%
     st_cast("POLYGON")
 
@@ -185,19 +204,34 @@ merged_sg <- st_as_sf(merged_sg)
 par(1,2)
 plot(st_geometry(mpsz))
 plot(st_geometry(merged_sg))
+
+write_rds(merged_sg, "data/rds/merged_sg.rds")
 ```
 
 ```{r}
+merged_sg <- read_rds("data/rds/merged_sg.rds")
+```
+
+```{r}
+
 merged_st <- as_Spatial(merged_sg)
 merged_sg_sp <- as(merged_st, "SpatialPolygons")
 merged_sg_owin <- as(merged_sg_sp, "owin")
+
+write_rds(merged_sg_owin, "data/rds/merged_sg_owin.rds")
 ```
 
 ```{r}
+merged_sg_owin <- read_rds("data/rds/merged_sg_owin.rds")
+```
+
+```{r}
+
 osm_sg <- st_intersection(osm, merged_sg)
 ```
 
 ```{r}
+
 write_rds(osm_sg, "data/rds/osm_sg.rds")
 ```
 
@@ -207,10 +241,54 @@ plot(osm_sg)
 ```
 
 ```{r}
-#grabp_sg <- grabp[merged_sg_owin]
+origin <- as_Spatial(origin_df)
+destination <- as_Spatial(destination_df)
+
+origin_sp <- as(origin, "SpatialPoints")
+destination_sp <- as(destination, "SpatialPoints")
+
+origin_ppp <- as(origin_sp, "ppp")
+destination_ppp <- as(destination_sp, "ppp")
+```
+
+```{r}
+origin_ppp <- origin_ppp[merged_sg_owin]
+destination_ppp <- destination_ppp[merged_sg_owin]
 ```
 
 ### 3.4 Simple Visualisations
+```{r}
+plot(origin_ppp)
+plot(destination_ppp)
+```
+```{r}
+any(duplicated(origin_ppp))
+any(duplicated(destination_ppp))
+```
 
 #### 4.0 KDE
+```{r}
+sapply(origin_ppp, class)
+sapply(origin_ppp, typeof)
+```
+```{r}
+summary(origin_ppp)
+```
+
+
+```{r}
+# origin.bw <- density(origin_ppp,
+#                              sigma=bw.diggle,
+#                              edge=TRUE,
+#                            kernel="gaussian") 
+# plot(origin.bw)
+
+# origin_ppp.km <- rescale(origin_ppp, 1000, "km")
+
+# origin.bw <- density(origin_ppp.km,
+#                              sigma=bw.diggle,
+#                              edge=TRUE,
+#                            kernel="gaussian") 
+# plot(origin.bw)
+```
 
