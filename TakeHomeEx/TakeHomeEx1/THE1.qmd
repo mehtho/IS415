@@ -40,7 +40,7 @@ execute:
 ### 2.1 Dependencies
 
 ```{r}
-pacman::p_load(arrow, lubridate, tidyverse, sf, tmap, maptools)
+pacman::p_load(arrow, lubridate, tidyverse, sf, tmap, maptools, spatstat)
 ```
 
 ### 2.2 Datasets
@@ -222,7 +222,7 @@ write_rds(merged_sg_owin, "data/rds/merged_sg_owin.rds")
 ```
 
 ```{r}
-merged_sg_owin <- read_rds("data/rds/merged_sg_owin.rds")
+# merged_sg_owin <- read_rds("data/rds/merged_sg_owin.rds")
 ```
 
 ```{r}
@@ -270,25 +270,28 @@ any(duplicated(destination_ppp))
 ```{r}
 sapply(origin_ppp, class)
 sapply(origin_ppp, typeof)
+
+class(origin_ppp)
 ```
 ```{r}
+origin_ppp$x <- as.numeric(origin_ppp$x)
 summary(origin_ppp)
 ```
 
 
 ```{r}
-# origin.bw <- density(origin_ppp,
-#                              sigma=bw.diggle,
-#                              edge=TRUE,
-#                            kernel="gaussian") 
-# plot(origin.bw)
+origin.bw <- density(origin_ppp,
+                             sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(origin.bw)
 
-# origin_ppp.km <- rescale(origin_ppp, 1000, "km")
+origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 
-# origin.bw <- density(origin_ppp.km,
-#                              sigma=bw.diggle,
-#                              edge=TRUE,
-#                            kernel="gaussian") 
-# plot(origin.bw)
+origin.bw <- density(origin_ppp.km,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(origin.bw)
 ```
 
