@@ -193,7 +193,7 @@
     "href": "InClassEx/ICE3/ICE3.html",
     "title": "In-Class Exercise 3: Kernel Density Estimation",
     "section": "",
-    "text": "Points as events, relates to activities\nIssues with points: Highly affected by the size of the ‘dots’. KDE is more consistent\nThe points MUST be a population. Cannot be a sample or we will have sample bias.\n\n\n\n\n\nChoose bandwidth\nChoose a kernel\n\n\n\n\n\nConstrained by network"
+    "text": "Points as events, relates to activities\nIssues with points: Highly affected by the size of the ‘dots’. KDE is more consistent\nThe points MUST be a population. Cannot be a sample or we will have sample bias.\n\n\n\n\n\nChoose bandwidth\nChoose a kernel\n\n\n\n\n\nConstrained by network\n\n\n\n\n\nAccounts for both time and location"
   },
   {
     "objectID": "InClassEx/ICE3/ICE3.html#simple-visualisations",
@@ -221,7 +221,7 @@
     "href": "InClassEx/ICE3/ICE3.html#class-notes",
     "title": "In-Class Exercise 3: Kernel Density Estimation",
     "section": "",
-    "text": "Points as events, relates to activities\nIssues with points: Highly affected by the size of the ‘dots’. KDE is more consistent\nThe points MUST be a population. Cannot be a sample or we will have sample bias.\n\n\n\n\n\nChoose bandwidth\nChoose a kernel\n\n\n\n\n\nConstrained by network"
+    "text": "Points as events, relates to activities\nIssues with points: Highly affected by the size of the ‘dots’. KDE is more consistent\nThe points MUST be a population. Cannot be a sample or we will have sample bias.\n\n\n\n\n\nChoose bandwidth\nChoose a kernel\n\n\n\n\n\nConstrained by network\n\n\n\n\n\nAccounts for both time and location"
   },
   {
     "objectID": "InClassEx/ICE3/ICE3_1.html",
@@ -242,6 +242,6 @@
     "href": "InClassEx/ICE3/ICE3_1.html#setup",
     "title": "In-Class Exercise 3.1: Kernel Density Estimation",
     "section": "1.0 Setup",
-    "text": "1.0 Setup\n\n1.1 Dependencies\n\npacman::p_load(sf, spNetwork, tmap, classInt, viridis, tidyverse)\n\n\n\n1.2 Importing and Changing CRS\n\nnetwork &lt;- st_read(dsn=\"data/geospatial\", layer=\"Punggol_St\")\n\nReading layer `Punggol_St' from data source \n  `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/InClassEx/ICE3/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 2642 features and 2 fields\nGeometry type: LINESTRING\nDimension:     XY\nBounding box:  xmin: 34038.56 ymin: 40941.11 xmax: 38882.85 ymax: 44801.27\nProjected CRS: SVY21 / Singapore TM\n\nchildcare &lt;- st_read(dsn=\"data/geospatial\", layer=\"Punggol_CC\")\n\nReading layer `Punggol_CC' from data source \n  `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/InClassEx/ICE3/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 61 features and 1 field\nGeometry type: POINT\nDimension:     XYZ\nBounding box:  xmin: 34423.98 ymin: 41503.6 xmax: 37619.47 ymax: 44685.77\nz_range:       zmin: 0 zmax: 0\nProjected CRS: SVY21 / Singapore TM\n\n\n\ntmap_mode('view')\ntm_shape(childcare) +\n  tm_dots() +\n  tm_shape(network) +\n  tm_lines()\n\n\n\n\ntmap_mode('plot')"
+    "text": "1.0 Setup\n\n1.1 Dependencies\n\npacman::p_load(sf, spNetwork, tmap, classInt, viridis, tidyverse)\n\n\n\n1.2 Importing and Changing CRS\n\nnetwork &lt;- st_read(dsn=\"data/geospatial\", layer=\"Punggol_St\")\n\nReading layer `Punggol_St' from data source \n  `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/InClassEx/ICE3/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 2642 features and 2 fields\nGeometry type: LINESTRING\nDimension:     XY\nBounding box:  xmin: 34038.56 ymin: 40941.11 xmax: 38882.85 ymax: 44801.27\nProjected CRS: SVY21 / Singapore TM\n\nchildcare &lt;- st_read(dsn=\"data/geospatial\", layer=\"Punggol_CC\")\n\nReading layer `Punggol_CC' from data source \n  `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/InClassEx/ICE3/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 61 features and 1 field\nGeometry type: POINT\nDimension:     XYZ\nBounding box:  xmin: 34423.98 ymin: 41503.6 xmax: 37619.47 ymax: 44685.77\nz_range:       zmin: 0 zmax: 0\nProjected CRS: SVY21 / Singapore TM\n\n\n\ntmap_mode('view')\ntm_shape(childcare) +\n  tm_dots() +\n  tm_shape(network) +\n  tm_lines()\n\n\n\n\ntmap_mode('plot')\n\n\nMindist = 0.5 * first param\n\nlixels &lt;- lixelize_lines(network, 750, mindist = 375)\n\n\nsamples &lt;- lines_center(lixels)\n\n\ndensities &lt;- nkde(network, \n                  events=childcare, \n                  w=rep(1, nrow(childcare)), \n                  samples=samples, \n                  kernel_name=\"quartic\", \n                  bw=300, div=\"bw\", \n                  method=\"simple\", \n                  digits=1,\n                  tol=1,\n\n                  max_depth = 8, \n                  agg=5, \n                  sparse=TRUE, \n                  verbose = FALSE)"
   }
 ]

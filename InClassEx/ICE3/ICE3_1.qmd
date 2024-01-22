@@ -62,5 +62,60 @@ tm_shape(childcare) +
   tm_shape(network) +
   tm_lines()
 tmap_mode('plot')
-
 ```
+#### Mindist = 0.5 * first param
+```{r}
+lixels <- lixelize_lines(network, 750, mindist = 375)
+```
+
+```{r}
+samples <- lines_center(lixels)
+```
+
+```{r}
+densities <- nkde(network, 
+                  events=childcare, 
+                  w=rep(1, nrow(childcare)), 
+                  samples=samples, 
+                  kernel_name="quartic", 
+                  bw=300, div="bw", 
+                  method="simple", 
+                  digits=1,
+                  tol=1,
+                  grid_shape=c(1,1), 
+                  max_depth = 8, 
+                  agg=5, 
+                  sparse=TRUE, 
+                  verbose = FALSE)
+```
+
+```{r}
+samples$density <- densities
+lixels$density <- densities
+```
+
+```{r}
+samples$density <- samples$density*1000
+lixels$density <- lixels$density*1000
+```
+
+```{r}
+tmap_mode('view')
+tm_shape(lixels) + 
+  tm_lines(col="density") + 
+tm_shape(childcare) + 
+  tm_dots()
+tmap_mode('plot')
+```
+
+
+
+
+
+
+
+
+
+
+
+
