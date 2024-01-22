@@ -23,6 +23,7 @@ website:
         - text: "In-class Exercises 2"
           href: InclassEx/ICE2/ICE2.html
         - text: "In-class Exercises 3"
+          href: InClassEx/ICE3/ICE3.html
     right:
       - href: index.qmd
         text: Home

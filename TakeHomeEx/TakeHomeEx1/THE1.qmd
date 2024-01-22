@@ -280,6 +280,8 @@ summary(origin_ppp)
 
 
 ```{r}
+par(1,2)
+
 origin.bw <- density(origin_ppp,
                              sigma=bw.diggle,
                               edge=TRUE,
@@ -293,5 +295,22 @@ origin.bw <- density(origin_ppp.km,
                               edge=TRUE,
                             kernel="gaussian") 
 plot(origin.bw)
+```
+```{r}
+par(1,2)
+
+destination.bw <- density(destination_ppp,
+                             sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(destination.bw)
+
+destination_ppp.km <- rescale(destination_ppp, 1000, "km")
+
+destination.bw <- density(destination_ppp.km,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(destination.bw)
 ```
 

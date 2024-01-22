@@ -1,0 +1,95 @@
+---
+title: "In-Class Exercise 3: Kernel Density Estimation"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-22-2024
+description: |
+  In-class exercise 3 
+categories:
+  - In-class Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+#### 1.0 Setup
+
+```{r}
+pacman::p_load(arrow, lubridate, tidyverse, sf, tmap, maptools, spatstat)
+```
+
+```{r}
+childcare_sf <- st_read("data/geospatial/ChildCareServices.geojson") %>% 
+  st_transform(crs=3414)
+
+mpsz_sf <- st_read(dsn = "data/geospatial/", layer="MP14_SUBZONE_WEB_PL") %>%
+  st_transform(crs=3414)
+
+st_crs(childcare_sf)
+st_crs(mpsz_sf)
+```
+
+```{r}
+sg_sf <- st_union(mpsz_sf)
+```
+
+```{r}
+length(which(st_is_valid(childcare_sf) == FALSE))
+length(which(st_is_valid(mpsz_sf) == FALSE))
+
+mpsz_sf <- st_make_valid(mpsz_sf)
+```
+
+```{r}
+childcare <- as_Spatial(childcare_sf)
+mpsz <- as_Spatial(mpsz_sf)
+```
+
+#### Important: 1 Liner conversion
+```{r}
+childcare_ppp <- as.ppp(childcare)
+summary(childcare_ppp)
+```
+
+```{r}
+any(duplicated(childcare_ppp))
+childcare_ppp_jit <- rjitter(childcare_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+
+any(duplicated(childcare_ppp_jit))
+```
+
+#### Another one-liner
+```{r}
+sg_owin <- as.owin(sg_sf, "owin")
+
+sg_owin
+```
+
+```{r}
+pg = mpsz_sf %>% filter(PLN_AREA_N == "PUNGGOL")
+tm = mpsz_sf %>% filter(PLN_AREA_N == "TAMPINES")
+ck = mpsz_sf %>% filter(PLN_AREA_N == "CHOA CHU KANG")
+jw = mpsz_sf %>% filter(PLN_AREA_N == "JURONG WEST")
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(pg["SUBZONE_N"])
+plot(tm["SUBZONE_N"])
+plot(ck["SUBZONE_N"])
+plot(jw["SUBZONE_N"])
+
+
+```
+
+
+
+

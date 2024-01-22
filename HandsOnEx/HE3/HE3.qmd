@@ -234,6 +234,7 @@ Only distance-based methods can be used to detect exactly at what distance attra
 
 D Function $D(r)=K_{cas}(r)-K_{controls}(r)$ Compare two subpopulation's distributions
 
+
 ## 2.0 Setup
 
 ### 2.1 Requirements
