@@ -200,7 +200,7 @@
     "href": "InClassEx/ICE3/ICE3.html#simple-visualisations",
     "title": "In-Class Exercise 3: Kernel Density Estimation",
     "section": "2.0 Simple Visualisations",
-    "text": "2.0 Simple Visualisations\n\n2.1 Plot the ppp object within the owin\n\nplot(childcare_ppp[sg_owin])\n\n\n\n\n\n\n\n\n\n\n2.2 Using the filter method\n\npg = mpsz_sf %&gt;% filter(PLN_AREA_N == \"PUNGGOL\")\ntm = mpsz_sf %&gt;% filter(PLN_AREA_N == \"TAMPINES\")\nck = mpsz_sf %&gt;% filter(PLN_AREA_N == \"CHOA CHU KANG\")\njw = mpsz_sf %&gt;% filter(PLN_AREA_N == \"JURONG WEST\")\n\n\nExtras\n\npar(mfrow=c(2,2))\n\nplot(pg[\"SUBZONE_N\"])\n\n\n\n\n\n\n\nplot(tm[\"SUBZONE_N\"])\n\n\n\n\n\n\n\nplot(ck[\"SUBZONE_N\"])\n\n\n\n\n\n\n\nplot(jw[\"SUBZONE_N\"])"
+    "text": "2.0 Simple Visualisations\n\nplot(mpsz_sf)\n\n\n\n\n\n\n\n\n\ntmap_mode('view')\ntm_shape(childcare_sf) +\n  tm_dots(alpha=0.4, \n          size=0.05)\n\n\n\n\ntmap_mode('plot')\n\n\n2.1 Plot the ppp object within the owin\n\nplot(childcare_ppp[sg_owin])\n\n\n\n\n\n\n\n\n\n\n2.2 Using the filter method\n\npg = mpsz_sf %&gt;% filter(PLN_AREA_N == \"PUNGGOL\")\ntm = mpsz_sf %&gt;% filter(PLN_AREA_N == \"TAMPINES\")\nck = mpsz_sf %&gt;% filter(PLN_AREA_N == \"CHOA CHU KANG\")\njw = mpsz_sf %&gt;% filter(PLN_AREA_N == \"JURONG WEST\")\n\n\nExtras\n\npar(mfrow=c(2,2))\n\nplot(pg[\"SUBZONE_N\"])\n\n\n\n\n\n\n\nplot(tm[\"SUBZONE_N\"])\n\n\n\n\n\n\n\nplot(ck[\"SUBZONE_N\"])\n\n\n\n\n\n\n\nplot(jw[\"SUBZONE_N\"])"
   },
   {
     "objectID": "InClassEx/ICE3/ICE3.html#setup",

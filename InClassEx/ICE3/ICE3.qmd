@@ -66,6 +66,18 @@ sg_owin
 
 ## 2.0 Simple Visualisations
 
+```{r}
+plot(mpsz_sf)
+```
+
+```{r}
+tmap_mode('view')
+tm_shape(childcare_sf) +
+  tm_dots(alpha=0.4, 
+          size=0.05)
+tmap_mode('plot')
+```
+
 ### 2.1 Plot the ppp object within the owin
 ```{r}
 plot(childcare_ppp[sg_owin])
