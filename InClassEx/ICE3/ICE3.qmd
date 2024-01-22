@@ -19,10 +19,12 @@ execute:
 
 #### 1.0 Setup
 
+### 1.1 Dependencies
 ```{r}
 pacman::p_load(arrow, lubridate, tidyverse, sf, tmap, maptools, spatstat)
 ```
 
+### 1.2 Importing and Changing CRS
 ```{r}
 childcare_sf <- st_read("data/geospatial/ChildCareServices.geojson") %>% 
   st_transform(crs=3414)
@@ -34,28 +36,18 @@ st_crs(childcare_sf)
 st_crs(mpsz_sf)
 ```
 
+### 1.3 Deriving Coastal Outline
 ```{r}
 sg_sf <- st_union(mpsz_sf)
 ```
 
-```{r}
-length(which(st_is_valid(childcare_sf) == FALSE))
-length(which(st_is_valid(mpsz_sf) == FALSE))
-
-mpsz_sf <- st_make_valid(mpsz_sf)
-```
-
-```{r}
-childcare <- as_Spatial(childcare_sf)
-mpsz <- as_Spatial(mpsz_sf)
-```
-
 #### Important: 1 Liner conversion
 ```{r}
-childcare_ppp <- as.ppp(childcare)
+childcare_ppp <- as.ppp(childcare_sf)
 summary(childcare_ppp)
 ```
 
+### 1.4 Removing Duplicates
 ```{r}
 any(duplicated(childcare_ppp))
 childcare_ppp_jit <- rjitter(childcare_ppp, 
@@ -69,10 +61,17 @@ any(duplicated(childcare_ppp_jit))
 #### Another one-liner
 ```{r}
 sg_owin <- as.owin(sg_sf, "owin")
-
 sg_owin
 ```
 
+## 2.0 Simple Visualisations
+
+### 2.1 Plot the ppp object within the owin
+```{r}
+plot(childcare_ppp[sg_owin])
+```
+
+### 2.2 Using the filter method
 ```{r}
 pg = mpsz_sf %>% filter(PLN_AREA_N == "PUNGGOL")
 tm = mpsz_sf %>% filter(PLN_AREA_N == "TAMPINES")
@@ -80,13 +79,14 @@ ck = mpsz_sf %>% filter(PLN_AREA_N == "CHOA CHU KANG")
 jw = mpsz_sf %>% filter(PLN_AREA_N == "JURONG WEST")
 ```
 
-```{r}
+#### Extras
+```{r fig.width=16, fig.height=10}
 par(mfrow=c(2,2))
+
 plot(pg["SUBZONE_N"])
 plot(tm["SUBZONE_N"])
 plot(ck["SUBZONE_N"])
 plot(jw["SUBZONE_N"])
-
 
 ```
 
