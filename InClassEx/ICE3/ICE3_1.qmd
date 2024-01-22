@@ -1,0 +1,66 @@
+---
+title: "In-Class Exercise 3.1: Kernel Density Estimation"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-22-2024
+description: |
+  In-class exercise 3.1
+categories:
+  - In-class Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+## 0.0 Class Notes
+
+#### Spatial Point Patterns
+
+-   Points as events, relates to activities
+
+-   Issues with points: Highly affected by the size of the 'dots'. KDE is more consistent
+
+-   The points MUST be a population. Cannot be a sample or we will have sample bias.
+
+#### KDE Setup
+
+-   Choose bandwidth
+-   Choose a kernel
+
+#### NKDE: Network-Constrained Kernel Density Estimation
+
+-   Constrained by network
+
+#### TNKDE: Temporal Network Kernel Density Estimate
+
+-   Accounts for both time and location
+
+## 1.0 Setup
+
+### 1.1 Dependencies
+
+```{r}
+pacman::p_load(sf, spNetwork, tmap, classInt, viridis, tidyverse)
+```
+
+### 1.2 Importing and Changing CRS
+
+```{r}
+network <- st_read(dsn="data/geospatial", layer="Punggol_St")
+childcare <- st_read(dsn="data/geospatial", layer="Punggol_CC")
+```
+
+```{r}
+tmap_mode('view')
+tm_shape(childcare) +
+  tm_dots() +
+  tm_shape(network) +
+  tm_lines()
+tmap_mode('plot')
+
+```

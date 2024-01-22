@@ -16,12 +16,30 @@ execute:
   echo: true
   warning: false
 ---
+## 0.0 Class Notes
+
+#### Spatial Point Patterns
+-   Points as events, relates to activities
+-   Issues with points: Highly affected by the size of the 'dots'. KDE is more consistent
+
+-   The points MUST be a population. Cannot be a sample or we will have sample bias.
+
+
+#### KDE Setup
+-   Choose bandwidth
+-   Choose a kernel
+
+#### NKDE: Network-Constrained Kernel Density Estimation
+-   Constrained by network
+
+#### TNKDE: Temporal Network Kernel Density Estimate
+-   Accounts for both time and location
 
 ## 1.0 Setup
 
 ### 1.1 Dependencies
 ```{r}
-pacman::p_load(arrow, lubridate, tidyverse, sf, tmap, maptools, spatstat)
+pacman::p_load(tidyverse, sf, tmap, maptools, spatstat, raster)
 ```
 
 ### 1.2 Importing and Changing CRS
@@ -94,12 +112,10 @@ jw = mpsz_sf %>% filter(PLN_AREA_N == "JURONG WEST")
 #### Extras
 ```{r fig.width=16, fig.height=10}
 par(mfrow=c(2,2))
-
 plot(pg["SUBZONE_N"])
 plot(tm["SUBZONE_N"])
 plot(ck["SUBZONE_N"])
 plot(jw["SUBZONE_N"])
-
 ```
 
 
