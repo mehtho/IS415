@@ -425,7 +425,7 @@ lixels$density <- lixels$density*1000
 
 ```{r}
 tm_shape(lixels) + 
-  tm_lines(col="density") + 
-tm_shape(destination_df.changi) + 
-  tm_dots()
+  tm_lines(col="density")
+# tm_shape(destination_df.changi) + 
+#  tm_dots()
 ```
