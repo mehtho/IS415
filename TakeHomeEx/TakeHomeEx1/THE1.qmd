@@ -21,6 +21,8 @@ execute:
 
 ### 1.1 Objectives
 
+#### Exercise Requirements
+
 1.  Using appropriate function of sf and tidyverse, preparing the following geospatial data layer in sf tibble data.frames:
 
 -   Grab taxi location points either by origins or destinations.
@@ -35,19 +37,51 @@ execute:
 
 ### 1.2 Approach
 
+This exercise seems quite straightforward, but I think that some genuinely useful information can be derived from this data. While removing the outer islands can be done fairly easily, I think that other small issues, like holes in the geometry will need to be fixed.
+
+NKDE may also require very long computation times for large areas, especially given the magnitude of the entire dataset. The GrabPosisi dataset's journey start and destination locations likely occur along smaller roads where people can walk. These small roads are likely near other small roads, which will greatly increase the number of affect lixels for every NKDE operation. Since these small roads will have the most interesting data, I will have to scale down my analysis to smaller locations determined by the simpler KDE analysis.
+
 ## 2.0 Setup
 
 ### 2.1 Dependencies
 
+Aside from the tools used in class, I also included some additional tools I found useful.
+
+#### Taught in class:
+
+-   Tidyverse: An extensive set of tools for geospatial analysis, a staple for most tasks
+
+-   sf: I also cannot imagine a geospatial task without simple features
+
+-   tmap: Used to generate thematic maps
+
+-   maptools: Used to handle spatial objects
+
+-   spatstat: Just recently used in the hands-on exercises for this week. Useful for spatial point analysis
+
+-   spNetwork: For spatial analysis on networks, we'll use this for NKDE and TNKDE
+
+-   classInt: For choosing univariate class intervals
+
+-   viridis: COLORS! These will help us create more interesting and colorful maps to communicate our ideas
+
+-   arrow: We need this to work with parquet files and to load the GrabPosisi dataset
+
+#### Exploration
+
+-   stringr: The Description field in kml files is not very convenient for us. It's an HTML table, meaning we need to parse it to get each variable into a column compatible for our use
+
+-   smoothr: The MPSZ2019 polygons have small holes, so I use this library to fix them before they cause issues
+
 ```{r}
-pacman::p_load(tidyverse, sf, tmap, maptools, spatstat, spNetwork, tmap, classInt, viridis, smoothr, arrow, stringr, purrr, rvest)
+pacman::p_load(tidyverse, sf, tmap, maptools, spatstat, spNetwork, classInt, viridis, smoothr, arrow, stringr)
 ```
 
 ### 2.2 Datasets
 
 #### Aspatial data
 
-Grab-Posisi Singapore dataset
+1.  Grab-Posisi Singapore dataset
 
 #### Geospatial data
 
@@ -59,16 +93,23 @@ Grab-Posisi Singapore dataset
 
 ## 3.0 Data Wrangling
 
-### 3.1 Importing Data
+### 3.1 Importing Aspatial Data
 
 #### Reading the Grab-Posisi Parquet Files
 
-```{r}
+I'm glad this function from the arrow library exists to load every split parquet file instead of having to loop and append each file to a single object.
 
+```{r}
 grabp <- open_dataset("data/aspatial/GrabPosisi/") %>% as.data.frame()
 ```
 
-#### Opening the geospatial data
+### 3.2 Importing Spatial Data
+
+#### Reading the Master Plan Subzone dataset
+
+Using st_read is a standard way to import the data in kml files, but there's a very apparent problem.
+
+The description field, when not rendered, is a monstrous chunk of HTML where none of the fields are easy to use. We'll need to split this up so that we can scope down our analysis later to interesting areas. There are no public roads in the jungle after all.
 
 ```{r}
 
@@ -78,7 +119,11 @@ mpsz = st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
 ```{r}
 mpsz$Description[1]
 ```
+
+I found a concise and performant solution here to parse this mess of HTML.
+
 https://www.linkedin.com/pulse/r-using-stringr-extract-information-from-html-tags-kml-melvin-kew/
+
 ```{r}
 mpsz <- mpsz %>% 
   mutate(Match=str_match_all(Description,"<td>(.*?)</td>")) %>% 
@@ -88,31 +133,49 @@ mpsz <- mpsz %>%
   st_as_sf()
 ```
 
+After splitting the description into columns, I can drop the Description and other fields I will not be using. Although the planning areas should suffice, having region and subzone names available does not consume a lot of memory and may be useful later on.
+
 ```{r}
 summary(mpsz)
-mpsz <- mpsz %>% dplyr::select('Name', 'Description', 'geometry', 'SUBZONE_NO', 'SUBZONE_N', 'PLN_AREA_N', 'PLN_AREA_C', 'REGION_N', 'REGION_C')
+mpsz <- mpsz %>% dplyr::select('Name', 'geometry', 'SUBZONE_NO', 'SUBZONE_N', 'PLN_AREA_N', 'PLN_AREA_C', 'REGION_N', 'REGION_C')
 summary(mpsz)
 ```
+
+```{r}
+length(which(st_is_valid(mpsz) == FALSE))
+mpsz[which(st_is_valid(mpsz) == FALSE), ]
+mpsz <- st_make_valid(mpsz)
+mpsz <- st_zm(mpsz)
+```
+
+#### Importing the OpenStreetMaps dataset
 
 ```{r}
 
 osm = st_read("data/geospatial/osm.shp.zip", layer="gis_osm_roads_free_1")
 ```
 
-### 3.2 Basic preprocessing
+### 3.2 Wrangling
+
+#### GrabPosisi conversion to spatial data
+
+The GrabPosisi dataset consists of many points for each journey, represented with latitudes and longitudes. There are also many other fields representing speed and direction of the vehicle. We only need to know about the start and end locations.
 
 ```{r}
-
 head(grabp)
 ```
 
-```{r}
+The easiest thing to fix first is the timestamp. Doing so will allow us to find the first and last points of a journey easily
 
+```{r}
 grabp$pingtimestamp <- as_datetime(grabp$pingtimestamp)
 ```
 
-```{r}
+Now we convert the timestamp into weekdays, hours and days. This will help us temporally constrain our data later on.
 
+We also convert the latitudes and longitudes to the SVY21 CRS system to give our task a standardised projection system.
+
+```{r}
 origin_df <- grabp %>%
   group_by(trj_id) %>%
   arrange(pingtimestamp) %>%
@@ -143,42 +206,82 @@ head(origin_df)
 head(destination_df)
 ```
 
-```{r}
+After converting some of our data and reducing it to only the trip starts and ends, we can drop the unused columns.
 
+```{r}
 origin_df <- origin_df %>% dplyr::select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'start_hr', 'day', 'geometry')
 destination_df <- destination_df %>% dplyr::select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'end_hr', 'day', 'geometry')
 ```
 
-```{r}
+This was a massive task in terms of computer memory. To make sure we don't have to do this again, we can save the objects into .rds files. I would consider this an advantage over using Python.
 
+```{r}
 write_rds(origin_df, "data/rds/origin.rds")
 write_rds(destination_df, "data/rds/destination.rds")
 ```
 
 ```{r}
-
 destination_df <- read_rds("data/rds/destination.rds")
 origin_df <- read_rds("data/rds/origin.rds")
 ```
 
-```{r}
-head(osm)
-unique(osm$fclass)
-```
-https://www.geofabrik.de/data/geofabrik-osm-gis-standard-0.3.pdf
-```{r}
-values_to_keep <- c("primary", "secondary", "residential", "service", "tertiary", "primary_link", "motorway", "motorway_link", "tertiary_link", "living_street", "trunk", "trunk_link")
+#### OpenStreetMaps reduction
 
-osm <- osm[osm$fclass %in% values_to_keep, ]
-```
+There were many of 'fclass' values on the OpenStreetMaps documentation and I was not sure all of them existed in our dataset. It turns out that although there were more than expected, I can 'whitelist' some those that are definitely roads.
+
+I found out about what each class meant from their documentation. <https://www.geofabrik.de/data/geofabrik-osm-gis-standard-0.3.pdf>
+
+This was great since I had no idea what a Bridleway was.
 
 ```{r}
 summary(osm)
 unique(osm$fclass)
 ```
 
-```{r}
+Of the above fclasses, these ones are definitely roads. We will keep them in our dataset.
 
+```{r}
+values_to_keep <- c("primary", "secondary", "residential", "service", "tertiary", "primary_link", "motorway", "motorway_link", "tertiary_link", "living_street", "trunk", "trunk_link")
+
+osm <- osm[osm$fclass %in% values_to_keep, ]
+```
+
+From this, we have confirmed that we have dropped the unnecessary fclasses and greatly reduced the size of our data. However, to geographically constrain this dataset to Singapore, we need to process the MasterPlanSubzone data.
+
+```{r}
+summary(osm)
+unique(osm$fclass)
+```
+
+For our purposes, the road data will only need to serve as a network, without all of the extra data. However, osm_id fclass may be useful later on and are relatively small. We can keep them.
+
+```{r}
+osm <- osm %>% dplyr::select('osm_id', 'fclass')
+```
+
+### 3.3 CRS Adjustments and Verification
+
+#### OpenStreetMaps and MasterPlanSubzone CRS
+
+It's now time to go a bit deeper with the data wrangling now that the size of our data has decreased. First thing to do is to check the CRS for the MPSZ and OpenStreetMaps data since we have not already done so.
+
+```{r}
+st_crs(mpsz)
+st_crs(osm)
+```
+
+Like in the previous exercises, the CRS for these are not SVY21. We will change them since GovTech is yet to do so.
+
+```{r}
+osm <- st_transform(osm, crs = 3414)
+mpsz <- st_transform(mpsz, crs = 3414)
+```
+
+#### Dealing with MPSZ z-coordinates and invalid geometry
+
+To prevent issues with invalid geometry causing issues later on, we can apply a quick fix here.
+
+```{r}
 length(which(st_is_valid(mpsz) == FALSE))
 mpsz[which(st_is_valid(mpsz) == FALSE), ]
 
@@ -186,41 +289,24 @@ mpsz <- st_make_valid(mpsz)
 mpsz <- st_zm(mpsz)
 ```
 
-### 3.3 CRS Adjustments and Verification
+A quick check confirms that the CRS has been changed successfully to SVY21
 
 ```{r}
-
 st_crs(mpsz)
 st_crs(osm)
 ```
 
-```{r}
+### 3.4 Singapore Boundaries
 
-osm <- st_transform(osm, crs = 3414)
-```
-
-```{r}
-
-mpsz <- st_transform(mpsz, crs = 3414)
-```
+From this plot, I realised that there were more islands than I thought surrounding Singapore.
 
 ```{r}
-
-st_crs(mpsz)
-st_crs(osm)
-```
-
-```{r}
-
-osm <- osm %>% dplyr::select('osm_id', 'fclass')
-```
-
-```{r}
-
 plot(st_geometry(mpsz))
 ```
 
-#### Outer Island:
+Based on the above plot, it became apparent that I needed to define what an "Outer Island" meant in relation to our task.
+
+#### Outer Island Definition
 
 An island in Singapore inaccessible by road
 
@@ -228,8 +314,15 @@ Therefore, Coney Island, Jurong Island and Sentosa are not outer islands.
 
 Pulau Ubin and Pulau Tekong are examples of outer islands.
 
-```{r}
+To remove the islands, I discovered a trick. After using st_union, st_cast can be used to split disconnected polygons in the larger multipolygon. I then choose the largest one (the mainland). Fortunately, the bridges to Serangoon island were enough to stick the whole of road-accessible Singapore together while excluding areas like Tekong.
 
+We can also use fill_holes to remove any gaps in geometry.
+
+After this process, we are left with a clean outline of Singapore!
+
+#### Outer Island Removal and Hole Fixing
+
+```{r}
 merged_sg <- st_union(mpsz) %>%
     st_cast("POLYGON")
 
@@ -239,16 +332,13 @@ merged_sg <- st_as_sf(merged_sg)
 par(1,2)
 plot(st_geometry(mpsz))
 plot(st_geometry(merged_sg))
-
-write_rds(merged_sg, "data/rds/merged_sg.rds")
 ```
 
-```{r}
-merged_sg <- read_rds("data/rds/merged_sg.rds")
-```
+#### Applying the outline
+
+With the outline, we can create an owin object to constrain our ppp objects later for KDE! We will save it to save us processing time later on.
 
 ```{r}
-
 merged_st <- as_Spatial(merged_sg)
 merged_sg_sp <- as(merged_st, "SpatialPolygons")
 merged_sg_owin <- as(merged_sg_sp, "owin")
@@ -257,15 +347,21 @@ write_rds(merged_sg_owin, "data/rds/merged_sg_owin.rds")
 ```
 
 ```{r}
-# merged_sg_owin <- read_rds("data/rds/merged_sg_owin.rds")
+merged_sg_owin <- read_rds("data/rds/merged_sg_owin.rds")
 ```
 
-```{r}
+Now we use the outline to remove the massive amount of data on Malaysian and Bruneian roads.
 
+```{r}
 osm_sg <- st_intersection(osm, merged_sg)
 ```
 
+An unexpected complication found here was that some geometry in OpenStreetMaps was saved as MULTILINESTRINGs. While this would be intuitive sometimes, it caused issues with KDE calculation. Here, I split each MULTILNESTRING into several LINESTRINGs.
+
+After this processing, I save the result
+
 ```{r}
+summary(osm_sg)
 osm_sg <- st_cast(st_cast(osm_sg, "MULTILINESTRING"),"LINESTRING")
 summary(osm_sg)
 
@@ -276,9 +372,9 @@ write_rds(osm_sg, "data/rds/osm_sg.rds")
 osm_sg <- read_rds("data/rds/osm_sg.rds")
 ```
 
-```{r}
-plot(osm_sg)
-```
+#### ppp Format
+
+To prepare our the data on trip starts and ends, we convert them into ppp objects.
 
 ```{r}
 origin <- as_Spatial(origin_df)
@@ -291,45 +387,47 @@ origin_ppp <- as(origin_sp, "ppp")
 destination_ppp <- as(destination_sp, "ppp")
 ```
 
+Using our previously prepared owin objects, we can constrain these points to only Singapore, in case any of the data was strangely placed outside of our borders.
+
+This happened for 3 destinations.
+
+```{r}
+summary(destination_ppp)
+```
+
 ```{r}
 origin_ppp <- origin_ppp[merged_sg_owin]
 destination_ppp <- destination_ppp[merged_sg_owin]
 ```
 
-### 3.4 Simple Visualisations
-
 ```{r}
-plot(origin_ppp)
-plot(destination_ppp)
+summary(destination_ppp)
 ```
+
+#### Checking for duplicates
+
+Fortunately, no duplicates were detected in our dataset.
 
 ```{r}
 any(duplicated(origin_ppp))
 any(duplicated(destination_ppp))
 ```
 
-#### 4.0 KDE
+### 3.5 Simple Visualisations
+
+From these plots, we can tell that naive methods of checking for patterns in spatial points does not work very well with large datasets. This is when we use KDE.
 
 ```{r}
-sapply(origin_ppp, class)
-sapply(origin_ppp, typeof)
-
-class(origin_ppp)
+plot(origin_ppp)
+plot(destination_ppp)
 ```
 
-```{r}
-origin_ppp$x <- as.numeric(origin_ppp$x)
-summary(origin_ppp)
-```
+## 4.0 KDE
+
+After all the wrangling, we can finally see our Kernel Density Estimates for origin and destinations! I first tried the quartic kernel with an automatically decided bandwidth, but realised that apart from Changi Airport, the rest of Singapore seemed dark.
 
 ```{r}
 par(1,2)
-
-origin.bw <- density(origin_ppp,
-                             sigma=bw.diggle,
-                              edge=TRUE,
-                            kernel="quartic") 
-plot(origin.bw)
 
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 
@@ -338,16 +436,6 @@ origin.bw <- density(origin_ppp.km,
                               edge=TRUE,
                             kernel="quartic") 
 plot(origin.bw)
-```
-
-```{r}
-par(1,2)
-
-destination.bw <- density(destination_ppp,
-                             sigma=bw.diggle,
-                              edge=TRUE,
-                            kernel="quartic") 
-plot(destination.bw)
 
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
 
@@ -357,9 +445,99 @@ destination.bw <- density(destination_ppp.km,
                             kernel="quartic") 
 plot(destination.bw)
 ```
+
+I then tried the more gently sloping Gaussian kernel, to little effect.
+
+```{r}
+par(1,2)
+
+origin_ppp.km <- rescale(origin_ppp, 1000, "km")
+
+origin.bw <- density(origin_ppp.km,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(origin.bw)
+
+destination_ppp.km <- rescale(destination_ppp, 1000, "km")
+
+destination.bw <- density(destination_ppp.km,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(destination.bw)
+```
+
+I decided to check the bandwidth derived with the Diggle algorithm, which was surprisingly small, at 8m. I strongly suspect this to be caused by Changi airport, where a huge number of Grab trips start and end at the same few small dropoff/pickup points.
+
+```{r}
+bw <- bw.diggle(destination_ppp.km)
+bw
+
+bw <- bw.ppl(destination_ppp.km)
+bw
+```
+
+I then tried the PPL algorithm's bandwidth, which did not have a significant effect either.
+
+```{r}
+par(1,2)
+
+origin_ppp.km <- rescale(origin_ppp, 1000, "km")
+
+origin.bw <- density(origin_ppp.km,
+                              sigma=bw.ppl,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(origin.bw)
+
+destination_ppp.km <- rescale(destination_ppp, 1000, "km")
+
+destination.bw <- density(destination_ppp.km,
+                              sigma=bw.ppl,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(destination.bw)
+```
+
+I then tried to manually set a higher bandwidth in hopes of illuminating the map more.
+
+```{r}
+sigm <- 0.5
+
+par(1,2)
+
+origin_ppp.km <- rescale(origin_ppp, 1000, "km")
+
+origin.bw <- density(origin_ppp.km,
+                              sigma=sigm,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(origin.bw)
+
+destination_ppp.km <- rescale(destination_ppp, 1000, "km")
+
+destination.bw <- density(destination_ppp.km,
+                              sigma=sigm,
+                              edge=TRUE,
+                            kernel="gaussian") 
+plot(destination.bw)
+```
+
+#### KDE Insights
+
+From these KDE maps, I observed
+
+-   Changi Airport and the CBD are frequently the origin and destination for Grab trips
+
+-   Interestingly, the maps are different. It seems that there are more trips from presumably more residential areas such as the West and North to the CBD than the other way round. Perhaps people use grab when they are in a rush to get to work and take their time on the way home with public transport.
+
+-   In both the origin and destination KDEs, there is a hotspot in the north, slightly to the west. That could correspond to the Woodlands checkpoint
+
 ```{r}
 sort(mpsz$SUBZONE_N)
 ```
+
 ```{r}
 sort(unique(mpsz$PLN_AREA_N))
 ```
@@ -371,6 +549,7 @@ changi_owin <- as.owin(mpsz_changi, "owin")
 plot(mpsz_changi)
 plot(changi_owin)
 ```
+
 ```{r}
 osm_changi_i <- st_intersection(osm_sg, mpsz_changi)
 osm_changi_idxs <- as.numeric(osm_changi_i$osm_id)
@@ -384,27 +563,26 @@ destination_df.changi = st_intersection(destination_df, mpsz_changi)
 plot(destination_df.changi)
 ```
 
-
 ```{r}
-lixels <- lixelize_lines(osm_changi, 1000, mindist = 500)
+lixels <- lixelize_lines(osm_changi, 200, mindist = 100)
 samples <- lines_center(lixels)
 ```
 
 ```{r}
-densities <- nkde(osm_changi, 
-                  events=destination_df.changi, 
-                  w=rep(1, nrow(destination_df.changi)), 
-                  samples=samples, 
-                  kernel_name="quartic", 
-                  bw=3000, 
-                  div="bw", 
-                  method="simple", 
+densities <- nkde(osm_changi,
+                  events=destination_df.changi,
+                  w=rep(1, nrow(destination_df.changi)),
+                  samples=samples,
+                  kernel_name="quartic",
+                  bw=500,
+                  div="bw",
+                  method="simple",
                   digits=1,
                   tol=1,
-                  grid_shape=c(1,1), 
-                  max_depth = 8, 
-                  agg=5, 
-                  sparse=TRUE, 
+                  grid_shape=c(1,1),
+                  max_depth = 8,
+                  agg=5,
+                  sparse=TRUE,
                   verbose = FALSE)
 ```
 
@@ -419,13 +597,13 @@ lixels$density <- lixels$density*1000
 ```
 
 ```{r}
-# write_rds(samples,  "data/rds/samples.rds")
-# write_rds(lixels,  "data/rds/lixels.rds")
-```
-
-```{r}
+par(1,2)
 tm_shape(lixels) + 
   tm_lines(col="density")
 # tm_shape(destination_df.changi) + 
 #  tm_dots()
+tm_shape(lixels) + 
+  tm_lines(col="density") +
+tm_shape(destination_df.changi) +
+  tm_dots()
 ```

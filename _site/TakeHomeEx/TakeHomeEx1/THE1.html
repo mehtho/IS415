@@ -260,6 +260,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="overview">1.0 Overview</h2>
 <section id="objectives" class="level3">
 <h3 class="anchored" data-anchor-id="objectives">1.1 Objectives</h3>
+<section id="exercise-requirements" class="level4">
+<h4 class="anchored" data-anchor-id="exercise-requirements">Exercise Requirements</h4>
 <ol type="1">
 <li>Using appropriate function of sf and tidyverse, preparing the following geospatial data layer in sf tibble data.frames:</li>
 </ol>
@@ -274,16 +276,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Describe the spatial patterns revealed by the kernel density maps.</li>
 </ol>
 </section>
+</section>
 <section id="approach" class="level3">
 <h3 class="anchored" data-anchor-id="approach">1.2 Approach</h3>
+<p>This exercise seems quite straightforward, but I think that some genuinely useful information can be derived from this data. While removing the outer islands can be done fairly easily, I think that other small issues, like holes in the geometry will need to be fixed.</p>
+<p>NKDE may also require very long computation times for large areas, especially given the magnitude of the entire dataset. The GrabPosisi dataset’s journey start and destination locations likely occur along smaller roads where people can walk. These small roads are likely near other small roads, which will greatly increase the number of affect lixels for every NKDE operation. Since these small roads will have the most interesting data, I will have to scale down my analysis to smaller locations determined by the simpler KDE analysis.</p>
 </section>
 </section>
 <section id="setup" class="level2">
 <h2 class="anchored" data-anchor-id="setup">2.0 Setup</h2>
 <section id="dependencies" class="level3">
 <h3 class="anchored" data-anchor-id="dependencies">2.1 Dependencies</h3>
+<p>Aside from the tools used in class, I also included some additional tools I found useful.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, sf, tmap, maptools, spatstat, spNetwork, tmap, classInt, viridis, smoothr, arrow, stringr, purrr, rvest)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, sf, tmap, maptools, spatstat, spNetwork, tmap, classInt, viridis, smoothr, arrow, stringr, purrr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="datasets" class="level3">
@@ -1239,24 +1245,24 @@ NULL</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a>lixels <span class="ot">&lt;-</span> <span class="fu">lixelize_lines</span>(osm_changi, <span class="dv">1000</span>, <span class="at">mindist =</span> <span class="dv">500</span>)</span>
+<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a>lixels <span class="ot">&lt;-</span> <span class="fu">lixelize_lines</span>(osm_changi, <span class="dv">200</span>, <span class="at">mindist =</span> <span class="dv">100</span>)</span>
 <span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">lines_center</span>(lixels)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>densities <span class="ot">&lt;-</span> <span class="fu">nkde</span>(osm_changi, </span>
-<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">events=</span>destination_df.changi, </span>
-<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">w=</span><span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(destination_df.changi)), </span>
-<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>                  <span class="at">samples=</span>samples, </span>
-<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>                  <span class="at">kernel_name=</span><span class="st">"quartic"</span>, </span>
-<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">bw=</span><span class="dv">3000</span>, </span>
-<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">div=</span><span class="st">"bw"</span>, </span>
-<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">method=</span><span class="st">"simple"</span>, </span>
+<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>densities <span class="ot">&lt;-</span> <span class="fu">nkde</span>(osm_changi,</span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">events=</span>destination_df.changi,</span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">w=</span><span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(destination_df.changi)),</span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>                  <span class="at">samples=</span>samples,</span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a>                  <span class="at">kernel_name=</span><span class="st">"quartic"</span>,</span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">bw=</span><span class="dv">500</span>,</span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">div=</span><span class="st">"bw"</span>,</span>
+<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">method=</span><span class="st">"simple"</span>,</span>
 <span id="cb97-9"><a href="#cb97-9" aria-hidden="true" tabindex="-1"></a>                  <span class="at">digits=</span><span class="dv">1</span>,</span>
 <span id="cb97-10"><a href="#cb97-10" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tol=</span><span class="dv">1</span>,</span>
-<span id="cb97-11"><a href="#cb97-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">grid_shape=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>), </span>
-<span id="cb97-12"><a href="#cb97-12" aria-hidden="true" tabindex="-1"></a>                  <span class="at">max_depth =</span> <span class="dv">8</span>, </span>
-<span id="cb97-13"><a href="#cb97-13" aria-hidden="true" tabindex="-1"></a>                  <span class="at">agg=</span><span class="dv">5</span>, </span>
-<span id="cb97-14"><a href="#cb97-14" aria-hidden="true" tabindex="-1"></a>                  <span class="at">sparse=</span><span class="cn">TRUE</span>, </span>
+<span id="cb97-11"><a href="#cb97-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">grid_shape=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>),</span>
+<span id="cb97-12"><a href="#cb97-12" aria-hidden="true" tabindex="-1"></a>                  <span class="at">max_depth =</span> <span class="dv">8</span>,</span>
+<span id="cb97-13"><a href="#cb97-13" aria-hidden="true" tabindex="-1"></a>                  <span class="at">agg=</span><span class="dv">5</span>,</span>
+<span id="cb97-14"><a href="#cb97-14" aria-hidden="true" tabindex="-1"></a>                  <span class="at">sparse=</span><span class="cn">TRUE</span>,</span>
 <span id="cb97-15"><a href="#cb97-15" aria-hidden="true" tabindex="-1"></a>                  <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
@@ -1273,9 +1279,7 @@ NULL</code></pre>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(lixels) <span class="sc">+</span> </span>
-<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col=</span><span class="st">"density"</span>) <span class="sc">+</span> </span>
-<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(destination_df.changi) <span class="sc">+</span> </span>
-<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col=</span><span class="st">"density"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1283,6 +1287,8 @@ NULL</code></pre>
 </figure>
 </div>
 </div>
+<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># tm_shape(destination_df.changi) + </span></span>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a><span class="co">#  tm_dots()</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 
