@@ -40,7 +40,7 @@ execute:
 ### 2.1 Dependencies
 
 ```{r}
-pacman::p_load(arrow, lubridate, tidyverse, sf, tmap, maptools, spatstat)
+pacman::p_load(tidyverse, sf, tmap, maptools, spatstat, spNetwork, tmap, classInt, viridis, smoothr, arrow, stringr, purrr, rvest)
 ```
 
 ### 2.2 Datasets
@@ -62,15 +62,36 @@ Grab-Posisi Singapore dataset
 ### 3.1 Importing Data
 
 #### Reading the Grab-Posisi Parquet Files
+
 ```{r}
 
 grabp <- open_dataset("data/aspatial/GrabPosisi/") %>% as.data.frame()
 ```
 
 #### Opening the geospatial data
+
 ```{r}
 
-mpsz = st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson")
+mpsz = st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
+```
+
+```{r}
+mpsz$Description[1]
+```
+https://www.linkedin.com/pulse/r-using-stringr-extract-information-from-html-tags-kml-melvin-kew/
+```{r}
+mpsz <- mpsz %>% 
+  mutate(Match=str_match_all(Description,"<td>(.*?)</td>")) %>% 
+  mutate(Match=map(Match, ~ .[,2])) %>% 
+  mutate(Match=map(Match,setNames,c("SUBZONE_NO","SUBZONE_N","SUBZONE_C", "CA_IND", "PLN_AREA_N", "PLN_AREA_C", "REGION_N", "REGION_C", "INC_CRC", "FMEL_UPD_D"))) %>% 
+  unnest_wider(Match) %>%
+  st_as_sf()
+```
+
+```{r}
+summary(mpsz)
+mpsz <- mpsz %>% dplyr::select('Name', 'Description', 'geometry', 'SUBZONE_NO', 'SUBZONE_N', 'PLN_AREA_N', 'PLN_AREA_C', 'REGION_N', 'REGION_C')
+summary(mpsz)
 ```
 
 ```{r}
@@ -141,8 +162,19 @@ origin_df <- read_rds("data/rds/origin.rds")
 ```
 
 ```{r}
-
 head(osm)
+unique(osm$fclass)
+```
+https://www.geofabrik.de/data/geofabrik-osm-gis-standard-0.3.pdf
+```{r}
+values_to_keep <- c("primary", "secondary", "residential", "service", "tertiary", "primary_link", "motorway", "motorway_link", "tertiary_link", "living_street", "trunk", "trunk_link")
+
+osm <- osm[osm$fclass %in% values_to_keep, ]
+```
+
+```{r}
+summary(osm)
+unique(osm$fclass)
 ```
 
 ```{r}
@@ -155,6 +187,7 @@ mpsz <- st_zm(mpsz)
 ```
 
 ### 3.3 CRS Adjustments and Verification
+
 ```{r}
 
 st_crs(mpsz)
@@ -188,6 +221,7 @@ plot(st_geometry(mpsz))
 ```
 
 #### Outer Island:
+
 An island in Singapore inaccessible by road
 
 Therefore, Coney Island, Jurong Island and Sentosa are not outer islands.
@@ -199,7 +233,8 @@ Pulau Ubin and Pulau Tekong are examples of outer islands.
 merged_sg <- st_union(mpsz) %>%
     st_cast("POLYGON")
 
-merged_sg <- merged_sg[c(10, 45)]
+merged_sg <- merged_sg[c(10)]
+merged_sg <- fill_holes(merged_sg, units::set_units(1, "km^2"))
 merged_sg <- st_as_sf(merged_sg)
 par(1,2)
 plot(st_geometry(mpsz))
@@ -231,12 +266,17 @@ osm_sg <- st_intersection(osm, merged_sg)
 ```
 
 ```{r}
+osm_sg <- st_cast(st_cast(osm_sg, "MULTILINESTRING"),"LINESTRING")
+summary(osm_sg)
 
 write_rds(osm_sg, "data/rds/osm_sg.rds")
 ```
 
 ```{r}
-osm_sg<- read_rds("data/rds/osm_sg.rds")
+osm_sg <- read_rds("data/rds/osm_sg.rds")
+```
+
+```{r}
 plot(osm_sg)
 ```
 
@@ -257,27 +297,30 @@ destination_ppp <- destination_ppp[merged_sg_owin]
 ```
 
 ### 3.4 Simple Visualisations
+
 ```{r}
 plot(origin_ppp)
 plot(destination_ppp)
 ```
+
 ```{r}
 any(duplicated(origin_ppp))
 any(duplicated(destination_ppp))
 ```
 
 #### 4.0 KDE
+
 ```{r}
 sapply(origin_ppp, class)
 sapply(origin_ppp, typeof)
 
 class(origin_ppp)
 ```
+
 ```{r}
 origin_ppp$x <- as.numeric(origin_ppp$x)
 summary(origin_ppp)
 ```
-
 
 ```{r}
 par(1,2)
@@ -285,7 +328,7 @@ par(1,2)
 origin.bw <- density(origin_ppp,
                              sigma=bw.diggle,
                               edge=TRUE,
-                            kernel="gaussian") 
+                            kernel="quartic") 
 plot(origin.bw)
 
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
@@ -293,16 +336,17 @@ origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 origin.bw <- density(origin_ppp.km,
                               sigma=bw.diggle,
                               edge=TRUE,
-                            kernel="gaussian") 
+                            kernel="quartic") 
 plot(origin.bw)
 ```
+
 ```{r}
 par(1,2)
 
 destination.bw <- density(destination_ppp,
                              sigma=bw.diggle,
                               edge=TRUE,
-                            kernel="gaussian") 
+                            kernel="quartic") 
 plot(destination.bw)
 
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
@@ -310,7 +354,78 @@ destination_ppp.km <- rescale(destination_ppp, 1000, "km")
 destination.bw <- density(destination_ppp.km,
                               sigma=bw.diggle,
                               edge=TRUE,
-                            kernel="gaussian") 
+                            kernel="quartic") 
 plot(destination.bw)
 ```
+```{r}
+sort(mpsz$SUBZONE_N)
+```
+```{r}
+sort(unique(mpsz$PLN_AREA_N))
+```
 
+```{r}
+mpsz_changi = mpsz %>% filter(PLN_AREA_N=="CHANGI")
+changi_owin <- as.owin(mpsz_changi, "owin")
+
+plot(mpsz_changi)
+plot(changi_owin)
+```
+```{r}
+osm_changi_i <- st_intersection(osm_sg, mpsz_changi)
+osm_changi_idxs <- as.numeric(osm_changi_i$osm_id)
+osm_changi<- osm_sg[osm_sg$osm_id %in% osm_changi_idxs, ]
+
+plot(osm_changi)
+```
+
+```{r}
+destination_df.changi = st_intersection(destination_df, mpsz_changi)
+plot(destination_df.changi)
+```
+
+
+```{r}
+lixels <- lixelize_lines(osm_changi, 1000, mindist = 500)
+samples <- lines_center(lixels)
+```
+
+```{r}
+densities <- nkde(osm_changi, 
+                  events=destination_df.changi, 
+                  w=rep(1, nrow(destination_df.changi)), 
+                  samples=samples, 
+                  kernel_name="quartic", 
+                  bw=3000, 
+                  div="bw", 
+                  method="simple", 
+                  digits=1,
+                  tol=1,
+                  grid_shape=c(1,1), 
+                  max_depth = 8, 
+                  agg=5, 
+                  sparse=TRUE, 
+                  verbose = FALSE)
+```
+
+```{r}
+samples$density <- densities
+lixels$density <- densities
+```
+
+```{r}
+samples$density <- samples$density*1000
+lixels$density <- lixels$density*1000
+```
+
+```{r}
+# write_rds(samples,  "data/rds/samples.rds")
+# write_rds(lixels,  "data/rds/lixels.rds")
+```
+
+```{r}
+tm_shape(lixels) + 
+  tm_lines(col="density") + 
+tm_shape(destination_df.changi) + 
+  tm_dots()
+```
