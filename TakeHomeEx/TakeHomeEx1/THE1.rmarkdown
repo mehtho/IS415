@@ -17,6 +17,7 @@ execute:
   warning: false
 ---
 
+
 ## 1.0 Overview
 
 ### 1.1 Objectives
@@ -77,9 +78,11 @@ Aside from the tools used in class, I also included some additional tools I foun
 
 -   gifski: To animate our TNKDE results
 
+
 ```{r}
 pacman::p_load(tidyverse, sf, tmap, maptools, spatstat, spNetwork, classInt, viridis, smoothr, arrow, stringr, RColorBrewer, gifski)
 ```
+
 
 ### 2.2 Datasets
 
@@ -103,9 +106,11 @@ pacman::p_load(tidyverse, sf, tmap, maptools, spatstat, spNetwork, classInt, vir
 
 I'm glad this function from the arrow library exists to load every split parquet file instead of having to loop and append each file to a single object.
 
+
 ```{r}
 grabp <- open_dataset("data/aspatial/GrabPosisi/") %>% as.data.frame()
 ```
+
 
 ### 3.2 Importing Spatial Data
 
@@ -114,6 +119,7 @@ grabp <- open_dataset("data/aspatial/GrabPosisi/") %>% as.data.frame()
 Using st_read is a standard way to import the data in kml files, but there's a very apparent problem.
 
 The description field, when not rendered, is a monstrous chunk of HTML where none of the fields are easy to use. We'll need to split this up so that we can scope down our analysis later to interesting areas. There are no public roads in the jungle after all.
+
 
 ```{r}
 
@@ -124,9 +130,11 @@ mpsz = st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
 mpsz$Description[1]
 ```
 
+
 I found a concise and performant solution here to parse this mess of HTML.
 
 https://www.linkedin.com/pulse/r-using-stringr-extract-information-from-html-tags-kml-melvin-kew/
+
 
 ```{r}
 mpsz <- mpsz %>% 
@@ -137,7 +145,9 @@ mpsz <- mpsz %>%
   st_as_sf()
 ```
 
+
 After splitting the description into columns, I can drop the Description and other fields I will not be using. Although the planning areas should suffice, having region and subzone names available does not consume a lot of memory and may be useful later on.
+
 
 ```{r}
 summary(mpsz)
@@ -152,12 +162,15 @@ mpsz <- st_make_valid(mpsz)
 mpsz <- st_zm(mpsz)
 ```
 
+
 #### Importing the OpenStreetMaps dataset
+
 
 ```{r}
 
 osm = st_read("data/geospatial/osm.shp.zip", layer="gis_osm_roads_free_1")
 ```
+
 
 ### 3.2 Wrangling
 
@@ -165,19 +178,24 @@ osm = st_read("data/geospatial/osm.shp.zip", layer="gis_osm_roads_free_1")
 
 The GrabPosisi dataset consists of many points for each journey, represented with latitudes and longitudes. There are also many other fields representing speed and direction of the vehicle. We only need to know about the start and end locations.
 
+
 ```{r}
 head(grabp)
 ```
 
+
 The easiest thing to fix first is the timestamp. Doing so will allow us to find the first and last points of a journey easily. We also need to make sure that we account for timezones properly here, since the timestamps written as a time since the epoch.
+
 
 ```{r}
 grabp$pingtimestamp <- as_datetime(grabp$pingtimestamp, tz = "Asia/Singapore")
 ```
 
+
 Now we convert the timestamp into weekdays, hours and days. This will help us temporally constrain our data later on.
 
 We also convert the latitudes and longitudes to the SVY21 CRS system to give our task a standardised projection system.
+
 
 ```{r}
 origin_df <- grabp %>%
@@ -210,14 +228,18 @@ head(origin_df)
 head(destination_df)
 ```
 
+
 After converting some of our data and reducing it to only the trip starts and ends, we can drop the unused columns.
+
 
 ```{r}
 origin_df <- origin_df %>% dplyr::select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'start_hr', 'day', 'geometry')
 destination_df <- destination_df %>% dplyr::select('trj_id', 'pingtimestamp', 'geometry', 'weekday', 'end_hr', 'day', 'geometry')
 ```
 
+
 This was a massive task in terms of computer memory. To make sure we don't have to do this again, we can save the objects into .rds files. I would consider this an advantage over using Python.
+
 
 ```{r}
 write_rds(origin_df, "data/rds/origin.rds")
@@ -229,6 +251,7 @@ destination_df <- read_rds("data/rds/destination.rds")
 origin_df <- read_rds("data/rds/origin.rds")
 ```
 
+
 #### OpenStreetMaps reduction
 
 There were many of 'fclass' values on the OpenStreetMaps documentation and I was not sure all of them existed in our dataset. It turns out that although there were more than expected, I can 'whitelist' some those that are definitely roads.
@@ -237,12 +260,15 @@ I found out about what each class meant from their documentation. <https://www.g
 
 This was great since I had no idea what a Bridleway was.
 
+
 ```{r}
 summary(osm)
 unique(osm$fclass)
 ```
 
+
 Of the above fclasses, these ones are definitely roads. We will keep them in our dataset.
+
 
 ```{r}
 values_to_keep <- c("primary", "secondary", "residential", "service", "tertiary", "primary_link", "motorway", "motorway_link", "tertiary_link", "living_street", "trunk", "trunk_link")
@@ -250,18 +276,23 @@ values_to_keep <- c("primary", "secondary", "residential", "service", "tertiary"
 osm <- osm[osm$fclass %in% values_to_keep, ]
 ```
 
+
 From this, we have confirmed that we have dropped the unnecessary fclasses and greatly reduced the size of our data. However, to geographically constrain this dataset to Singapore, we need to process the MasterPlanSubzone data.
+
 
 ```{r}
 summary(osm)
 unique(osm$fclass)
 ```
 
+
 For our purposes, the road data will only need to serve as a network, without all of the extra data. However, osm_id fclass may be useful later on and are relatively small. We can keep them.
+
 
 ```{r}
 osm <- osm %>% dplyr::select('osm_id', 'fclass')
 ```
+
 
 ### 3.3 CRS Adjustments and Verification
 
@@ -269,21 +300,26 @@ osm <- osm %>% dplyr::select('osm_id', 'fclass')
 
 It's now time to go a bit deeper with the data wrangling now that the size of our data has decreased. First thing to do is to check the CRS for the MPSZ and OpenStreetMaps data since we have not already done so.
 
+
 ```{r}
 st_crs(mpsz)
 st_crs(osm)
 ```
 
+
 Like in the previous exercises, the CRS for these are not SVY21. We will change them since GovTech is yet to do so.
+
 
 ```{r}
 osm <- st_transform(osm, crs = 3414)
 mpsz <- st_transform(mpsz, crs = 3414)
 ```
 
+
 #### Dealing with MPSZ z-coordinates and invalid geometry
 
 To prevent issues with invalid geometry causing issues later on, we can apply a quick fix here.
+
 
 ```{r}
 length(which(st_is_valid(mpsz) == FALSE))
@@ -293,20 +329,25 @@ mpsz <- st_make_valid(mpsz)
 mpsz <- st_zm(mpsz)
 ```
 
+
 A quick check confirms that the CRS has been changed successfully to SVY21
+
 
 ```{r}
 st_crs(mpsz)
 st_crs(osm)
 ```
 
+
 ### 3.4 Singapore Boundaries
 
 From this plot, I realised that there were more islands than I thought surrounding Singapore.
 
+
 ```{r}
 plot(st_geometry(mpsz))
 ```
+
 
 Based on the above plot, it became apparent that I needed to define what an "Outer Island" meant in relation to our task.
 
@@ -328,6 +369,7 @@ After this process, we are left with a clean outline of Singapore!
 
 ::: {.panel-tabset}
 ## Original
+
 ```{r}
 merged_sg <- st_union(mpsz) %>%
     st_cast("POLYGON")
@@ -339,15 +381,19 @@ par(mfrow=c(1,2))
 
 plot(st_geometry(mpsz))
 ```
+
 ## Merged
+
 ```{r}
 plot(st_geometry(merged_sg))
 ```
+
 :::
 
 #### Applying the outline
 
 With the outline, we can create an owin object to constrain our ppp objects later for KDE! We will save it to save us processing time later on.
+
 
 ```{r}
 merged_st <- as_Spatial(merged_sg)
@@ -361,15 +407,19 @@ write_rds(merged_sg_owin, "data/rds/merged_sg_owin.rds")
 merged_sg_owin <- read_rds("data/rds/merged_sg_owin.rds")
 ```
 
+
 Now we use the outline to remove the massive amount of data on Malaysian and Bruneian roads.
+
 
 ```{r}
 osm_sg <- st_intersection(osm, merged_sg)
 ```
 
+
 An unexpected complication found here was that some geometry in OpenStreetMaps was saved as MULTILINESTRINGs. While this would be intuitive sometimes, it caused issues with KDE calculation. Here, I split each MULTILNESTRING into several LINESTRINGs.
 
 After this processing, I save the result
+
 
 ```{r}
 summary(osm_sg)
@@ -383,9 +433,11 @@ write_rds(osm_sg, "data/rds/osm_sg.rds")
 osm_sg <- read_rds("data/rds/osm_sg.rds")
 ```
 
+
 #### ppp Format
 
 To prepare our the data on trip starts and ends, we convert them into ppp objects.
+
 
 ```{r}
 origin <- as_Spatial(origin_df)
@@ -398,9 +450,11 @@ origin_ppp <- as(origin_sp, "ppp")
 destination_ppp <- as(destination_sp, "ppp")
 ```
 
+
 Using our previously prepared owin objects, we can constrain these points to only Singapore, in case any of the data was strangely placed outside of our borders.
 
 This happened for 3 destinations.
+
 
 ```{r}
 summary(destination_ppp)
@@ -415,23 +469,28 @@ destination_ppp <- destination_ppp[merged_sg_owin]
 summary(destination_ppp)
 ```
 
+
 #### Checking for duplicates
 
 Fortunately, no duplicates were detected in our dataset.
+
 
 ```{r}
 any(duplicated(origin_ppp))
 any(duplicated(destination_ppp))
 ```
 
+
 ### 3.5 Simple Visualisations
 
 From these plots, we can tell that naive methods of checking for patterns in spatial points does not work very well with large datasets. This is when we use KDE.
+
 
 ```{r}
 plot(origin_ppp)
 plot(destination_ppp)
 ```
+
 
 ## 4.0 KDE
 
@@ -439,6 +498,7 @@ After all the wrangling, we can finally see our Kernel Density Estimates for ori
 
 ::: {.panel-tabset}
 ## Origins
+
 ```{r}
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 
@@ -449,7 +509,9 @@ origin.bw <- density(origin_ppp.km,
 plot(origin.bw)
 ```
 
+
 ## Destinations
+
 ```{r}
 
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
@@ -460,12 +522,14 @@ destination.bw <- density(destination_ppp.km,
                             kernel="quartic") 
 plot(destination.bw)
 ```
+
 :::
 
 I then tried the more gently sloping Gaussian kernel, to little effect.
 
 ::: {.panel-tabset}
 ## Origins
+
 ```{r}
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 
@@ -475,7 +539,9 @@ origin.bw <- density(origin_ppp.km,
                             kernel="gaussian") 
 plot(origin.bw)
 ```
+
 ## Destinations
+
 ```{r}
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
 
@@ -485,9 +551,11 @@ destination.bw <- density(destination_ppp.km,
                             kernel="gaussian") 
 plot(destination.bw)
 ```
+
 :::
 
 I decided to check the bandwidth derived with the Diggle algorithm, which was surprisingly small, at 8m. I strongly suspect this to be caused by Changi airport, where a huge number of Grab trips start and end at the same few small dropoff/pickup points.
+
 
 ```{r}
 bw <- bw.diggle(destination_ppp.km)
@@ -497,10 +565,12 @@ bw <- bw.ppl(destination_ppp.km)
 bw
 ```
 
+
 I then tried the PPL algorithm's bandwidth, which did not have a significant effect either.
 
 ::: {.panel-tabset}
 ## Origins
+
 ```{r}
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 
@@ -510,7 +580,9 @@ origin.bw <- density(origin_ppp.km,
                             kernel="gaussian") 
 plot(origin.bw)
 ```
+
 ## Destinations
+
 ```{r}
 
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
@@ -521,12 +593,14 @@ destination.bw <- density(destination_ppp.km,
                             kernel="gaussian") 
 plot(destination.bw)
 ```
+
 :::
 
 I then tried to manually set a higher bandwidth in hopes of illuminating the map more.
 
 ::: {.panel-tabset}
 ## Origins
+
 ```{r}
 sigm <- 0.5
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
@@ -538,7 +612,9 @@ origin.bw <- density(origin_ppp.km,
 plot(origin.bw)
 ```
 
+
 ## Destinations
+
 ```{r}
 
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
@@ -549,6 +625,7 @@ destination.bw <- density(destination_ppp.km,
                             kernel="gaussian") 
 plot(destination.bw)
 ```
+
 :::
 #### KDE Insights
 
@@ -569,15 +646,18 @@ In the MPSZ dataset, some areas are conveniently segmented by PLN_AREA, making i
 -   WOODLANDS: For the checkpoint and residential areas
 -   DOWNTOWN CORE, ORCHARD: The CBD and "town" area
 
+
 ```{r}
 sort(unique(mpsz$PLN_AREA_N))
 ```
+
 ### 5.1 Changi Airport
 #### NKDE Data Preparation
 
 First, we restrict the area of our NKDE to CHANGI. We can also remove the possibility of small rocks or outer islands on the map by taking the intersection with merged_sg (Our outline).
 
 Next, we take only the roads that come into contact with Changi. I did not use st_intersection alone because it cut off some roads into points, and other undesirable geometry. This means that our subset of roads may protrude out of Changi, but that can be solved with the NKDE functions's study_area parameter and edge correction. 
+
 
 ```{r}
 mpsz_changi = mpsz %>% filter(PLN_AREA_N=="CHANGI")
@@ -589,37 +669,47 @@ osm_changi <- osm_sg[osm_sg$osm_id %in% osm_changi_idxs, ]
 
 plot(osm_changi)
 ```
+
 We also need to take only the events that happened within Changi. We do this with st_intersection. This is much easier since the events are points.
 
 ::: {.panel-tabset}
 ## Destinations w/o Snap
+
 ```{r}
 destination_df.changi = st_intersection(destination_df, mpsz_changi)
 origin_df.changi = st_intersection(origin_df, mpsz_changi)
 
 plot(destination_df.changi)
 ```
+
 ## Origins w/o Snap
+
 ```{r}
 plot(origin_df.changi)
 ```
 
+
 As part of NKDE, the events need to have happened on the network. As such, we use snapPointsToLines2 to ensure that the points are on the network. Points off the network may have occurred due to slight GPS drift.
 
 ## Destinations w/ Snap
+
 ```{r}
 origin_df.changi.snapped = snapPointsToLines2(origin_df.changi, osm_changi)
 destination_df.changi.snapped = snapPointsToLines2(destination_df.changi, osm_changi)
 
 plot(destination_df.changi.snapped)
 ```
+
 ## Origins w/ Snap
+
 ```{r}
 plot(origin_df.changi.snapped)
 ```
+
 :::
 
 With our points on the network and study area constrained, we can visualise the events at Changi, especially the airport. 
+
 
 ```{r}
 tm_shape(osm_changi) + 
@@ -628,7 +718,9 @@ tm_shape(destination_df.changi.snapped) +
   tm_dots(col = "red")
 ```
 
+
 #### NKDE Calculation
+
 ```{r}
 lixels <- lixelize_lines(osm_changi, 200, mindist = 100)
 samples <- lines_center(lixels)
@@ -681,6 +773,7 @@ samples2.origin <- samples[order(samples$density.origin),]
 samples2.destination <- samples[order(samples$density.destination),]
 ```
 
+
 I tried a simple method taught in class to visualise the density of events on the road network at Changi. Unfortunately, the huge proportion of events at what is presumedly a dropoff point makes the rest of the area very light in comparison. 
 
 However, it can be noted that a good portion of trips are ended along the road leading up to Changi. This is not visible in the origin.
@@ -693,21 +786,26 @@ I suspect that trips ended along the road before the pickup/dropoff area can be 
 
 ::: {.panel-tabset}
 ## Origins
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.origin")
 ```
 
+
 ## Destinations
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.destination")
 ```
+
 :::
 In this alternative visualisation of NKDE at Changi, where the density steps are increasingly large, we can begin to see the other hotspots in the vicinity. When looking the magnitude of the lighter colors in the legend, we can see that these areas are nowhere near as dense as the pickup/dropoff area.
 
 ::: {.panel-tabset}
 ## NKDE Origins Changi
+
 ```{r}
 colorRamp <- brewer.pal(n = 7, name = "Spectral")
 colorRamp <- rev(colorRamp)
@@ -720,7 +818,9 @@ tm_shape(osm_changi) +
             main.title = 'NKDE of Grab Trip Origins in Changi' , main.title.size = 1)
 ```
 
+
 ## NKDE Destinations Changi
+
 ```{r}
 
 tm_shape(osm_changi) + 
@@ -730,6 +830,7 @@ tm_shape(osm_changi) +
   tm_layout(legend.outside = TRUE, 
             main.title = 'NKDE of Grab Trip Destinations in Changi' , main.title.size = 1)
 ```
+
 :::
 
 ### 5.2 Woodlands and Woodlands Checkpoint
@@ -746,6 +847,7 @@ However, I would like the number and maps to paint a clearer picture of where co
 
 In the map below, the checkpoint is clearly denoted by the cluster of parallel roads in the top left.
 
+
 ```{r}
 mpsz_woodlands = mpsz %>% filter(PLN_AREA_N=="WOODLANDS")
 mpsz_woodlands <- st_intersection(mpsz_woodlands, merged_sg)
@@ -756,7 +858,9 @@ osm_woodlands <- osm_sg[osm_sg$osm_id %in% osm_woodlands_idxs, ]
 
 plot(osm_woodlands)
 ```
+
 As in the previous example at Changi, we snap the points to the network and constrain the study area.
+
 ```{r}
 destination_df.woodlands = st_intersection(destination_df, mpsz_woodlands)
 origin_df.woodlands = st_intersection(origin_df, mpsz_woodlands)
@@ -766,7 +870,9 @@ destination_df.woodlands.snapped = snapPointsToLines2(destination_df.woodlands, 
 
 ```
 
+
 As expected, few rides occur in the direct vicinity of the checkpoint.
+
 ```{r}
 tm_shape(osm_woodlands) + 
   tm_lines() +
@@ -774,9 +880,11 @@ tm_shape(destination_df.woodlands.snapped) +
   tm_dots(col = "red")
 ```
 
+
 #### NKDE Calculation
 
 Since I want a sharper curve to more clearly identify hotspots on the network, I use a quartic kernel. When trying an adaptive bandwidth, only one hotspot was clearly identified. As such, I have set a static bandwidth. 
+
 
 ```{r}
 lixels <- lixelize_lines(osm_woodlands, 200, mindist = 100)
@@ -830,20 +938,25 @@ samples2.origin <- samples[order(samples$density.origin),]
 samples2.destination <- samples[order(samples$density.destination),]
 ```
 
+
 From this NKDE map, we can already tell that more people use Grab to leave Woodlands than to come in. This applies to the residential areas as well, sufficiently far from the checkpoint. 
 
 ::: {.panel-tabset}
 ## NKDE Origins Woodlands
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.origin")
 ```
 
+
 ## NKDE Destinations Woodlands
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.destination")
 ```
+
 :::
 
 In this alternative map, I can tell that my suspicion was wrong. While origins are more distributed than destinations in woodlands, a clear hotspot for origins can be identified right outside the checkpoint. This could mean that grab drivers and passengers are willing to brave the traffic jam for a grab ride. 
@@ -852,6 +965,7 @@ I was also surprised that there were no clear signs that passengers alighted pre
 
 ::: {.panel-tabset}
 ## NKDE Origins Woodlands
+
 ```{r}
 colorRamp <- brewer.pal(n = 7, name = "Spectral")
 colorRamp <- rev(colorRamp)
@@ -864,7 +978,9 @@ tm_shape(osm_woodlands) +
             main.title = 'NKDE of Grab Trip Origins in Woodlands' , main.title.size = 1)
 ```
 
+
 ## NKDE Destinations Woodlands
+
 ```{r}
 tm_shape(osm_woodlands) + 
   tm_lines("black") + 
@@ -873,6 +989,7 @@ tm_shape(osm_woodlands) +
   tm_layout(legend.outside = TRUE, 
             main.title = 'NKDE of Grab Trip Destinations in Woodlands' , main.title.size = 1)
 ```
+
 :::
 
 ### 5.3 Downtown
@@ -880,6 +997,7 @@ tm_shape(osm_woodlands) +
 The downtown area is intuitively a slow, congested area during rush hours. In the KDE maps, the downtown area was consistently bright, indicating that many Grab rides started and ended there. In this segment I wanted to see if there were particular areas within the downtown core area that many commuters head to. 
 
 #### NKDE Data Preparation
+
 ```{r}
 mpsz_town = mpsz %>% filter(PLN_AREA_N=="DOWNTOWN CORE")
 mpsz_town <- st_intersection(mpsz_town, merged_sg)
@@ -904,7 +1022,9 @@ tm_shape(destination_df.town.snapped) +
   tm_dots(col = "red")
 ```
 
+
 #### NKDE Calculation
+
 ```{r}
 lixels <- lixelize_lines(osm_town, 200, mindist = 100)
 samples <- lines_center(lixels)
@@ -957,18 +1077,23 @@ samples2.origin <- samples[order(samples$density.origin),]
 samples2.destination <- samples[order(samples$density.destination),]
 ```
 
+
 ::: {.panel-tabset}
 ## NKDE Origins Town
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.origin")
 ```
 
+
 ## NKDE Destinations Town
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.destination")
 ```
+
 :::
 
 When observing the destinations map, it becomes clear that many intersections in the upper area, near Raffle's city, become extremely packed with people on their way there. On the southern part of the map, roads near Marina Bay Financial centre also see a lot fo traffic from private hire vehicles. 
@@ -979,6 +1104,7 @@ It might be possible that the area above Lau Pa Sat is used as an area to get a 
 
 ::: {.panel-tabset}
 ## NKDE Origins Town
+
 ```{r}
 colorRamp <- brewer.pal(n = 7, name = "Spectral")
 colorRamp <- rev(colorRamp)
@@ -993,7 +1119,9 @@ tm_shape(osm_town) +
             main.title = 'NKDE of Grab Trip Origins in Downtown Core' , main.title.size = 1)
 ```
 
+
 ## NKDE Destinations Town
+
 
 ```{r}
 tm_shape(osm_town) + 
@@ -1003,6 +1131,7 @@ tm_shape(osm_town) +
   tm_layout(legend.outside = TRUE, 
             main.title = 'NKDE of Grab Trip Destinations in Downtown Core' , main.title.size = 1)
 ```
+
 :::
 
 ### 5.4 NKDE General Insights
@@ -1023,6 +1152,7 @@ From the NKDE in Changi, we were able to see that the airport road had enough le
 From the TNKDE, we can see that drivers need to be careful around the clock, but less so in the evenings, since there will be travelers alighting where they may not be allowed to.
 
 However, this could also be an illusion caused by grab drivers pressing the button to end their trip slightly earlier to prepare to help travelers get their bags out the car.
+
 
 
 ```{r}
@@ -1109,6 +1239,7 @@ all_maps.origin<- lapply(1:ncol(tnkde_densities.origin$k), function(i){
 tmap_animation(all_maps.origin, filename = "images/tnkde_origin_changi.gif", 
                width = 1000, height = 1000, dpi = 300, delay = 50)
 ```
+
 ![TNKDEOriginChangi](images/tnkde_origin_changi.gif)
 ![TNKDEOriginChangi](images/tnkde_destination_changi.gif)
 
@@ -1117,6 +1248,7 @@ tmap_animation(all_maps.origin, filename = "images/tnkde_origin_changi.gif",
 In this TNKDE, we can observe people leaving the woodlands checkpoint in the early morning and evening. We can also observe some other small hotspots in the lower centre of the map. 
 
 While this could be where a bus from the checkpoint may stop, it is difficult to say for sure. However, this map shows that there are many private hire vehicles in the lower middle of this study area throughout the day, perhaps indicating a congestion issue as a result of suboptimally designed roads.
+
 
 ```{r}
 destination_df.woodlands.snapped$end_hr <- as.numeric(destination_df.woodlands.snapped$end_hr)
@@ -1202,6 +1334,7 @@ all_maps.destination<- lapply(1:ncol(tnkde_densities.destination$k), function(i)
 tmap_animation(all_maps.destination, filename = "images/tnkde_destination_woodlands.gif", 
                width = 1000, height = 1000, dpi = 300, delay = 50)
 ```
+
 ![TNKDEOriginWoodlands](images/tnkde_origin_woodlands.gif)
 ![TNKDEDestinationWoodlands](images/tnkde_destination_woodlands.gif)
 
@@ -1210,6 +1343,7 @@ tmap_animation(all_maps.destination, filename = "images/tnkde_destination_woodla
 From the TNKDE, we can see the southern part of the map light up after midnight! This might indicate that the area, especially around Lau Pa Sat, contributes to Grab ride origins as a place to relax in the evenings. The area also becomes busy around lunch hour, as expected.
 
 In contrast, the destinations map does not light up as much. Although the NKDE may indicate heavy congestion due to private hire vehicles, the TNKDE shows that this may not be as persistent a problem as expected.
+
 ```{r}
 destination_df.town.snapped$end_hr <- as.numeric(destination_df.town.snapped$end_hr)
 origin_df.town.snapped$start_hr <- as.numeric(origin_df.town.snapped$start_hr)
@@ -1297,6 +1431,7 @@ tmap_animation(all_maps.destination, filename = "images/tnkde_destination_town.g
                width = 1000, height = 1000, dpi = 300, delay = 50)
 ```
 
+
 ![TNKDEOriginTown](images/tnkde_origin_town.gif)
 ![TNKDEDestinationTown](images/tnkde_destination_town.gif)
 
@@ -1311,3 +1446,4 @@ This exercise has been a rigorous and challenging introduction to r programming.
 Although this exercise became very time consuming and frustrating at times, I believe that the next exercises will be much faster, having gone through extensive documentation and numerous roadblocks. 
 
 Ultimately, this has been a fun and interesting experience about finding patterns otherwise invisible to the naked eye.
+

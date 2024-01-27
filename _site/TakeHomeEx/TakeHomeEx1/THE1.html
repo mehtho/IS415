@@ -222,9 +222,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#study-areas" id="toc-study-areas" class="nav-link" data-scroll-target="#study-areas">Study Areas</a></li>
   <li><a href="#changi-airport" id="toc-changi-airport" class="nav-link" data-scroll-target="#changi-airport">5.1 Changi Airport</a></li>
   <li><a href="#woodlands-and-woodlands-checkpoint" id="toc-woodlands-and-woodlands-checkpoint" class="nav-link" data-scroll-target="#woodlands-and-woodlands-checkpoint">5.2 Woodlands and Woodlands Checkpoint</a></li>
-  </ul></li>
-  <li><a href="#nkde-destinations-woodlands-1" id="toc-nkde-destinations-woodlands-1" class="nav-link" data-scroll-target="#nkde-destinations-woodlands-1">NKDE Destinations Woodlands</a>
-  <ul class="collapse">
   <li><a href="#downtown" id="toc-downtown" class="nav-link" data-scroll-target="#downtown">5.3 Downtown</a></li>
   <li><a href="#nkde-general-insights" id="toc-nkde-general-insights" class="nav-link" data-scroll-target="#nkde-general-insights">5.4 NKDE General Insights</a></li>
   </ul></li>
@@ -297,7 +294,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 <ol start="2" type="1">
 <li>Using the extracted data, derive traditional Kernel Density Estimation layers.</li>
-<li>Using the extracted data, derive either Network Kernel Density Estimation (NKDE) or Temporal Network Kernel Density Estimation (TNKDE) Using appropriate tmap functions, display the kernel density layers on openstreetmap of Singapore.</li>
+<li>Using the extracted data, derive either Network Kernel Density Estimation (NKDE) or Temporal Network Kernel Density Estimation (TNKDE) Using appropriate tmap functions, display the kernel density layers on OpenStreetMaps of Singapore.</li>
 <li>Describe the spatial patterns revealed by the kernel density maps.</li>
 </ol>
 </section>
@@ -1651,19 +1648,21 @@ Fraction of frame area: 0.499</code></pre>
 </div>
 </div>
 <p>In this alternative map, I can tell that my suspicion was wrong. While origins are more distributed than destinations in woodlands, a clear hotspot for origins can be identified right outside the checkpoint. This could mean that grab drivers and passengers are willing to brave the traffic jam for a grab ride.</p>
-<p>I was also surprised that there were no clear signs that passengers alighted prematurely from their rides to the checkpoint, as was the case at Changi airport. ::: {.panel-tabset} ## NKDE Origins Woodlands</p>
+<p>I was also surprised that there were no clear signs that passengers alighted prematurely from their rides to the checkpoint, as was the case at Changi airport.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-10-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-10-1" role="tab" aria-controls="tabset-10-1" aria-selected="true">NKDE Origins Woodlands</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-10-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-10-2" role="tab" aria-controls="tabset-10-2" aria-selected="false">NKDE Destinations Woodlands</a></li></ul>
+<div class="tab-content">
+<div id="tabset-10-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-10-1-tab">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb112"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a>colorRamp <span class="ot">&lt;-</span> <span class="fu">brewer.pal</span>(<span class="at">n =</span> <span class="dv">7</span>, <span class="at">name =</span> <span class="st">"Spectral"</span>)</span>
 <span id="cb112-2"><a href="#cb112-2" aria-hidden="true" tabindex="-1"></a>colorRamp <span class="ot">&lt;-</span> <span class="fu">rev</span>(colorRamp)</span>
 <span id="cb112-3"><a href="#cb112-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb112-4"><a href="#cb112-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb112-5"><a href="#cb112-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb112-6"><a href="#cb112-6" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(osm_woodlands) <span class="sc">+</span> </span>
-<span id="cb112-7"><a href="#cb112-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="st">"black"</span>) <span class="sc">+</span> </span>
-<span id="cb112-8"><a href="#cb112-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(samples2.origin) <span class="sc">+</span> </span>
-<span id="cb112-9"><a href="#cb112-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="st">"density.origin"</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>, <span class="at">palette =</span> colorRamp, <span class="at">n =</span> <span class="dv">7</span>, <span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span> </span>
-<span id="cb112-10"><a href="#cb112-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">legend.outside =</span> <span class="cn">TRUE</span>, </span>
-<span id="cb112-11"><a href="#cb112-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">main.title =</span> <span class="st">'NKDE of Grab Trip Origins in Woodlands'</span> , <span class="at">main.title.size =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb112-4"><a href="#cb112-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(osm_woodlands) <span class="sc">+</span> </span>
+<span id="cb112-5"><a href="#cb112-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="st">"black"</span>) <span class="sc">+</span> </span>
+<span id="cb112-6"><a href="#cb112-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(samples2.origin) <span class="sc">+</span> </span>
+<span id="cb112-7"><a href="#cb112-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="st">"density.origin"</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>, <span class="at">palette =</span> colorRamp, <span class="at">n =</span> <span class="dv">7</span>, <span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span> </span>
+<span id="cb112-8"><a href="#cb112-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">legend.outside =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb112-9"><a href="#cb112-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">main.title =</span> <span class="st">'NKDE of Grab Trip Origins in Woodlands'</span> , <span class="at">main.title.size =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1672,11 +1671,8 @@ Fraction of frame area: 0.499</code></pre>
 </div>
 </div>
 </div>
-</section>
-</section>
-</section>
-<section id="nkde-destinations-woodlands-1" class="level2">
-<h2 class="anchored" data-anchor-id="nkde-destinations-woodlands-1">NKDE Destinations Woodlands</h2>
+</div>
+<div id="tabset-10-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-10-2-tab">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(osm_woodlands) <span class="sc">+</span> </span>
 <span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="st">"black"</span>) <span class="sc">+</span> </span>
@@ -1692,7 +1688,11 @@ Fraction of frame area: 0.499</code></pre>
 </div>
 </div>
 </div>
-<p>:::</p>
+</div>
+</div>
+</div>
+</section>
+</section>
 <section id="downtown" class="level3">
 <h3 class="anchored" data-anchor-id="downtown">5.3 Downtown</h3>
 <p>The downtown area is intuitively a slow, congested area during rush hours. In the KDE maps, the downtown area was consistently bright, indicating that many Grab rides started and ended there. In this segment I wanted to see if there were particular areas within the downtown core area that many commuters head to.</p>
@@ -1779,9 +1779,9 @@ Fraction of frame area: 0.499</code></pre>
 <span id="cb119-8"><a href="#cb119-8" aria-hidden="true" tabindex="-1"></a>samples2.destination <span class="ot">&lt;-</span> samples[<span class="fu">order</span>(samples<span class="sc">$</span>density.destination),]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-10-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-10-1" role="tab" aria-controls="tabset-10-1" aria-selected="true">NKDE Origins Town</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-10-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-10-2" role="tab" aria-controls="tabset-10-2" aria-selected="false">NKDE Destinations Town</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-11-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-11-1" role="tab" aria-controls="tabset-11-1" aria-selected="true">NKDE Origins Town</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-11-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-11-2" role="tab" aria-controls="tabset-11-2" aria-selected="false">NKDE Destinations Town</a></li></ul>
 <div class="tab-content">
-<div id="tabset-10-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-10-1-tab">
+<div id="tabset-11-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-11-1-tab">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb120"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(lixels) <span class="sc">+</span> </span>
 <span id="cb120-2"><a href="#cb120-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col=</span><span class="st">"density.origin"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -1794,7 +1794,7 @@ Fraction of frame area: 0.499</code></pre>
 </div>
 </div>
 </div>
-<div id="tabset-10-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-10-2-tab">
+<div id="tabset-11-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-11-2-tab">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(lixels) <span class="sc">+</span> </span>
 <span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col=</span><span class="st">"density.destination"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -1813,9 +1813,9 @@ Fraction of frame area: 0.499</code></pre>
 <p>However, most interesting about these maps is that the origins in this map are primarily clustered around an area with high end office building and attractions, but nothing out of the ordinary relative to the surrounding area.</p>
 <p>It might be possible that the area above Lau Pa Sat is used as an area to get a Grab ride after a meal, where smaller roads make it easier for cars to stop to pick up passengers.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-11-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-11-1" role="tab" aria-controls="tabset-11-1" aria-selected="true">NKDE Origins Town</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-11-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-11-2" role="tab" aria-controls="tabset-11-2" aria-selected="false">NKDE Destinations Town</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-12-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-12-1" role="tab" aria-controls="tabset-12-1" aria-selected="true">NKDE Origins Town</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-12-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-12-2" role="tab" aria-controls="tabset-12-2" aria-selected="false">NKDE Destinations Town</a></li></ul>
 <div class="tab-content">
-<div id="tabset-11-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-11-1-tab">
+<div id="tabset-12-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-12-1-tab">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a>colorRamp <span class="ot">&lt;-</span> <span class="fu">brewer.pal</span>(<span class="at">n =</span> <span class="dv">7</span>, <span class="at">name =</span> <span class="st">"Spectral"</span>)</span>
 <span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a>colorRamp <span class="ot">&lt;-</span> <span class="fu">rev</span>(colorRamp)</span>
@@ -1837,7 +1837,7 @@ Fraction of frame area: 0.499</code></pre>
 </div>
 </div>
 </div>
-<div id="tabset-11-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-11-2-tab">
+<div id="tabset-12-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-12-2-tab">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(osm_town) <span class="sc">+</span> </span>
 <span id="cb123-2"><a href="#cb123-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="st">"black"</span>) <span class="sc">+</span> </span>
@@ -1866,10 +1866,12 @@ Fraction of frame area: 0.499</code></pre>
 </section>
 <section id="tnkde" class="level2">
 <h2 class="anchored" data-anchor-id="tnkde">6.0 TNKDE</h2>
+<p>To extend the NKDE, we can use the TNKDE to visualise patterns in the network over time. In this section, I will be creating visualisation split over the 24 hours of the day to visualise daily patterns. This should show more variations than a split by the days of the week, where patterns may only correspond to the weekday/weekend differences.</p>
+<p>I have kept the bandwidth the same for consistency.</p>
 <section id="changi-airport-1" class="level3">
 <h3 class="anchored" data-anchor-id="changi-airport-1">6.1 Changi Airport</h3>
 <p>From the NKDE in Changi, we were able to see that the airport road had enough legally questionable dropoffs along the road to the airport during periods of congestion. It is possible that not every jam in Changi airport will cause this phenomenon.</p>
-<p>From the TNKDE, we can see that drivers need to be careful around the clock, but less so from 8pm-11pm, since there will be travelers alighting where they may not be allowed to.</p>
+<p>From the TNKDE, we can see that drivers need to be careful around the clock, but less so in the evenings, since there will be travelers alighting where they may not be allowed to.</p>
 <p>However, this could also be an illusion caused by grab drivers pressing the button to end their trip slightly earlier to prepare to help travelers get their bags out the car.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb124"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1" aria-hidden="true" tabindex="-1"></a>destination_df.changi.snapped<span class="sc">$</span>end_hr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(destination_df.changi.snapped<span class="sc">$</span>end_hr)</span>
@@ -1949,7 +1951,7 @@ Fraction of frame area: 0.499</code></pre>
 <span id="cb125-69"><a href="#cb125-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
 <span id="cb125-70"><a href="#cb125-70" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb125-71"><a href="#cb125-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb125-72"><a href="#cb125-72" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.destination, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_changi.gif"</span>, </span>
+<span id="cb125-72"><a href="#cb125-72" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.origin, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_changi.gif"</span>, </span>
 <span id="cb125-73"><a href="#cb125-73" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
@@ -1957,6 +1959,8 @@ Fraction of frame area: 0.499</code></pre>
 </section>
 <section id="woodlands" class="level3">
 <h3 class="anchored" data-anchor-id="woodlands">6.2 Woodlands</h3>
+<p>In this TNKDE, we can observe people leaving the woodlands checkpoint in the early morning and evening. We can also observe some other small hotspots in the lower centre of the map.</p>
+<p>While this could be where a bus from the checkpoint may stop, it is difficult to say for sure. However, this map shows that there are many private hire vehicles in the lower middle of this study area throughout the day, perhaps indicating a congestion issue as a result of suboptimally designed roads.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb126"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a>destination_df.woodlands.snapped<span class="sc">$</span>end_hr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(destination_df.woodlands.snapped<span class="sc">$</span>end_hr)</span>
 <span id="cb126-2"><a href="#cb126-2" aria-hidden="true" tabindex="-1"></a>origin_df.woodlands.snapped<span class="sc">$</span>start_hr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(origin_df.woodlands.snapped<span class="sc">$</span>start_hr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -2018,7 +2022,7 @@ Fraction of frame area: 0.499</code></pre>
 <span id="cb127-52"><a href="#cb127-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
 <span id="cb127-53"><a href="#cb127-53" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb127-54"><a href="#cb127-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb127-55"><a href="#cb127-55" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.destination, <span class="at">filename =</span> <span class="st">"images/tnkde_destination_woodlands.gif"</span>, </span>
+<span id="cb127-55"><a href="#cb127-55" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.origin, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_woodlands.gif"</span>, </span>
 <span id="cb127-56"><a href="#cb127-56" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span>
 <span id="cb127-57"><a href="#cb127-57" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb127-58"><a href="#cb127-58" aria-hidden="true" tabindex="-1"></a>all_densities.destination <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.destination<span class="sc">$</span>k)</span>
@@ -2043,6 +2047,8 @@ Fraction of frame area: 0.499</code></pre>
 </section>
 <section id="downtown-core" class="level3">
 <h3 class="anchored" data-anchor-id="downtown-core">6.3 Downtown Core</h3>
+<p>From the TNKDE, we can see the southern part of the map light up after midnight! This might indicate that the area, especially around Lau Pa Sat, contributes to Grab ride origins as a place to relax in the evenings. The area also becomes busy around lunch hour, as expected.</p>
+<p>In contrast, the destinations map does not light up as much. Although the NKDE may indicate heavy congestion due to private hire vehicles, the TNKDE shows that this may not be as persistent a problem as expected.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb128"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb128-1"><a href="#cb128-1" aria-hidden="true" tabindex="-1"></a>destination_df.town.snapped<span class="sc">$</span>end_hr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(destination_df.town.snapped<span class="sc">$</span>end_hr)</span>
 <span id="cb128-2"><a href="#cb128-2" aria-hidden="true" tabindex="-1"></a>origin_df.town.snapped<span class="sc">$</span>start_hr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(origin_df.town.snapped<span class="sc">$</span>start_hr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -2132,7 +2138,7 @@ Fraction of frame area: 0.499</code></pre>
 </section>
 <section id="conclusions" class="level2">
 <h2 class="anchored" data-anchor-id="conclusions">7.0 Conclusions</h2>
-<p>The Grab Posisi dataset has yielded many interesting insights with Spatial Point Analysis. From commuter behaviour and safety in Changi airport, finding out where people head to after arriving at the Woodlands checkpoint to embark on rides to cover their last miles home and the extent of congestion in the downtown core, spatial point analysis has proven itself to be a powerful too.</p>
+<p>The Grab Posisi dataset has yielded many interesting insights with Spatial Point Analysis. From commuter behaviour and safety in Changi airport, investigating private hire vehicle use around the Woodlands checkpoint to visualising the daily patterns of the downtown core, spatial point analysis has proven itself to be a powerful tool.</p>
 <p>In terms of policy making, anecdotal evidence is not sufficient. Reported patterns through interviews may not truly reflect the patterns in crowded areas. Spatial Point Analysis can contribute heavily to the public good by identifying dangerous patterns, inefficiencies, and ways to facilitate life in a society that just wants to have dinner after work at Lau Pa Sat. Although the public may never know the full extent of the planning and analysis that goes on behind the scenes and drives decision making, NKDE and TNKDE maps help paint simple yet effective messages to build understanding and cohesion.</p>
 </section>
 <section id="personal-learnings" class="level2">
