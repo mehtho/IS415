@@ -74,7 +74,7 @@ Aside from the tools used in class, I also included some additional tools I foun
 -   smoothr: The MPSZ2019 polygons have small holes, so I use this library to fix them before they cause issues
 
 ```{r}
-pacman::p_load(tidyverse, sf, tmap, maptools, spatstat, spNetwork, classInt, viridis, smoothr, arrow, stringr)
+pacman::p_load(tidyverse, sf, tmap, maptools, spatstat, spNetwork, classInt, viridis, smoothr, arrow, stringr, RColorBrewer, gifski)
 ```
 
 ### 2.2 Datasets
@@ -534,44 +534,71 @@ From these KDE maps, I observed
 
 -   In both the origin and destination KDEs, there is a hotspot in the north, slightly to the west. That could correspond to the Woodlands checkpoint
 
-```{r}
-sort(mpsz$SUBZONE_N)
-```
+## 5.0 NKDE
+### Study Areas
+
+In the MPSZ dataset, some areas are conveniently segmented by PLN_AREA, making it easy to extract areas of interest. From the KDE results above, we ca choose several of the interesting zones below for NKDE.
+
+-   CHANGI: For the airport
+-   WOODLANDS: For the checkpoint and residential areas
+-   DOWNTOWN CORE, ORCHARD: The CBD and "town" area
 
 ```{r}
 sort(unique(mpsz$PLN_AREA_N))
 ```
+### 5.1 Changi Airport
+#### NKDE Data Preparation
+
+First, we restrict the area of our NKDE to CHANGI. We can also remove the possibility of small rocks or outer islands on the map by taking the intersection with merged_sg (Our outline).
+
+Next, we take only the roads that come into contact with Changi. I did not use st_intersection alone because it cut off some roads into points, and other undesirable geometry. This means that our subset of roads may protrude out of Changi, but that can be solved with the NKDE functions's study_area parameter and edge correction. 
 
 ```{r}
 mpsz_changi = mpsz %>% filter(PLN_AREA_N=="CHANGI")
-changi_owin <- as.owin(mpsz_changi, "owin")
+mpsz_changi <- st_intersection(mpsz_changi, merged_sg)
 
-plot(mpsz_changi)
-plot(changi_owin)
-```
-
-```{r}
 osm_changi_i <- st_intersection(osm_sg, mpsz_changi)
 osm_changi_idxs <- as.numeric(osm_changi_i$osm_id)
-osm_changi<- osm_sg[osm_sg$osm_id %in% osm_changi_idxs, ]
+osm_changi <- osm_sg[osm_sg$osm_id %in% osm_changi_idxs, ]
 
 plot(osm_changi)
 ```
-
+We also need to take only the events that happened within Changi. We do this with st_intersection. This is much easier since the events are points.
 ```{r}
 destination_df.changi = st_intersection(destination_df, mpsz_changi)
+origin_df.changi = st_intersection(origin_df, mpsz_changi)
+
+par(2,2)
 plot(destination_df.changi)
+plot(origin_df.changi)
+```
+As part of NKDE, the events need to have happened on the network. As such, we use snapPointsToLines2 to ensure that the points are on the network. Points off the network may have occurred due to slight GPS drift.
+```{r}
+origin_df.changi.snapped = snapPointsToLines2(origin_df.changi, osm_changi)
+destination_df.changi.snapped = snapPointsToLines2(destination_df.changi, osm_changi)
+
+plot(destination_df.changi.snapped)
+plot(origin_df.changi.snapped)
+```
+With our points on the network and study area constrained, we can visualise the events at Changi, especially the airport. 
+
+```{r}
+tm_shape(osm_changi) + 
+  tm_lines() +
+tm_shape(destination_df.changi.snapped) +
+  tm_dots(col = "red")
 ```
 
+#### NKDE Calculation
 ```{r}
 lixels <- lixelize_lines(osm_changi, 200, mindist = 100)
 samples <- lines_center(lixels)
 ```
 
 ```{r}
-densities <- nkde(osm_changi,
-                  events=destination_df.changi,
-                  w=rep(1, nrow(destination_df.changi)),
+densities.destination <- nkde(osm_changi,
+                  events=destination_df.changi.snapped,
+                  w=rep(1, nrow(destination_df.changi.snapped)),
                   samples=samples,
                   kernel_name="quartic",
                   bw=500,
@@ -583,27 +610,587 @@ densities <- nkde(osm_changi,
                   max_depth = 8,
                   agg=5,
                   sparse=TRUE,
-                  verbose = FALSE)
+                  verbose = FALSE,
+                  study_area = mpsz_changi)
+
+densities.origin <- nkde(osm_changi,
+                  events=origin_df.changi.snapped,
+                  w=rep(1, nrow(origin_df.changi.snapped)),
+                  samples=samples,
+                  kernel_name="quartic",
+                  bw=500,
+                  div="bw",
+                  method="simple",
+                  digits=1,
+                  tol=1,
+                  grid_shape=c(1,1),
+                  max_depth = 8,
+                  agg=5,
+                  sparse=TRUE,
+                  verbose = FALSE,
+                  study_area = mpsz_changi)
 ```
 
 ```{r}
-samples$density <- densities
-lixels$density <- densities
+samples$density.destination <- densities.destination*1000
+lixels$density.destination <- densities.destination*1000
+
+samples$density.origin <- densities.origin*1000
+lixels$density.origin <- densities.origin*1000
+
+samples2.origin <- samples[order(samples$density.origin),]
+samples2.destination <- samples[order(samples$density.destination),]
+```
+
+I tried a simple method taught in class to visualise the density of events on the road network at Changi. Unfortunately, the huge proportion of events at what is presumedly a dropoff point makes the rest of the area very light in comparison. 
+
+However, it can be noted that a good portion of trips are ended along the road leading up to Changi. This is not visible in the origin.
+
+This shows that travellers sometimes preferred to disembark and walk the remaining distance. This likely happens if there is a sufficiently dense traffic jam at the actual dropoff point to cause traffic to completely stop for long enough for passengers to disembark.
+
+On the other hand, origins are typically constrained to the lawful pickup/dropoff area. 
+
+I suspect that trips ended along the road before the pickup/dropoff area can be an indicator of bad traffic jams, because the riders would otherwise have no reason to disembark early.
+
+```{r}
+par(1,2)
+tm_shape(lixels) + 
+  tm_lines(col="density.origin")
+
+tm_shape(lixels) + 
+  tm_lines(col="density.destination")
+```
+In this alternative visualisation of NKDE at Changi, where the density steps are increasingly large, we can begin to see the other hotspots in the vicinity. When looking the magnitude of the lighter colors in the legend, we can see that these areas are nowhere near as dense as the pickup/dropoff area.
+```{r}
+colorRamp <- brewer.pal(n = 7, name = "Spectral")
+colorRamp <- rev(colorRamp)
+
+par(1,2)
+
+tm_shape(osm_changi) + 
+  tm_lines("black") + 
+  tm_shape(samples2.origin) + 
+  tm_dots("density.origin", style = "kmeans", palette = colorRamp, n = 7, size = 0.1) + 
+  tm_layout(legend.outside = TRUE, 
+            main.title = 'TITLE TITLE HERE HERE' , main.title.size = 1)
+
+tm_shape(osm_changi) + 
+  tm_lines("black") + 
+  tm_shape(samples2.destination) + 
+  tm_dots("density.destination", style = "kmeans", palette = colorRamp, n = 7, size = 0.1) + 
+  tm_layout(legend.outside = TRUE, 
+            main.title = 'TITLE TITLE HERE HERE' , main.title.size = 1)
+```
+
+### 5.2 Woodlands and Woodlands Checkpoint
+
+Based on the KDE calculation, we noticed that the area near the Woodlands checkpoint the general Woodlands area was a hotspot for both trip starts and ends. 
+
+From my anecdotal experience, I suspected that Grab rides from the checkpoint may not start very near to it.
+
+I found it difficult to get Grab rides directly outside the checkpoint during peak hours. Usually, commuters will take public buses to nearby areas before booking their rides home. 
+
+However, I would like the number and maps to paint a clearer picture of where commuters start and end their grab rides.
+
+#### NKDE Data Preparation
+
+In the map below, the checkpoint is clearly denoted by the cluster of parallel roads in the top left.
+
+```{r}
+mpsz_woodlands = mpsz %>% filter(PLN_AREA_N=="WOODLANDS")
+mpsz_woodlands <- st_intersection(mpsz_woodlands, merged_sg)
+
+osm_woodlands_i <- st_intersection(osm_sg, mpsz_woodlands)
+osm_woodlands_idxs <- as.numeric(osm_woodlands_i$osm_id)
+osm_woodlands <- osm_sg[osm_sg$osm_id %in% osm_woodlands_idxs, ]
+
+plot(osm_woodlands)
+```
+As in the previous example at Changi, we snap the points to the network and constrain the study area.
+```{r}
+destination_df.woodlands = st_intersection(destination_df, mpsz_woodlands)
+origin_df.woodlands = st_intersection(origin_df, mpsz_woodlands)
+
+origin_df.woodlands.snapped = snapPointsToLines2(origin_df.woodlands, osm_woodlands)
+destination_df.woodlands.snapped = snapPointsToLines2(destination_df.woodlands, osm_woodlands)
+
+```
+
+As expected, few rides occur in the direct vicinity of the checkpoint.
+```{r}
+par(1,2)
+tm_shape(osm_woodlands) + 
+  tm_lines() +
+tm_shape(destination_df.woodlands.snapped) +
+  tm_dots(col = "red")
+```
+
+#### NKDE Calculation
+
+Since I want a sharper curve to more clearly identify hotspots on the network, I use a quartic kernel. When trying an adaptive bandwidth, only one hotspot was clearly identified. As such, I have set a static bandwidth. 
+
+```{r}
+lixels <- lixelize_lines(osm_woodlands, 200, mindist = 100)
+samples <- lines_center(lixels)
 ```
 
 ```{r}
-samples$density <- samples$density*1000
-lixels$density <- lixels$density*1000
+densities.destination <- nkde(osm_woodlands,
+                  events=destination_df.woodlands.snapped,
+                  w=rep(1, nrow(destination_df.woodlands.snapped)),
+                  samples=samples,
+                  kernel_name="quartic",
+                  bw=500,
+                  div="bw",
+                  method="simple",
+                  digits=1,
+                  tol=1,
+                  grid_shape=c(1,1),
+                  max_depth = 8,
+                  agg=5,
+                  sparse=TRUE,
+                  verbose = FALSE,
+                  study_area = mpsz_woodlands)
+
+densities.origin <- nkde(osm_woodlands,
+                  events=origin_df.woodlands.snapped,
+                  w=rep(1, nrow(origin_df.woodlands.snapped)),
+                  samples=samples,
+                  kernel_name="quartic",
+                  bw=500,
+                  div="bw",
+                  method="simple",
+                  digits=1,
+                  tol=1,
+                  grid_shape=c(1,1),
+                  max_depth = 8,
+                  agg=5,
+                  sparse=TRUE,
+                  verbose = FALSE,
+                  study_area = mpsz_woodlands)
+```
+
+```{r}
+samples$density.destination <- densities.destination*1000
+lixels$density.destination <- densities.destination*1000
+
+samples$density.origin <- densities.origin*1000
+lixels$density.origin <- densities.origin*1000
+
+samples2.origin <- samples[order(samples$density.origin),]
+samples2.destination <- samples[order(samples$density.destination),]
+```
+
+From this NKDE map, we can already tell that more people use Grab to leave Woodlands than to come in. This applies to the residential areas as well, sufficiently far from the checkpoint. 
+
+```{r}
+par(1,2)
+tm_shape(lixels) + 
+  tm_lines(col="density.origin")
+
+tm_shape(lixels) + 
+  tm_lines(col="density.destination")
+```
+In this alternative map, I can tell that my suspicion was wrong. While origins are more distributed than destinations in woodlands, a clear hotspot for origins can be identified right outside the checkpoint. This could mean that grab drivers and passengers are willing to brave the traffic jam for a grab ride. 
+
+I was also surprised that there were no clear signs that passengers alighted prematurely from their rides to the checkpoint, as was the case at Changi airport. 
+```{r}
+colorRamp <- brewer.pal(n = 7, name = "Spectral")
+colorRamp <- rev(colorRamp)
+
+par(1,2)
+
+tm_shape(osm_woodlands) + 
+  tm_lines("black") + 
+  tm_shape(samples2.origin) + 
+  tm_dots("density.origin", style = "kmeans", palette = colorRamp, n = 7, size = 0.1) + 
+  tm_layout(legend.outside = TRUE, 
+            main.title = 'TITLE TITLE HERE HERE' , main.title.size = 1)
+
+tm_shape(osm_woodlands) + 
+  tm_lines("black") + 
+  tm_shape(samples2.destination) + 
+  tm_dots("density.destination", style = "kmeans", palette = colorRamp, n = 7, size = 0.1) + 
+  tm_layout(legend.outside = TRUE, 
+            main.title = 'TITLE TITLE HERE HERE' , main.title.size = 1)
+```
+
+### 5.3 Downtown
+
+The downtown area is intuitively a slow, congested area during rush hours. In the KDE maps, the downtown area was consistently bright, indicating that many Grab rides started and ended there. In this segment I wanted to see if there were particular areas within the downtown core area that many commuters head to. 
+
+#### NKDE Data Preparation
+```{r}
+mpsz_town = mpsz %>% filter(PLN_AREA_N=="DOWNTOWN CORE")
+mpsz_town <- st_intersection(mpsz_town, merged_sg)
+
+osm_town_i <- st_intersection(osm_sg, mpsz_town)
+osm_town_idxs <- as.numeric(osm_town_i$osm_id)
+osm_town <- osm_sg[osm_sg$osm_id %in% osm_town_idxs, ]
+```
+
+```{r}
+destination_df.town = st_intersection(destination_df, mpsz_town)
+origin_df.town = st_intersection(origin_df, mpsz_town)
+
+origin_df.town.snapped = snapPointsToLines2(origin_df.town, osm_town)
+destination_df.town.snapped = snapPointsToLines2(destination_df.town, osm_town)
+```
+
+```{r}
+tm_shape(osm_town) + 
+  tm_lines() +
+tm_shape(destination_df.town.snapped) +
+  tm_dots(col = "red")
+```
+
+#### NKDE Calculation
+```{r}
+lixels <- lixelize_lines(osm_town, 200, mindist = 100)
+samples <- lines_center(lixels)
+```
+
+```{r}
+densities.destination <- nkde(osm_town,
+                  events=destination_df.town.snapped,
+                  w=rep(1, nrow(destination_df.town.snapped)),
+                  samples=samples,
+                  kernel_name="quartic",
+                  bw=500,
+                  div="bw",
+                  method="simple",
+                  digits=1,
+                  tol=1,
+                  grid_shape=c(1,1),
+                  max_depth = 8,
+                  agg=5,
+                  sparse=TRUE,
+                  verbose = FALSE,
+                  study_area = mpsz_town)
+
+densities.origin <- nkde(osm_town,
+                  events=origin_df.town.snapped,
+                  w=rep(1, nrow(origin_df.town.snapped)),
+                  samples=samples,
+                  kernel_name="quartic",
+                  bw=500,
+                  div="bw",
+                  method="simple",
+                  digits=1,
+                  tol=1,
+                  grid_shape=c(1,1),
+                  max_depth = 8,
+                  agg=5,
+                  sparse=TRUE,
+                  verbose = FALSE,
+                  study_area = mpsz_town)
+```
+
+```{r}
+samples$density.destination <- densities.destination*1000
+lixels$density.destination <- densities.destination*1000
+
+samples$density.origin <- densities.origin*1000
+lixels$density.origin <- densities.origin*1000
+
+samples2.origin <- samples[order(samples$density.origin),]
+samples2.destination <- samples[order(samples$density.destination),]
 ```
 
 ```{r}
 par(1,2)
 tm_shape(lixels) + 
-  tm_lines(col="density")
-# tm_shape(destination_df.changi) + 
-#  tm_dots()
+  tm_lines(col="density.origin")
+
 tm_shape(lixels) + 
-  tm_lines(col="density") +
-tm_shape(destination_df.changi) +
-  tm_dots()
+  tm_lines(col="density.destination")
 ```
+
+When observing the destinations map, it becomes clear that many intersections in the upper area, near Raffle's city, become extremely packed with people on their way there. On the southern part of the map, roads near Marina Bay Financial centre also see a lot fo traffic from private hire vehicles. 
+
+However, most interesting about these maps is that the origins in this map are primarily clustered around an area with high end office building and attractions, but nothing out of the ordinary relative to the surrounding area. 
+
+It might be possible that the area above Lau Pa Sat is used as an area to get a Grab ride after a meal, where smaller roads make it easier for cars to stop to pick up passengers. 
+```{r}
+colorRamp <- brewer.pal(n = 7, name = "Spectral")
+colorRamp <- rev(colorRamp)
+
+par(1,2)
+
+tm_shape(osm_town) + 
+  tm_lines("black") + 
+  tm_shape(samples2.origin) + 
+  tm_dots("density.origin", style = "kmeans", palette = colorRamp, n = 7, size = 0.1) + 
+  tm_layout(legend.outside = TRUE, 
+            main.title = 'TITLE TITLE HERE HERE' , main.title.size = 1)
+
+tm_shape(osm_town) + 
+  tm_lines("black") + 
+  tm_shape(samples2.destination) + 
+  tm_dots("density.destination", style = "kmeans", palette = colorRamp, n = 7, size = 0.1) + 
+  tm_layout(legend.outside = TRUE, 
+            main.title = 'TITLE TITLE HERE HERE' , main.title.size = 1)
+```
+
+### 5.4 NKDE General Insights
+The NKDE is very useful to visualise the impact of events on a network. In the case of traffic, more events likely correlates with more traffic, giving us insights on potentially impacted roads during peak hours. However, NKDE maps are limited by their ambiguous time frame. I would like to visualise smaller subsets of events corresponding to daily patterns, including meal times, commuting times, and perhaps post-nightlife rides back home. 
+
+That's what I hope to learn from the TNKDE!
+
+## 6.0 TNKDE
+
+### 6.1 Changi Airport
+```{r}
+destination_df.changi.snapped$end_hr <- as.numeric(destination_df.changi.snapped$end_hr)
+origin_df.changi.snapped$start_hr <- as.numeric(origin_df.changi.snapped$start_hr)
+```
+
+```{r}
+lixels <- lixelize_lines(osm_changi, 200, mindist = 100)
+sample_points <- lines_center(lixels)
+
+sample_time.destination <- seq(min(destination_df.changi.snapped$end_hr), max(destination_df.changi.snapped$end_hr), 1)
+sample_time.origin <- seq(min(origin_df.changi.snapped$start_hr), max(origin_df.changi.snapped$start_hr), 1)
+
+tnkde_densities.destination <- tnkde(lines = osm_changi,
+                   events = destination_df.changi.snapped,
+                   time_field = "end_hr",
+                   w = rep(1, nrow(destination_df.changi.snapped)), 
+                   samples_loc = sample_points,
+                   samples_time = sample_time.destination, 
+                   kernel_name = "quartic",
+                   bw_net = 300, bw_time = 1,
+                   adaptive = TRUE,
+                   trim_bw_net = 900,
+                   trim_bw_time = 80,
+                   method = "discontinuous",
+                   div = "bw", max_depth = 10,
+                   digits = 2, tol = 0.01,
+                   agg = 15, grid_shape = c(1,1), 
+                   verbose  = FALSE)
+
+tnkde_densities.origin <- tnkde(lines = osm_changi,
+                   events = origin_df.changi.snapped,
+                   time_field = "start_hr",
+                   w = rep(1, nrow(origin_df.changi.snapped)), 
+                   samples_loc = sample_points,
+                   samples_time = sample_time.origin, 
+                   kernel_name = "quartic",
+                   bw_net = 300, bw_time = 1,
+                   adaptive = TRUE,
+                   trim_bw_net = 900,
+                   trim_bw_time = 80,
+                   method = "discontinuous",
+                   div = "bw", max_depth = 10,
+                   digits = 2, tol = 0.01,
+                   agg = 15, grid_shape = c(1,1), 
+                   verbose  = FALSE)
+
+```
+
+```{r}
+all_densities.destination <- c(tnkde_densities.destination$k)
+color_breaks <- classIntervals(all_densities.destination, n = 10, style = "kmeans")
+
+all_maps.destination <- lapply(1:ncol(tnkde_densities.destination$k), function(i){
+  time <- sample_time.destination[[i]]
+  
+  sample_points$density <- tnkde_densities.destination$k[,i]
+  map1 <- tm_shape(sample_points) + 
+  tm_dots(col = "density", size = 0.01,
+          breaks = color_breaks$brks, palette = viridis(10)) + 
+    tm_layout(legend.show=FALSE, main.title = paste("TNKDE CHANGI @", time, ":00"), main.title.size = 0.5)
+  return(map1)
+})
+
+tmap_animation(all_maps.destination, filename = "images/tnkde_destination_changi.gif", 
+               width = 1000, height = 1000, dpi = 300, delay = 50)
+
+all_densities.origin <- c(tnkde_densities.origin$k)
+color_breaks.origin <- classIntervals(all_densities.origin, n = 10, style = "kmeans")
+
+all_maps.origin<- lapply(1:ncol(tnkde_densities.origin$k), function(i){
+  time <- sample_time.origin[[i]]
+  
+  sample_points$density <- tnkde_densities.destination$k[,i]
+  map1 <- tm_shape(sample_points) + 
+  tm_dots(col = "density", size = 0.01,
+          breaks = color_breaks.origin$brks, palette = viridis(10)) + 
+    tm_layout(legend.show=FALSE, main.title = paste("TNKDE CHANGI @", time, ":00"), main.title.size = 0.5)
+  return(map1)
+})
+
+tmap_animation(all_maps.destination, filename = "images/tnkde_origin_changi.gif", 
+               width = 1000, height = 1000, dpi = 300, delay = 50)
+```
+
+### 6.2 Woodlands
+```{r}
+destination_df.woodlands.snapped$end_hr <- as.numeric(destination_df.woodlands.snapped$end_hr)
+origin_df.woodlands.snapped$start_hr <- as.numeric(origin_df.woodlands.snapped$start_hr)
+```
+
+```{r}
+lixels <- lixelize_lines(osm_woodlands, 200, mindist = 100)
+sample_points <- lines_center(lixels)
+
+sample_time.destination <- seq(min(destination_df.woodlands.snapped$end_hr), max(destination_df.woodlands.snapped$end_hr), 1)
+sample_time.origin <- seq(min(origin_df.woodlands.snapped$start_hr), max(origin_df.woodlands.snapped$start_hr), 1)
+
+tnkde_densities.destination <- tnkde(lines = osm_woodlands,
+                   events = destination_df.woodlands.snapped,
+                   time_field = "end_hr",
+                   w = rep(1, nrow(destination_df.woodlands.snapped)), 
+                   samples_loc = sample_points,
+                   samples_time = sample_time.destination, 
+                   kernel_name = "quartic",
+                   bw_net = 300, bw_time = 1,
+                   adaptive = TRUE,
+                   trim_bw_net = 900,
+                   trim_bw_time = 80,
+                   method = "discontinuous",
+                   div = "bw", max_depth = 10,
+                   digits = 2, tol = 0.01,
+                   agg = 15, grid_shape = c(1,1), 
+                   verbose  = FALSE)
+
+tnkde_densities.origin <- tnkde(lines = osm_woodlands,
+                   events = origin_df.woodlands.snapped,
+                   time_field = "start_hr",
+                   w = rep(1, nrow(origin_df.woodlands.snapped)), 
+                   samples_loc = sample_points,
+                   samples_time = sample_time.origin, 
+                   kernel_name = "quartic",
+                   bw_net = 300, bw_time = 1,
+                   adaptive = TRUE,
+                   trim_bw_net = 900,
+                   trim_bw_time = 80,
+                   method = "discontinuous",
+                   div = "bw", max_depth = 10,
+                   digits = 2, tol = 0.01,
+                   agg = 15, grid_shape = c(1,1), 
+                   verbose  = FALSE)
+
+```
+
+```{r}
+all_densities.destination <- c(tnkde_densities.destination$k)
+color_breaks <- classIntervals(all_densities.destination, n = 10, style = "kmeans")
+
+all_maps.destination <- lapply(1:ncol(tnkde_densities.destination$k), function(i){
+  time <- sample_time.destination[[i]]
+  
+  sample_points$density <- tnkde_densities.destination$k[,i]
+  map1 <- tm_shape(sample_points) + 
+  tm_dots(col = "density", size = 0.01,
+          breaks = color_breaks$brks, palette = viridis(10)) + 
+    tm_layout(legend.show=FALSE, main.title = paste("TNKDE WOODLANDS @", time, ":00"), main.title.size = 0.5)
+  return(map1)
+})
+
+tmap_animation(all_maps.destination, filename = "images/tnkde_destination_woodlands.gif", 
+               width = 1000, height = 1000, dpi = 300, delay = 50)
+
+all_densities.origin <- c(tnkde_densities.origin$k)
+color_breaks.origin <- classIntervals(all_densities.origin, n = 10, style = "kmeans")
+
+all_maps.origin<- lapply(1:ncol(tnkde_densities.origin$k), function(i){
+  time <- sample_time.origin[[i]]
+  
+  sample_points$density <- tnkde_densities.destination$k[,i]
+  map1 <- tm_shape(sample_points) + 
+  tm_dots(col = "density", size = 0.01,
+          breaks = color_breaks.origin$brks, palette = viridis(10)) + 
+    tm_layout(legend.show=FALSE, main.title = paste("TNKDE WOODLANDS @", time, ":00"), main.title.size = 0.5)
+  return(map1)
+})
+
+tmap_animation(all_maps.destination, filename = "images/tnkde_origin_woodlands.gif", 
+               width = 1000, height = 1000, dpi = 300, delay = 50)
+```
+
+### 6.3 Downtown Core
+```{r}
+destination_df.town.snapped$end_hr <- as.numeric(destination_df.town.snapped$end_hr)
+origin_df.town.snapped$start_hr <- as.numeric(origin_df.town.snapped$start_hr)
+```
+
+```{r}
+lixels <- lixelize_lines(osm_town, 200, mindist = 100)
+sample_points <- lines_center(lixels)
+
+sample_time.destination <- seq(min(destination_df.town.snapped$end_hr), max(destination_df.town.snapped$end_hr), 1)
+sample_time.origin <- seq(min(origin_df.town.snapped$start_hr), max(origin_df.town.snapped$start_hr), 1)
+
+tnkde_densities.destination <- tnkde(lines = osm_town,
+                   events = destination_df.town.snapped,
+                   time_field = "end_hr",
+                   w = rep(1, nrow(destination_df.town.snapped)), 
+                   samples_loc = sample_points,
+                   samples_time = sample_time.destination, 
+                   kernel_name = "quartic",
+                   bw_net = 300, bw_time = 1,
+                   adaptive = TRUE,
+                   trim_bw_net = 900,
+                   trim_bw_time = 80,
+                   method = "discontinuous",
+                   div = "bw", max_depth = 10,
+                   digits = 2, tol = 0.01,
+                   agg = 15, grid_shape = c(1,1), 
+                   verbose  = FALSE)
+
+tnkde_densities.origin <- tnkde(lines = osm_town,
+                   events = origin_df.town.snapped,
+                   time_field = "start_hr",
+                   w = rep(1, nrow(origin_df.town.snapped)), 
+                   samples_loc = sample_points,
+                   samples_time = sample_time.origin, 
+                   kernel_name = "quartic",
+                   bw_net = 300, bw_time = 1,
+                   adaptive = TRUE,
+                   trim_bw_net = 900,
+                   trim_bw_time = 80,
+                   method = "discontinuous",
+                   div = "bw", max_depth = 10,
+                   digits = 2, tol = 0.01,
+                   agg = 15, grid_shape = c(1,1), 
+                   verbose  = FALSE)
+
+```
+
+```{r}
+all_densities.destination <- c(tnkde_densities.destination$k)
+color_breaks <- classIntervals(all_densities.destination, n = 10, style = "kmeans")
+
+all_maps.destination <- lapply(1:ncol(tnkde_densities.destination$k), function(i){
+  time <- sample_time.destination[[i]]
+  
+  sample_points$density <- tnkde_densities.destination$k[,i]
+  map1 <- tm_shape(sample_points) + 
+  tm_dots(col = "density", size = 0.01,
+          breaks = color_breaks$brks, palette = viridis(10)) + 
+    tm_layout(legend.show=FALSE, main.title = paste("TNKDE DOWNTOWN CORE @", time, ":00"), main.title.size = 0.5)
+  return(map1)
+})
+
+tmap_animation(all_maps.destination, filename = "images/tnkde_destination_town.gif", 
+               width = 1000, height = 1000, dpi = 300, delay = 50)
+
+all_densities.origin <- c(tnkde_densities.origin$k)
+color_breaks.origin <- classIntervals(all_densities.origin, n = 10, style = "kmeans")
+
+all_maps.origin<- lapply(1:ncol(tnkde_densities.origin$k), function(i){
+  time <- sample_time.origin[[i]]
+  
+  sample_points$density <- tnkde_densities.destination$k[,i]
+  map1 <- tm_shape(sample_points) + 
+  tm_dots(col = "density", size = 0.01,
+          breaks = color_breaks.origin$brks, palette = viridis(10)) + 
+    tm_layout(legend.show=FALSE, main.title = paste("TNKDE DOWNTOWN CORE @", time, ":00"), main.title.size = 0.5)
+  return(map1)
+})
+
+tmap_animation(all_maps.destination, filename = "images/tnkde_origin_town.gif", 
+               width = 1000, height = 1000, dpi = 300, delay = 50)
+```
+
