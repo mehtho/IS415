@@ -73,7 +73,7 @@ Aside from the tools used in class, I also included some additional tools I foun
 
 -   smoothr: The MPSZ2019 polygons have small holes, so I use this library to fix them before they cause issues
 
--   RColorBrewer: Used to create alternative NKDE and TNKDE visualisation which I found to work better than those that only change the color of the lines of the network 
+-   RColorBrewer: Used to create alternative NKDE and TNKDE visualisation which I found to work better than those that only change the color of the lines of the network
 
 -   gifski: To animate our TNKDE results
 
@@ -326,8 +326,9 @@ After this process, we are left with a clean outline of Singapore!
 
 #### Outer Island Removal and Hole Fixing
 
-::: {.panel-tabset}
+::: panel-tabset
 ## Original
+
 ```{r}
 merged_sg <- st_union(mpsz) %>%
     st_cast("POLYGON")
@@ -339,7 +340,9 @@ par(mfrow=c(1,2))
 
 plot(st_geometry(mpsz))
 ```
+
 ## Merged
+
 ```{r}
 plot(st_geometry(merged_sg))
 ```
@@ -437,8 +440,9 @@ plot(destination_ppp)
 
 After all the wrangling, we can finally see our Kernel Density Estimates for origin and destinations! I first tried the quartic kernel with an automatically decided bandwidth, but realised that apart from Changi Airport, the rest of Singapore seemed dark.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## Origins
+
 ```{r}
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 
@@ -450,6 +454,7 @@ plot(origin.bw)
 ```
 
 ## Destinations
+
 ```{r}
 
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
@@ -464,8 +469,9 @@ plot(destination.bw)
 
 I then tried the more gently sloping Gaussian kernel, to little effect.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## Origins
+
 ```{r}
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 
@@ -475,7 +481,9 @@ origin.bw <- density(origin_ppp.km,
                             kernel="gaussian") 
 plot(origin.bw)
 ```
+
 ## Destinations
+
 ```{r}
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
 
@@ -499,8 +507,9 @@ bw
 
 I then tried the PPL algorithm's bandwidth, which did not have a significant effect either.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## Origins
+
 ```{r}
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
 
@@ -510,7 +519,9 @@ origin.bw <- density(origin_ppp.km,
                             kernel="gaussian") 
 plot(origin.bw)
 ```
+
 ## Destinations
+
 ```{r}
 
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
@@ -525,8 +536,9 @@ plot(destination.bw)
 
 I then tried to manually set a higher bandwidth in hopes of illuminating the map more.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## Origins
+
 ```{r}
 sigm <- 0.5
 origin_ppp.km <- rescale(origin_ppp, 1000, "km")
@@ -539,6 +551,7 @@ plot(origin.bw)
 ```
 
 ## Destinations
+
 ```{r}
 
 destination_ppp.km <- rescale(destination_ppp, 1000, "km")
@@ -550,6 +563,7 @@ destination.bw <- density(destination_ppp.km,
 plot(destination.bw)
 ```
 :::
+
 #### KDE Insights
 
 From these KDE maps, I observed
@@ -561,6 +575,7 @@ From these KDE maps, I observed
 -   In both the origin and destination KDEs, there is a hotspot in the north, slightly to the west. That could correspond to the Woodlands checkpoint
 
 ## 5.0 NKDE
+
 ### Study Areas
 
 In the MPSZ dataset, some areas are conveniently segmented by PLN_AREA, making it easy to extract areas of interest. From the KDE results above, we ca choose several of the interesting zones below for NKDE.
@@ -572,12 +587,14 @@ In the MPSZ dataset, some areas are conveniently segmented by PLN_AREA, making i
 ```{r}
 sort(unique(mpsz$PLN_AREA_N))
 ```
+
 ### 5.1 Changi Airport
+
 #### NKDE Data Preparation
 
 First, we restrict the area of our NKDE to CHANGI. We can also remove the possibility of small rocks or outer islands on the map by taking the intersection with merged_sg (Our outline).
 
-Next, we take only the roads that come into contact with Changi. I did not use st_intersection alone because it cut off some roads into points, and other undesirable geometry. This means that our subset of roads may protrude out of Changi, but that can be solved with the NKDE functions's study_area parameter and edge correction. 
+Next, we take only the roads that come into contact with Changi. I did not use st_intersection alone because it cut off some roads into points, and other undesirable geometry. This means that our subset of roads may protrude out of Changi, but that can be solved with the NKDE functions's study_area parameter and edge correction.
 
 ```{r}
 mpsz_changi = mpsz %>% filter(PLN_AREA_N=="CHANGI")
@@ -589,17 +606,21 @@ osm_changi <- osm_sg[osm_sg$osm_id %in% osm_changi_idxs, ]
 
 plot(osm_changi)
 ```
+
 We also need to take only the events that happened within Changi. We do this with st_intersection. This is much easier since the events are points.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## Destinations w/o Snap
+
 ```{r}
 destination_df.changi = st_intersection(destination_df, mpsz_changi)
 origin_df.changi = st_intersection(origin_df, mpsz_changi)
 
 plot(destination_df.changi)
 ```
+
 ## Origins w/o Snap
+
 ```{r}
 plot(origin_df.changi)
 ```
@@ -607,19 +628,22 @@ plot(origin_df.changi)
 As part of NKDE, the events need to have happened on the network. As such, we use snapPointsToLines2 to ensure that the points are on the network. Points off the network may have occurred due to slight GPS drift.
 
 ## Destinations w/ Snap
+
 ```{r}
 origin_df.changi.snapped = snapPointsToLines2(origin_df.changi, osm_changi)
 destination_df.changi.snapped = snapPointsToLines2(destination_df.changi, osm_changi)
 
 plot(destination_df.changi.snapped)
 ```
+
 ## Origins w/ Snap
+
 ```{r}
 plot(origin_df.changi.snapped)
 ```
 :::
 
-With our points on the network and study area constrained, we can visualise the events at Changi, especially the airport. 
+With our points on the network and study area constrained, we can visualise the events at Changi, especially the airport.
 
 ```{r}
 tm_shape(osm_changi) + 
@@ -629,6 +653,7 @@ tm_shape(destination_df.changi.snapped) +
 ```
 
 #### NKDE Calculation
+
 ```{r}
 lixels <- lixelize_lines(osm_changi, 200, mindist = 100)
 samples <- lines_center(lixels)
@@ -681,33 +706,37 @@ samples2.origin <- samples[order(samples$density.origin),]
 samples2.destination <- samples[order(samples$density.destination),]
 ```
 
-I tried a simple method taught in class to visualise the density of events on the road network at Changi. Unfortunately, the huge proportion of events at what is presumedly a dropoff point makes the rest of the area very light in comparison. 
+I tried a simple method taught in class to visualise the density of events on the road network at Changi. Unfortunately, the huge proportion of events at what is presumedly a dropoff point makes the rest of the area very light in comparison.
 
 However, it can be noted that a good portion of trips are ended along the road leading up to Changi. This is not visible in the origin.
 
 This shows that travellers sometimes preferred to disembark and walk the remaining distance. This likely happens if there is a sufficiently dense traffic jam at the actual dropoff point to cause traffic to completely stop for long enough for passengers to disembark.
 
-On the other hand, origins are typically constrained to the lawful pickup/dropoff area. 
+On the other hand, origins are typically constrained to the lawful pickup/dropoff area.
 
 I suspect that trips ended along the road before the pickup/dropoff area can be an indicator of bad traffic jams, because the riders would otherwise have no reason to disembark early.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## Origins
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.origin")
 ```
 
 ## Destinations
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.destination")
 ```
 :::
+
 In this alternative visualisation of NKDE at Changi, where the density steps are increasingly large, we can begin to see the other hotspots in the vicinity. When looking the magnitude of the lighter colors in the legend, we can see that these areas are nowhere near as dense as the pickup/dropoff area.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## NKDE Origins Changi
+
 ```{r}
 colorRamp <- brewer.pal(n = 7, name = "Spectral")
 colorRamp <- rev(colorRamp)
@@ -721,6 +750,7 @@ tm_shape(osm_changi) +
 ```
 
 ## NKDE Destinations Changi
+
 ```{r}
 
 tm_shape(osm_changi) + 
@@ -734,11 +764,11 @@ tm_shape(osm_changi) +
 
 ### 5.2 Woodlands and Woodlands Checkpoint
 
-Based on the KDE calculation, we noticed that the area near the Woodlands checkpoint the general Woodlands area was a hotspot for both trip starts and ends. 
+Based on the KDE calculation, we noticed that the area near the Woodlands checkpoint the general Woodlands area was a hotspot for both trip starts and ends.
 
 From my anecdotal experience, I suspected that Grab rides from the checkpoint may not start very near to it.
 
-I found it difficult to get Grab rides directly outside the checkpoint during peak hours. Usually, commuters will take public buses to nearby areas before booking their rides home. 
+I found it difficult to get Grab rides directly outside the checkpoint during peak hours. Usually, commuters will take public buses to nearby areas before booking their rides home.
 
 However, I would like the number and maps to paint a clearer picture of where commuters start and end their grab rides.
 
@@ -756,7 +786,9 @@ osm_woodlands <- osm_sg[osm_sg$osm_id %in% osm_woodlands_idxs, ]
 
 plot(osm_woodlands)
 ```
+
 As in the previous example at Changi, we snap the points to the network and constrain the study area.
+
 ```{r}
 destination_df.woodlands = st_intersection(destination_df, mpsz_woodlands)
 origin_df.woodlands = st_intersection(origin_df, mpsz_woodlands)
@@ -767,6 +799,7 @@ destination_df.woodlands.snapped = snapPointsToLines2(destination_df.woodlands, 
 ```
 
 As expected, few rides occur in the direct vicinity of the checkpoint.
+
 ```{r}
 tm_shape(osm_woodlands) + 
   tm_lines() +
@@ -776,7 +809,7 @@ tm_shape(destination_df.woodlands.snapped) +
 
 #### NKDE Calculation
 
-Since I want a sharper curve to more clearly identify hotspots on the network, I use a quartic kernel. When trying an adaptive bandwidth, only one hotspot was clearly identified. As such, I have set a static bandwidth. 
+Since I want a sharper curve to more clearly identify hotspots on the network, I use a quartic kernel. When trying an adaptive bandwidth, only one hotspot was clearly identified. As such, I have set a static bandwidth.
 
 ```{r}
 lixels <- lixelize_lines(osm_woodlands, 200, mindist = 100)
@@ -830,28 +863,31 @@ samples2.origin <- samples[order(samples$density.origin),]
 samples2.destination <- samples[order(samples$density.destination),]
 ```
 
-From this NKDE map, we can already tell that more people use Grab to leave Woodlands than to come in. This applies to the residential areas as well, sufficiently far from the checkpoint. 
+From this NKDE map, we can already tell that more people use Grab to leave Woodlands than to come in. This applies to the residential areas as well, sufficiently far from the checkpoint.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## NKDE Origins Woodlands
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.origin")
 ```
 
 ## NKDE Destinations Woodlands
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.destination")
 ```
 :::
 
-In this alternative map, I can tell that my suspicion was wrong. While origins are more distributed than destinations in woodlands, a clear hotspot for origins can be identified right outside the checkpoint. This could mean that grab drivers and passengers are willing to brave the traffic jam for a grab ride. 
+In this alternative map, I can tell that my suspicion was wrong. While origins are more distributed than destinations in woodlands, a clear hotspot for origins can be identified right outside the checkpoint. This could mean that grab drivers and passengers are willing to brave the traffic jam for a grab ride.
 
-I was also surprised that there were no clear signs that passengers alighted prematurely from their rides to the checkpoint, as was the case at Changi airport. 
+I was also surprised that there were no clear signs that passengers alighted prematurely from their rides to the checkpoint, as was the case at Changi airport.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## NKDE Origins Woodlands
+
 ```{r}
 colorRamp <- brewer.pal(n = 7, name = "Spectral")
 colorRamp <- rev(colorRamp)
@@ -865,6 +901,7 @@ tm_shape(osm_woodlands) +
 ```
 
 ## NKDE Destinations Woodlands
+
 ```{r}
 tm_shape(osm_woodlands) + 
   tm_lines("black") + 
@@ -877,9 +914,10 @@ tm_shape(osm_woodlands) +
 
 ### 5.3 Downtown
 
-The downtown area is intuitively a slow, congested area during rush hours. In the KDE maps, the downtown area was consistently bright, indicating that many Grab rides started and ended there. In this segment I wanted to see if there were particular areas within the downtown core area that many commuters head to. 
+The downtown area is intuitively a slow, congested area during rush hours. In the KDE maps, the downtown area was consistently bright, indicating that many Grab rides started and ended there. In this segment I wanted to see if there were particular areas within the downtown core area that many commuters head to.
 
 #### NKDE Data Preparation
+
 ```{r}
 mpsz_town = mpsz %>% filter(PLN_AREA_N=="DOWNTOWN CORE")
 mpsz_town <- st_intersection(mpsz_town, merged_sg)
@@ -905,6 +943,7 @@ tm_shape(destination_df.town.snapped) +
 ```
 
 #### NKDE Calculation
+
 ```{r}
 lixels <- lixelize_lines(osm_town, 200, mindist = 100)
 samples <- lines_center(lixels)
@@ -957,28 +996,31 @@ samples2.origin <- samples[order(samples$density.origin),]
 samples2.destination <- samples[order(samples$density.destination),]
 ```
 
-::: {.panel-tabset}
+::: panel-tabset
 ## NKDE Origins Town
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.origin")
 ```
 
 ## NKDE Destinations Town
+
 ```{r}
 tm_shape(lixels) + 
   tm_lines(col="density.destination")
 ```
 :::
 
-When observing the destinations map, it becomes clear that many intersections in the upper area, near Raffle's city, become extremely packed with people on their way there. On the southern part of the map, roads near Marina Bay Financial centre also see a lot fo traffic from private hire vehicles. 
+When observing the destinations map, it becomes clear that many intersections in the upper area, near Raffle's city, become extremely packed with people on their way there. On the southern part of the map, roads near Marina Bay Financial centre also see a lot fo traffic from private hire vehicles.
 
-However, most interesting about these maps is that the origins in this map are primarily clustered around an area with high end office building and attractions, but nothing out of the ordinary relative to the surrounding area. 
+However, most interesting about these maps is that the origins in this map are primarily clustered around an area with high end office building and attractions, but nothing out of the ordinary relative to the surrounding area.
 
-It might be possible that the area above Lau Pa Sat is used as an area to get a Grab ride after a meal, where smaller roads make it easier for cars to stop to pick up passengers. 
+It might be possible that the area above Lau Pa Sat is used as an area to get a Grab ride after a meal, where smaller roads make it easier for cars to stop to pick up passengers.
 
-::: {.panel-tabset}
+::: panel-tabset
 ## NKDE Origins Town
+
 ```{r}
 colorRamp <- brewer.pal(n = 7, name = "Spectral")
 colorRamp <- rev(colorRamp)
@@ -1006,24 +1048,24 @@ tm_shape(osm_town) +
 :::
 
 ### 5.4 NKDE General Insights
-The NKDE is very useful to visualise the impact of events on a network. In the case of traffic, more events likely correlates with more traffic, giving us insights on potentially impacted roads during peak hours. However, NKDE maps are limited by their ambiguous time frame. I would like to visualise smaller subsets of events corresponding to daily patterns, including meal times, commuting times, and perhaps post-nightlife rides back home. 
+
+The NKDE is very useful to visualise the impact of events on a network. In the case of traffic, more events likely correlates with more traffic, giving us insights on potentially impacted roads during peak hours. However, NKDE maps are limited by their ambiguous time frame. I would like to visualise smaller subsets of events corresponding to daily patterns, including meal times, commuting times, and perhaps post-nightlife rides back home.
 
 That's what I hope to learn from the TNKDE!
 
 ## 6.0 TNKDE
 
-To extend the NKDE, we can use the TNKDE to visualise patterns in the network over time. In this section, I will be creating visualisation split over the 24 hours of the day to visualise daily patterns. This should show more variations than a split by the days of the week, where patterns may only correspond to the weekday/weekend differences. 
+To extend the NKDE, we can use the TNKDE to visualise patterns in the network over time. In this section, I will be creating visualisation split over the 24 hours of the day to visualise daily patterns. This should show more variations than a split by the days of the week, where patterns may only correspond to the weekday/weekend differences.
 
-I have kept the bandwidth the same for consistency. 
+I have kept the bandwidth the same for consistency.
 
 ### 6.1 Changi Airport
 
-From the NKDE in Changi, we were able to see that the airport road had enough legally questionable dropoffs along the road to the airport during periods of congestion. It is possible that not every jam in Changi airport will cause this phenomenon. 
+From the NKDE in Changi, we were able to see that the airport road had enough legally questionable dropoffs along the road to the airport during periods of congestion. It is possible that not every jam in Changi airport will cause this phenomenon.
 
 From the TNKDE, we can see that drivers need to be careful around the clock, but less so in the evenings, since there will be travelers alighting where they may not be allowed to.
 
 However, this could also be an illusion caused by grab drivers pressing the button to end their trip slightly earlier to prepare to help travelers get their bags out the car.
-
 
 ```{r}
 destination_df.changi.snapped$end_hr <- as.numeric(destination_df.changi.snapped$end_hr)
@@ -1109,12 +1151,12 @@ all_maps.origin<- lapply(1:ncol(tnkde_densities.origin$k), function(i){
 tmap_animation(all_maps.origin, filename = "images/tnkde_origin_changi.gif", 
                width = 1000, height = 1000, dpi = 300, delay = 50)
 ```
-![TNKDEOriginChangi](images/tnkde_origin_changi.gif)
-![TNKDEOriginChangi](images/tnkde_destination_changi.gif)
+
+![TNKDEOriginChangi](images/tnkde_origin_changi.gif) ![TNKDEOriginChangi](images/tnkde_destination_changi.gif)
 
 ### 6.2 Woodlands
 
-In this TNKDE, we can observe people leaving the woodlands checkpoint in the early morning and evening. We can also observe some other small hotspots in the lower centre of the map. 
+In this TNKDE, we can observe people leaving the woodlands checkpoint in the early morning and evening. We can also observe some other small hotspots in the lower centre of the map.
 
 While this could be where a bus from the checkpoint may stop, it is difficult to say for sure. However, this map shows that there are many private hire vehicles in the lower middle of this study area throughout the day, perhaps indicating a congestion issue as a result of suboptimally designed roads.
 
@@ -1202,14 +1244,15 @@ all_maps.destination<- lapply(1:ncol(tnkde_densities.destination$k), function(i)
 tmap_animation(all_maps.destination, filename = "images/tnkde_destination_woodlands.gif", 
                width = 1000, height = 1000, dpi = 300, delay = 50)
 ```
-![TNKDEOriginWoodlands](images/tnkde_origin_woodlands.gif)
-![TNKDEDestinationWoodlands](images/tnkde_destination_woodlands.gif)
+
+![TNKDEOriginWoodlands](images/tnkde_origin_woodlands.gif) ![TNKDEDestinationWoodlands](images/tnkde_destination_woodlands.gif)
 
 ### 6.3 Downtown Core
 
 From the TNKDE, we can see the southern part of the map light up after midnight! This might indicate that the area, especially around Lau Pa Sat, contributes to Grab ride origins as a place to relax in the evenings. The area also becomes busy around lunch hour, as expected.
 
 In contrast, the destinations map does not light up as much. Although the NKDE may indicate heavy congestion due to private hire vehicles, the TNKDE shows that this may not be as persistent a problem as expected.
+
 ```{r}
 destination_df.town.snapped$end_hr <- as.numeric(destination_df.town.snapped$end_hr)
 origin_df.town.snapped$start_hr <- as.numeric(origin_df.town.snapped$start_hr)
@@ -1297,17 +1340,18 @@ tmap_animation(all_maps.destination, filename = "images/tnkde_destination_town.g
                width = 1000, height = 1000, dpi = 300, delay = 50)
 ```
 
-![TNKDEOriginTown](images/tnkde_origin_town.gif)
-![TNKDEDestinationTown](images/tnkde_destination_town.gif)
+![TNKDEOriginTown](images/tnkde_origin_town.gif) ![TNKDEDestinationTown](images/tnkde_destination_town.gif)
 
 ## 7.0 Conclusions
+
 The Grab Posisi dataset has yielded many interesting insights with Spatial Point Analysis. From commuter behaviour and safety in Changi airport, investigating private hire vehicle use around the Woodlands checkpoint to visualising the daily patterns of the downtown core, spatial point analysis has proven itself to be a powerful tool.
 
-In terms of policy making, anecdotal evidence is not sufficient. Reported patterns through interviews may not truly reflect the patterns in crowded areas. Spatial Point Analysis can contribute heavily to the public good by identifying dangerous patterns, inefficiencies, and ways to facilitate life in a society that just wants to have dinner after work at Lau Pa Sat. Although the public may never know the full extent of the planning and analysis that goes on behind the scenes and drives decision making, NKDE and TNKDE maps help paint simple yet effective messages to build understanding and cohesion. 
+In terms of policy making, anecdotal evidence is not sufficient. Reported patterns through interviews may not truly reflect the patterns in crowded areas. Spatial Point Analysis can contribute heavily to the public good by identifying dangerous patterns, inefficiencies, and ways to facilitate life in a society that just wants to have dinner after work at Lau Pa Sat. Although the public may never know the full extent of the planning and analysis that goes on behind the scenes and drives decision making, NKDE and TNKDE maps help paint simple yet effective messages to build understanding and cohesion.
 
 ## 8.0 Personal Learnings
+
 This exercise has been a rigorous and challenging introduction to r programming. Dealing with many issues related to data types, formats and other complexities associated with geospatial data.
 
-Although this exercise became very time consuming and frustrating at times, I believe that the next exercises will be much faster, having gone through extensive documentation and numerous roadblocks. 
+Although this exercise became very time consuming and frustrating at times, I believe that the next exercises will be much faster, having gone through extensive documentation and numerous roadblocks.
 
 Ultimately, this has been a fun and interesting experience about finding patterns otherwise invisible to the naked eye.

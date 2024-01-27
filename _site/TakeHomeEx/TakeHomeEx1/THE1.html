@@ -329,6 +329,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li><p>stringr: The Description field in kml files is not very convenient for us. It’s an HTML table, meaning we need to parse it to get each variable into a column compatible for our use</p></li>
 <li><p>smoothr: The MPSZ2019 polygons have small holes, so I use this library to fix them before they cause issues</p></li>
+<li><p>RColorBrewer: Used to create alternative NKDE and TNKDE visualisation which I found to work better than those that only change the color of the lines of the network</p></li>
+<li><p>gifski: To animate our TNKDE results</p></li>
 </ul>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, sf, tmap, maptools, spatstat, spNetwork, classInt, viridis, smoothr, arrow, stringr, RColorBrewer, gifski)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
