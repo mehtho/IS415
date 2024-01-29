@@ -1,0 +1,296 @@
+---
+title: "In-Class Exercise 4: Spatial Weights and Applications"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-29-2024
+description: |
+  In-class exercise 4
+categories:
+  - In-class Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+## Class Notes
+
+#### Geographical distribution question
+
+Are the planning subzones with high proportion of dependency ratios randomly distributed over space?
+
+#### Spatial weights
+
+-   Used to define neighbours to determine relationships between geographical units.
+
+-   Define spatial neighbourhoods
+
+-   The difference comes from the definition of 'neighbour'
+    -   Most common: Rooks & Queen's
+    -   Bishop's case less frequently used
+
+#### Spatial weight definition criteria
+
+1.  Adjacency Criterion
+
+    1.  $W_{ij} = \begin{dcases}
+    1, & \text{if location j is adjacent to i}\\
+    0, & \text{otherwise}\end{dcases}$
+
+2.  Distance Criterion
+
+    1.  $W_{ij} = \begin{dcases}
+    1, & \text{if location j is within distance of i}\\
+    0, & \text{otherwise}\end{dcases}$
+
+3.  General spatial distance weight matrix
+
+    1.  $w_{id}=d_{ij}^{-a} \cdot \beta^b$
+    
+#### n-th order contiguity
+Consider lagged contiguity and whether to use second order contiguity, i.e second degree neighbour
+
+#### Adjacency matrix
+Same as conventional graph algorithm implementations, but do not count self as neighbour (Count as zero)
+
+#### Weights Matrix for Distance-based neighbours
+-   Set a distance threshold $d$
+-   Derive adjacency matrix, consider neighbour if $d_i \gt d$
+-   Can use centroids for distances
+    -   Can cause issues, can try inverse weights
+    
+#### Inverse weights
+-   $W_{ij} = \frac{1}{d_{ij}}$
+-   Helps odd shapes or long distances from centroids
+
+
+#### Row standardisation
+-   Binary matrix: Matrix of 0/1s
+    -   Symmetric matrix
+-   Row standardised matrix:
+    -   Divide row by no. neighbours. 
+    -   No longer symmetric
+    -   Typically used over column
+
+
+#### Application of Spatial Weights
+Given observation $i$, spatial lag of $y_i$, referred to as $[Wy]_i$
+
+$[Wy]_i=\sum_{j=1}^{n}w_{ij}y_j$
+
+$W_{ii} = 0 \forall i \forall W$ 
+
+#### Administrative Boundaries
+-   Consider that boundaries and subzones will change over the years
+-   Areas may get split or moved
+
+
+## Hands On Notes
+
+
+```{r}
+pacman::p_load(sf, spdep, tmap, tidyverse, knitr, GWmodel)
+```
+
+```{r}
+hunan <- st_read(dsn = "data/geospatial", layer="Hunan")
+```
+
+```{r}
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+```{r}
+# Auto join on County
+hunan <- left_join(hunan, hunan2012) %>% select(1:4, 7, 15)
+```
+
+tm_text is useful to display names on top of the polygons. Also adjust text size
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+
+basemap <- tm_shape(hunan) +
+  tm_polygons() +
+  tm_text("NAME_3", size=0.5)
+
+gdppc <- qtm(hunan, "GDPPC")
+tmap_arrange(basemap, gdppc, asp=1, ncol=2)
+```
+
+Get the number of links for each polygon or region
+```{r}
+wm_q <- poly2nb(hunan, queen=TRUE)
+summary(wm_q)
+```
+
+How to convert latlongs and get centroids
+```{r}
+longitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[1]])
+latitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[2]])
+coords <- cbind(longitude, latitude)
+head(coords)
+```
+
+```{r}
+wm_q[[1]]
+hunan$County[1]
+
+# show county names of 5 neighbours
+hunan$NAME_3[c(2,3,4,57,85)]
+```
+
+```{r}
+# Uses rook, fewer links
+wm_r <- poly2nb(hunan, queen=FALSE)
+summary(wm_r)
+```
+
+Notice the missing lines for Rook's
+```{r}
+par(mfrow=c(1,2))
+plot(hunan$geometry, border="lightgrey", main="Queen Contiguity")
+plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col= "red")
+plot(hunan$geometry, border="lightgrey", main="Rook Contiguity")
+plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+
+No distance limit to find distance neighbours
+Also note we are not using centroids
+
+Note the largest value to set a cutoff
+```{r}
+k1 <- knn2nb(knearneigh(coords))
+# Must indicate that we are using longlats
+k1dists <- unlist(nbdists(k1, coords, longlat = TRUE))
+summary(k1dists)
+```
+
+
+Use that cutoff for fixed distance weight matrix
+Remember to set longlat TRUE as well
+```{r}
+wm_d62 <- dnearneigh(coords, 0, 62, longlat = TRUE)
+wm_d62
+```
+
+```{r}
+str(wm_d62)
+```
+
+Adaptive neighbours: Will go as far as needed to get the number of neighbours
+```{r}
+knn6 <- knn2nb(knearneigh(coords, k=6))
+knn6
+```
+
+```{r}
+str(knn6)
+```
+
+```{r}
+plot(hunan$geometry, border="lightgrey")
+plot(knn6, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
+```
+
+Row standardised with style="W"
+```{r}
+rswm_q <- nb2listw(wm_q, style="W", zero.policy = TRUE)
+rswm_q
+```
+
+```{r}
+rswm_q$weights[10]
+```
+
+#### Applications
+
+Get the value but also apply a weight
+```{r}
+GDPPC.lag <- lag.listw(rswm_q, hunan$GDPPC)
+GDPPC.lag
+```
+
+Window methods: Includes self
+
+Spatial lag as a sum of neighboring values with weights. Does not include self
+```{r}
+b_weights <- lapply(wm_q, function(x) 0*x + 1)
+b_weights2 <- nb2listw(wm_q, 
+                       glist = b_weights, 
+                       style = "B")
+b_weights2
+```
+
+```{r}
+lag_sum <- list(hunan$NAME_3, lag.listw(b_weights2, hunan$GDPPC))
+lag.res <- as.data.frame(lag_sum)
+colnames(lag.res) <- c("NAME_3", "lag_sum GDPPC")
+lag_sum
+```
+
+## ICE
+
+GWmodel: Distance-based only 
+
+```{r}
+pacman::p_load(sf, spdep, tmap, tidyverse, knitr, GWmodel)
+```
+
+```{r}
+hunan <- st_read(dsn = "data/geospatial", layer="Hunan")
+```
+
+```{r}
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+```{r}
+# Auto join on County
+hunan <- left_join(hunan, hunan2012) %>% select(1:4, 7, 15)
+```
+
+Old package, need to convert from sf to sp
+```{r}
+hunan_sp <- hunan %>%
+  as_Spatial()
+```
+
+Set bw because adaptive is true. (Adapt to get 6 neighbours)
+Can choose a kernel just like Spatial Point Pattern Analysis
+```{r}
+gwstat <- gwss(data=hunan_sp,
+               vars = "GDPPC",
+               bw = 6,
+               kernel = "bisquare",
+               adaptive = TRUE, 
+               longlat = T)
+```
+
+Trying using GDPPC_LM / SD / Var / SKe / CV like Spatial Window Sums figure from the gwstat data structure
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
