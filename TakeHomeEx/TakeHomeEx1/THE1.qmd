@@ -564,7 +564,28 @@ plot(destination.bw)
 ```
 :::
 
-#### KDE Insights
+### 4.1 2nd Order Spatial Point Analysis
+I was wondering about whether Grab ride origins and destinations would be clustered. Intuitively, pickup points would form clusters, but I also remember the convenience of a car at your doorstep during the 2019 era, when private hire vehicle rides were affordable. 
+
+To check if Grab ride origins and destinations were clustered or even, I used the F function. 
+
+The L function's advantage over the K function is that it stabilises variances, while still being a representation of spatial dependence over a wider range. Unfortunately, L and K functions are too computationally intensive to run for about 28000 points each since they use more points. The formula the K function also appears to have a summation of a summation, leading me to believe that its runtime is perhaps O(n^2), which would not support 28000 points on my computer.
+
+```{r}
+#| output: false
+#| code-fold: true
+#| code-summary: "Show the code"
+F_CK = Fest(destination_ppp.km)
+F_CK.csr <- envelope(destination_ppp.km, Fest, nsim = 249)
+plot(F_CK.csr)
+
+F_CK = Fest(origin_ppp.km)
+F_CK.csr <- envelope(destination_ppp.km, Fest, nsim = 249)
+plot(F_CK.csr)
+```
+From these plots, it is extremely clear that these spatial points are clustered since they fall well below the envelope in both cases!
+
+### 4.2 KDE Insights
 
 From these KDE maps, I observed
 
@@ -1058,6 +1079,10 @@ That's what I hope to learn from the TNKDE!
 To extend the NKDE, we can use the TNKDE to visualise patterns in the network over time. In this section, I will be creating visualisation split over the 24 hours of the day to visualise daily patterns. This should show more variations than a split by the days of the week, where patterns may only correspond to the weekday/weekend differences.
 
 I have kept the bandwidth the same for consistency.
+
+The code used in this section has been adapted from an example, but with thin lines kept to show the original network and a brighter, easier to see color palette.
+
+https://cran.r-project.org/web/packages/spNetwork/vignettes/TNKDE.html
 
 ### 6.1 Changi Airport
 
