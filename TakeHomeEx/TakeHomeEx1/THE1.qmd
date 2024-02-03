@@ -403,7 +403,7 @@ destination_ppp <- as(destination_sp, "ppp")
 
 Using our previously prepared owin objects, we can constrain these points to only Singapore, in case any of the data was strangely placed outside of our borders.
 
-This happened for 3 destinations.
+This happened for 3 destinations. Regardless of whether these were caused by inaccuracy due to GPS drift near the coast or otherwise, the loss of these 3 points should not influence our downstream analysis by much. As such, it can be deemed an acceptable loss due to erring on the side of caution.
 
 ```{r}
 summary(destination_ppp)
@@ -1118,15 +1118,17 @@ tnkde_densities.origin <- tnkde(lines = osm_changi,
                    verbose  = FALSE)
 
 all_densities.destination <- c(tnkde_densities.destination$k)
-color_breaks <- classIntervals(all_densities.destination, n = 10, style = "kmeans")
+color_breaks.destination <- classIntervals(all_densities.destination, n = 10, style = "kmeans")
 
 all_maps.destination <- lapply(1:ncol(tnkde_densities.destination$k), function(i){
   time <- sample_time.destination[[i]]
   
   sample_points$density <- tnkde_densities.destination$k[,i]
-  map1 <- tm_shape(sample_points) + 
-  tm_dots(col = "density", size = 0.01,
-          breaks = color_breaks$brks, palette = viridis(10)) + 
+  map1 <- tm_shape(osm_changi) + 
+    tm_lines(lwd=0.5) +
+    tm_shape(sample_points) +
+  tm_dots(col = "density", size = 0.005,
+          breaks = color_breaks.destination$brks, palette = plasma(10, direction = -1)) +  
     tm_layout(legend.show=FALSE, main.title = paste("TNKDE OF GRAB TRIP DESTINATIONS @ CHANGI", time, ":00"), main.title.size = 0.5)
   return(map1)
 })
@@ -1141,9 +1143,11 @@ all_maps.origin<- lapply(1:ncol(tnkde_densities.origin$k), function(i){
   time <- sample_time.origin[[i]]
   
   sample_points$density <- tnkde_densities.origin$k[,i]
-  map1 <- tm_shape(sample_points) + 
-  tm_dots(col = "density", size = 0.01,
-          breaks = color_breaks.origin$brks, palette = viridis(10)) + 
+  map1 <- tm_shape(osm_changi) + 
+    tm_lines(lwd=0.5) +
+    tm_shape(sample_points) +
+  tm_dots(col = "density", size = 0.005,
+          breaks = color_breaks.origin$brks, palette = plasma(10, direction = -1)) +   
     tm_layout(legend.show=FALSE, main.title = paste("TNKDE OF GRAB TRIP ORIGINS @ CHANGI", time, ":00"), main.title.size = 0.5)
   return(map1)
 })
@@ -1211,15 +1215,17 @@ tnkde_densities.origin <- tnkde(lines = osm_woodlands,
                    verbose  = FALSE)
 
 all_densities.origin <- c(tnkde_densities.origin$k)
-color_breaks <- classIntervals(all_densities.origin, n = 10, style = "kmeans")
+color_breaks.origin <- classIntervals(all_densities.origin, n = 10, style = "kmeans")
 
 all_maps.origin <- lapply(1:ncol(tnkde_densities.origin$k), function(i){
   time <- sample_time.origin[[i]]
   
   sample_points$density <- tnkde_densities.origin$k[,i]
-  map1 <- tm_shape(sample_points) + 
-  tm_dots(col = "density", size = 0.01,
-          breaks = color_breaks$brks, palette = viridis(10)) + 
+  map1 <- tm_shape(osm_woodlands) + 
+    tm_lines(lwd=0.5) +
+    tm_shape(sample_points) +
+  tm_dots(col = "density", size = 0.005,
+          breaks = color_breaks.origin$brks, palette = plasma(10, direction = -1)) +  
     tm_layout(legend.show=FALSE, main.title = paste("TNKDE OF GRAB TRIP ORIGINS @ WOODLANDS", time, ":00"), main.title.size = 0.5)
   return(map1)
 })
@@ -1234,9 +1240,11 @@ all_maps.destination<- lapply(1:ncol(tnkde_densities.destination$k), function(i)
   time <- sample_time.destination[[i]]
   
   sample_points$density <- tnkde_densities.destination$k[,i]
-  map1 <- tm_shape(sample_points) + 
-  tm_dots(col = "density", size = 0.01,
-          breaks = color_breaks.destination$brks, palette = viridis(10)) + 
+  map1 <- tm_shape(osm_woodlands) + 
+    tm_lines(lwd=0.5) +
+    tm_shape(sample_points) +
+  tm_dots(col = "density", size = 0.005,
+          breaks = color_breaks.destination$brks, palette = plasma(10, direction = -1)) +  
     tm_layout(legend.show=FALSE, main.title = paste("TNKDE OF GRAB TRIP DESTINATIONS @ WOODLANDS ", time, ":00"), main.title.size = 0.5)
   return(map1)
 })
@@ -1304,15 +1312,18 @@ tnkde_densities.origin <- tnkde(lines = osm_town,
                    verbose  = FALSE)
 
 all_densities.origin <- c(tnkde_densities.origin$k)
-color_breaks <- classIntervals(all_densities.origin, n = 10, style = "kmeans")
+
+color_breaks.origin <- classIntervals(all_densities.origin, n = 10, style = "kmeans")
 
 all_maps.origin <- lapply(1:ncol(tnkde_densities.origin$k), function(i){
   time <- sample_time.origin[[i]]
   
   sample_points$density <- tnkde_densities.origin$k[,i]
-  map1 <- tm_shape(sample_points) + 
-  tm_dots(col = "density", size = 0.01,
-          breaks = color_breaks$brks, palette = viridis(10)) + 
+  map1 <- tm_shape(osm_town) + 
+    tm_lines(lwd=0.5) +
+    tm_shape(sample_points) +
+  tm_dots(col = "density", size = 0.005,
+          breaks = color_breaks.origin$brks, palette = plasma(10, direction = -1)) +
     tm_layout(legend.show=FALSE, main.title = paste("TNKDE OF GRAB TRIP ORIGINS @ DOWNTOWN CORE", time, ":00"), main.title.size = 0.5)
   return(map1)
 })
@@ -1329,9 +1340,11 @@ all_maps.destination<- lapply(1:ncol(tnkde_densities.destination$k), function(i)
   time <- sample_time.destination[[i]]
   
   sample_points$density <- tnkde_densities.destination$k[,i]
-  map1 <- tm_shape(sample_points) + 
-  tm_dots(col = "density", size = 0.01,
-          breaks = color_breaks.destination$brks, palette = viridis(10)) + 
+  map1 <- tm_shape(osm_town) + 
+    tm_lines(lwd=0.5) +
+    tm_shape(sample_points) +
+  tm_dots(col = "density", size = 0.005,
+          breaks = color_breaks.destination$brks, palette = plasma(10, direction = -1)) + 
     tm_layout(legend.show=FALSE, main.title = paste("TNKDE OF GRAB TRIP DESTINATIONS @ DOWNTOWN CORE ", time, ":00"), main.title.size = 0.5)
   return(map1)
 })

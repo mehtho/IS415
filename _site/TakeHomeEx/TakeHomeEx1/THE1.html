@@ -145,6 +145,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../../HandsOnEx/HE4/HE4.html">
  <span class="dropdown-text">Hands-on Exercise 4</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE5/HE5.html">
+ <span class="dropdown-text">Hands-on Exercise 5</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -176,6 +180,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li>
     <a class="dropdown-item" href="../../InClassEx/ICE3/ICE3_1.html">
  <span class="dropdown-text">In-class Exercises 3.1</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE4/ICE4.html">
+ <span class="dropdown-text">In-class Exercises 4</span></a>
   </li>  
     </ul>
   </li>
@@ -974,7 +982,7 @@ PROJCRS["SVY21 / Singapore TM",
 <span id="cb65-8"><a href="#cb65-8" aria-hidden="true" tabindex="-1"></a>destination_ppp <span class="ot">&lt;-</span> <span class="fu">as</span>(destination_sp, <span class="st">"ppp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Using our previously prepared owin objects, we can constrain these points to only Singapore, in case any of the data was strangely placed outside of our borders.</p>
-<p>This happened for 3 destinations.</p>
+<p>This happened for 3 destinations. Regardless of whether these were caused by inaccuracy due to GPS drift near the coast or otherwise, the loss of these 3 points should not influence our downstream analysis by much. As such, it can be deemed an acceptable loss due to erring on the side of caution.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(destination_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -1927,38 +1935,42 @@ Fraction of frame area: 0.499</code></pre>
 <span id="cb125-39"><a href="#cb125-39" aria-hidden="true" tabindex="-1"></a>                   <span class="at">verbose  =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb125-40"><a href="#cb125-40" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb125-41"><a href="#cb125-41" aria-hidden="true" tabindex="-1"></a>all_densities.destination <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.destination<span class="sc">$</span>k)</span>
-<span id="cb125-42"><a href="#cb125-42" aria-hidden="true" tabindex="-1"></a>color_breaks <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.destination, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
+<span id="cb125-42"><a href="#cb125-42" aria-hidden="true" tabindex="-1"></a>color_breaks.destination <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.destination, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
 <span id="cb125-43"><a href="#cb125-43" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb125-44"><a href="#cb125-44" aria-hidden="true" tabindex="-1"></a>all_maps.destination <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.destination<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
 <span id="cb125-45"><a href="#cb125-45" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.destination[[i]]</span>
 <span id="cb125-46"><a href="#cb125-46" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb125-47"><a href="#cb125-47" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.destination<span class="sc">$</span>k[,i]</span>
-<span id="cb125-48"><a href="#cb125-48" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span> </span>
-<span id="cb125-49"><a href="#cb125-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.01</span>,</span>
-<span id="cb125-50"><a href="#cb125-50" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">viridis</span>(<span class="dv">10</span>)) <span class="sc">+</span> </span>
-<span id="cb125-51"><a href="#cb125-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP DESTINATIONS @ CHANGI"</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
-<span id="cb125-52"><a href="#cb125-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
-<span id="cb125-53"><a href="#cb125-53" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb125-54"><a href="#cb125-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb125-55"><a href="#cb125-55" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.destination, <span class="at">filename =</span> <span class="st">"images/tnkde_destination_changi.gif"</span>, </span>
-<span id="cb125-56"><a href="#cb125-56" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span>
-<span id="cb125-57"><a href="#cb125-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb125-58"><a href="#cb125-58" aria-hidden="true" tabindex="-1"></a>all_densities.origin <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.origin<span class="sc">$</span>k)</span>
-<span id="cb125-59"><a href="#cb125-59" aria-hidden="true" tabindex="-1"></a>color_breaks.origin <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.origin, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
-<span id="cb125-60"><a href="#cb125-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb125-61"><a href="#cb125-61" aria-hidden="true" tabindex="-1"></a>all_maps.origin<span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.origin<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
-<span id="cb125-62"><a href="#cb125-62" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.origin[[i]]</span>
-<span id="cb125-63"><a href="#cb125-63" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb125-64"><a href="#cb125-64" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.origin<span class="sc">$</span>k[,i]</span>
-<span id="cb125-65"><a href="#cb125-65" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span> </span>
-<span id="cb125-66"><a href="#cb125-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.01</span>,</span>
-<span id="cb125-67"><a href="#cb125-67" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.origin<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">viridis</span>(<span class="dv">10</span>)) <span class="sc">+</span> </span>
-<span id="cb125-68"><a href="#cb125-68" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP ORIGINS @ CHANGI"</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
-<span id="cb125-69"><a href="#cb125-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
-<span id="cb125-70"><a href="#cb125-70" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb125-71"><a href="#cb125-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb125-72"><a href="#cb125-72" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.origin, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_changi.gif"</span>, </span>
-<span id="cb125-73"><a href="#cb125-73" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb125-48"><a href="#cb125-48" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(osm_changi) <span class="sc">+</span> </span>
+<span id="cb125-49"><a href="#cb125-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_lines</span>(<span class="at">lwd=</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb125-50"><a href="#cb125-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span></span>
+<span id="cb125-51"><a href="#cb125-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.005</span>,</span>
+<span id="cb125-52"><a href="#cb125-52" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.destination<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">plasma</span>(<span class="dv">10</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>)) <span class="sc">+</span>  </span>
+<span id="cb125-53"><a href="#cb125-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP DESTINATIONS @ CHANGI"</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
+<span id="cb125-54"><a href="#cb125-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
+<span id="cb125-55"><a href="#cb125-55" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb125-56"><a href="#cb125-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-57"><a href="#cb125-57" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.destination, <span class="at">filename =</span> <span class="st">"images/tnkde_destination_changi.gif"</span>, </span>
+<span id="cb125-58"><a href="#cb125-58" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span>
+<span id="cb125-59"><a href="#cb125-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-60"><a href="#cb125-60" aria-hidden="true" tabindex="-1"></a>all_densities.origin <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.origin<span class="sc">$</span>k)</span>
+<span id="cb125-61"><a href="#cb125-61" aria-hidden="true" tabindex="-1"></a>color_breaks.origin <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.origin, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
+<span id="cb125-62"><a href="#cb125-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-63"><a href="#cb125-63" aria-hidden="true" tabindex="-1"></a>all_maps.origin<span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.origin<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
+<span id="cb125-64"><a href="#cb125-64" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.origin[[i]]</span>
+<span id="cb125-65"><a href="#cb125-65" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb125-66"><a href="#cb125-66" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.origin<span class="sc">$</span>k[,i]</span>
+<span id="cb125-67"><a href="#cb125-67" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(osm_changi) <span class="sc">+</span> </span>
+<span id="cb125-68"><a href="#cb125-68" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_lines</span>(<span class="at">lwd=</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb125-69"><a href="#cb125-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span></span>
+<span id="cb125-70"><a href="#cb125-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.005</span>,</span>
+<span id="cb125-71"><a href="#cb125-71" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.origin<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">plasma</span>(<span class="dv">10</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>)) <span class="sc">+</span>   </span>
+<span id="cb125-72"><a href="#cb125-72" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP ORIGINS @ CHANGI"</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
+<span id="cb125-73"><a href="#cb125-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
+<span id="cb125-74"><a href="#cb125-74" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb125-75"><a href="#cb125-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-76"><a href="#cb125-76" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.origin, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_changi.gif"</span>, </span>
+<span id="cb125-77"><a href="#cb125-77" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p><img src="images/tnkde_origin_changi.gif" class="img-fluid" alt="TNKDEOriginChangi"> <img src="images/tnkde_destination_changi.gif" class="img-fluid" alt="TNKDEOriginChangi"></p>
@@ -2015,38 +2027,42 @@ Fraction of frame area: 0.499</code></pre>
 <span id="cb127-39"><a href="#cb127-39" aria-hidden="true" tabindex="-1"></a>                   <span class="at">verbose  =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb127-40"><a href="#cb127-40" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb127-41"><a href="#cb127-41" aria-hidden="true" tabindex="-1"></a>all_densities.origin <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.origin<span class="sc">$</span>k)</span>
-<span id="cb127-42"><a href="#cb127-42" aria-hidden="true" tabindex="-1"></a>color_breaks <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.origin, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
+<span id="cb127-42"><a href="#cb127-42" aria-hidden="true" tabindex="-1"></a>color_breaks.origin <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.origin, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
 <span id="cb127-43"><a href="#cb127-43" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb127-44"><a href="#cb127-44" aria-hidden="true" tabindex="-1"></a>all_maps.origin <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.origin<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
 <span id="cb127-45"><a href="#cb127-45" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.origin[[i]]</span>
 <span id="cb127-46"><a href="#cb127-46" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb127-47"><a href="#cb127-47" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.origin<span class="sc">$</span>k[,i]</span>
-<span id="cb127-48"><a href="#cb127-48" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span> </span>
-<span id="cb127-49"><a href="#cb127-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.01</span>,</span>
-<span id="cb127-50"><a href="#cb127-50" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">viridis</span>(<span class="dv">10</span>)) <span class="sc">+</span> </span>
-<span id="cb127-51"><a href="#cb127-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP ORIGINS @ WOODLANDS"</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
-<span id="cb127-52"><a href="#cb127-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
-<span id="cb127-53"><a href="#cb127-53" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb127-54"><a href="#cb127-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb127-55"><a href="#cb127-55" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.origin, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_woodlands.gif"</span>, </span>
-<span id="cb127-56"><a href="#cb127-56" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span>
-<span id="cb127-57"><a href="#cb127-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb127-58"><a href="#cb127-58" aria-hidden="true" tabindex="-1"></a>all_densities.destination <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.destination<span class="sc">$</span>k)</span>
-<span id="cb127-59"><a href="#cb127-59" aria-hidden="true" tabindex="-1"></a>color_breaks.destination <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.destination, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
-<span id="cb127-60"><a href="#cb127-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb127-61"><a href="#cb127-61" aria-hidden="true" tabindex="-1"></a>all_maps.destination<span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.destination<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
-<span id="cb127-62"><a href="#cb127-62" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.destination[[i]]</span>
-<span id="cb127-63"><a href="#cb127-63" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb127-64"><a href="#cb127-64" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.destination<span class="sc">$</span>k[,i]</span>
-<span id="cb127-65"><a href="#cb127-65" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span> </span>
-<span id="cb127-66"><a href="#cb127-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.01</span>,</span>
-<span id="cb127-67"><a href="#cb127-67" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.destination<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">viridis</span>(<span class="dv">10</span>)) <span class="sc">+</span> </span>
-<span id="cb127-68"><a href="#cb127-68" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP DESTINATIONS @ WOODLANDS "</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
-<span id="cb127-69"><a href="#cb127-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
-<span id="cb127-70"><a href="#cb127-70" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb127-71"><a href="#cb127-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb127-72"><a href="#cb127-72" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.destination, <span class="at">filename =</span> <span class="st">"images/tnkde_destination_woodlands.gif"</span>, </span>
-<span id="cb127-73"><a href="#cb127-73" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb127-48"><a href="#cb127-48" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(osm_woodlands) <span class="sc">+</span> </span>
+<span id="cb127-49"><a href="#cb127-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_lines</span>(<span class="at">lwd=</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb127-50"><a href="#cb127-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span></span>
+<span id="cb127-51"><a href="#cb127-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.005</span>,</span>
+<span id="cb127-52"><a href="#cb127-52" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.origin<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">plasma</span>(<span class="dv">10</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>)) <span class="sc">+</span>  </span>
+<span id="cb127-53"><a href="#cb127-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP ORIGINS @ WOODLANDS"</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
+<span id="cb127-54"><a href="#cb127-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
+<span id="cb127-55"><a href="#cb127-55" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb127-56"><a href="#cb127-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb127-57"><a href="#cb127-57" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.origin, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_woodlands.gif"</span>, </span>
+<span id="cb127-58"><a href="#cb127-58" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span>
+<span id="cb127-59"><a href="#cb127-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb127-60"><a href="#cb127-60" aria-hidden="true" tabindex="-1"></a>all_densities.destination <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.destination<span class="sc">$</span>k)</span>
+<span id="cb127-61"><a href="#cb127-61" aria-hidden="true" tabindex="-1"></a>color_breaks.destination <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.destination, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
+<span id="cb127-62"><a href="#cb127-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb127-63"><a href="#cb127-63" aria-hidden="true" tabindex="-1"></a>all_maps.destination<span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.destination<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
+<span id="cb127-64"><a href="#cb127-64" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.destination[[i]]</span>
+<span id="cb127-65"><a href="#cb127-65" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb127-66"><a href="#cb127-66" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.destination<span class="sc">$</span>k[,i]</span>
+<span id="cb127-67"><a href="#cb127-67" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(osm_woodlands) <span class="sc">+</span> </span>
+<span id="cb127-68"><a href="#cb127-68" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_lines</span>(<span class="at">lwd=</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb127-69"><a href="#cb127-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span></span>
+<span id="cb127-70"><a href="#cb127-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.005</span>,</span>
+<span id="cb127-71"><a href="#cb127-71" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.destination<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">plasma</span>(<span class="dv">10</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>)) <span class="sc">+</span>  </span>
+<span id="cb127-72"><a href="#cb127-72" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP DESTINATIONS @ WOODLANDS "</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
+<span id="cb127-73"><a href="#cb127-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
+<span id="cb127-74"><a href="#cb127-74" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb127-75"><a href="#cb127-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb127-76"><a href="#cb127-76" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.destination, <span class="at">filename =</span> <span class="st">"images/tnkde_destination_woodlands.gif"</span>, </span>
+<span id="cb127-77"><a href="#cb127-77" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p><img src="images/tnkde_origin_woodlands.gif" class="img-fluid" alt="TNKDEOriginWoodlands"> <img src="images/tnkde_destination_woodlands.gif" class="img-fluid" alt="TNKDEDestinationWoodlands"></p>
@@ -2103,40 +2119,45 @@ Fraction of frame area: 0.499</code></pre>
 <span id="cb129-39"><a href="#cb129-39" aria-hidden="true" tabindex="-1"></a>                   <span class="at">verbose  =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb129-40"><a href="#cb129-40" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb129-41"><a href="#cb129-41" aria-hidden="true" tabindex="-1"></a>all_densities.origin <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.origin<span class="sc">$</span>k)</span>
-<span id="cb129-42"><a href="#cb129-42" aria-hidden="true" tabindex="-1"></a>color_breaks <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.origin, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
-<span id="cb129-43"><a href="#cb129-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb129-44"><a href="#cb129-44" aria-hidden="true" tabindex="-1"></a>all_maps.origin <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.origin<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
-<span id="cb129-45"><a href="#cb129-45" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.origin[[i]]</span>
-<span id="cb129-46"><a href="#cb129-46" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb129-47"><a href="#cb129-47" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.origin<span class="sc">$</span>k[,i]</span>
-<span id="cb129-48"><a href="#cb129-48" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span> </span>
-<span id="cb129-49"><a href="#cb129-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.01</span>,</span>
-<span id="cb129-50"><a href="#cb129-50" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">viridis</span>(<span class="dv">10</span>)) <span class="sc">+</span> </span>
-<span id="cb129-51"><a href="#cb129-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP ORIGINS @ DOWNTOWN CORE"</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
-<span id="cb129-52"><a href="#cb129-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
-<span id="cb129-53"><a href="#cb129-53" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb129-54"><a href="#cb129-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb129-55"><a href="#cb129-55" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.origin, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_town.gif"</span>, </span>
-<span id="cb129-56"><a href="#cb129-56" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span>
+<span id="cb129-42"><a href="#cb129-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-43"><a href="#cb129-43" aria-hidden="true" tabindex="-1"></a>color_breaks.origin <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.origin, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
+<span id="cb129-44"><a href="#cb129-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-45"><a href="#cb129-45" aria-hidden="true" tabindex="-1"></a>all_maps.origin <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.origin<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
+<span id="cb129-46"><a href="#cb129-46" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.origin[[i]]</span>
+<span id="cb129-47"><a href="#cb129-47" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb129-48"><a href="#cb129-48" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.origin<span class="sc">$</span>k[,i]</span>
+<span id="cb129-49"><a href="#cb129-49" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(osm_town) <span class="sc">+</span> </span>
+<span id="cb129-50"><a href="#cb129-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_lines</span>(<span class="at">lwd=</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb129-51"><a href="#cb129-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span></span>
+<span id="cb129-52"><a href="#cb129-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.005</span>,</span>
+<span id="cb129-53"><a href="#cb129-53" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.origin<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">plasma</span>(<span class="dv">10</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb129-54"><a href="#cb129-54" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP ORIGINS @ DOWNTOWN CORE"</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
+<span id="cb129-55"><a href="#cb129-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
+<span id="cb129-56"><a href="#cb129-56" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb129-57"><a href="#cb129-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb129-58"><a href="#cb129-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb129-59"><a href="#cb129-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb129-60"><a href="#cb129-60" aria-hidden="true" tabindex="-1"></a>all_densities.destination <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.destination<span class="sc">$</span>k)</span>
-<span id="cb129-61"><a href="#cb129-61" aria-hidden="true" tabindex="-1"></a>color_breaks.destination <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.destination, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
+<span id="cb129-58"><a href="#cb129-58" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.origin, <span class="at">filename =</span> <span class="st">"images/tnkde_origin_town.gif"</span>, </span>
+<span id="cb129-59"><a href="#cb129-59" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span>
+<span id="cb129-60"><a href="#cb129-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-61"><a href="#cb129-61" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb129-62"><a href="#cb129-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb129-63"><a href="#cb129-63" aria-hidden="true" tabindex="-1"></a>all_maps.destination<span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.destination<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
-<span id="cb129-64"><a href="#cb129-64" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.destination[[i]]</span>
-<span id="cb129-65"><a href="#cb129-65" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb129-66"><a href="#cb129-66" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.destination<span class="sc">$</span>k[,i]</span>
-<span id="cb129-67"><a href="#cb129-67" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span> </span>
-<span id="cb129-68"><a href="#cb129-68" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.01</span>,</span>
-<span id="cb129-69"><a href="#cb129-69" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.destination<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">viridis</span>(<span class="dv">10</span>)) <span class="sc">+</span> </span>
-<span id="cb129-70"><a href="#cb129-70" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP DESTINATIONS @ DOWNTOWN CORE "</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
-<span id="cb129-71"><a href="#cb129-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
-<span id="cb129-72"><a href="#cb129-72" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb129-73"><a href="#cb129-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb129-74"><a href="#cb129-74" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.destination, <span class="at">filename =</span> <span class="st">"images/tnkde_destination_town.gif"</span>, </span>
-<span id="cb129-75"><a href="#cb129-75" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb129-63"><a href="#cb129-63" aria-hidden="true" tabindex="-1"></a>all_densities.destination <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities.destination<span class="sc">$</span>k)</span>
+<span id="cb129-64"><a href="#cb129-64" aria-hidden="true" tabindex="-1"></a>color_breaks.destination <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities.destination, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
+<span id="cb129-65"><a href="#cb129-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-66"><a href="#cb129-66" aria-hidden="true" tabindex="-1"></a>all_maps.destination<span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities.destination<span class="sc">$</span>k), <span class="cf">function</span>(i){</span>
+<span id="cb129-67"><a href="#cb129-67" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time.destination[[i]]</span>
+<span id="cb129-68"><a href="#cb129-68" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb129-69"><a href="#cb129-69" aria-hidden="true" tabindex="-1"></a>  sample_points<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities.destination<span class="sc">$</span>k[,i]</span>
+<span id="cb129-70"><a href="#cb129-70" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(osm_town) <span class="sc">+</span> </span>
+<span id="cb129-71"><a href="#cb129-71" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_lines</span>(<span class="at">lwd=</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb129-72"><a href="#cb129-72" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(sample_points) <span class="sc">+</span></span>
+<span id="cb129-73"><a href="#cb129-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.005</span>,</span>
+<span id="cb129-74"><a href="#cb129-74" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> color_breaks.destination<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">plasma</span>(<span class="dv">10</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>)) <span class="sc">+</span> </span>
+<span id="cb129-75"><a href="#cb129-75" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show=</span><span class="cn">FALSE</span>, <span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"TNKDE OF GRAB TRIP DESTINATIONS @ DOWNTOWN CORE "</span>, time, <span class="st">":00"</span>), <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
+<span id="cb129-76"><a href="#cb129-76" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
+<span id="cb129-77"><a href="#cb129-77" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb129-78"><a href="#cb129-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-79"><a href="#cb129-79" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps.destination, <span class="at">filename =</span> <span class="st">"images/tnkde_destination_town.gif"</span>, </span>
+<span id="cb129-80"><a href="#cb129-80" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p><img src="images/tnkde_origin_town.gif" class="img-fluid" alt="TNKDEOriginTown"> <img src="images/tnkde_destination_town.gif" class="img-fluid" alt="TNKDEDestinationTown"></p>
