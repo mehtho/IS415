@@ -1,0 +1,526 @@
+---
+title: "Hands-On Exercise 5: Global and Local Measures of Spatial Autocorrelation"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 02-03-2024
+description: |
+  Global and Local Measures of Spatial Autocorrelation
+categories:
+  - Hands-On Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+## Notes
+#### Tobler's First law of Geography
+
+Everything is related to everything else but near things are more related than distant things. 
+
+Relates to spatial dependence and spatial autocorrelation
+
+#### Spatial Dependency
+
+Spatial relationship of variable values over space or locations
+Measured as the existence of statistical dependence in a collection of random variables, each associated with a different geographical location
+
+#### Spatial Autocorrelation
+
+The presence of systematic spatial variation in a variable
+
+Can assume values 
+
+-   At any point on a continuous surface
+-   At a set of fixed states within a region
+-   Across a set of areas subdividing a region (Like MPSZ Subzones)
+
+
+#### Positive Spatial Autocorrelation (Higher value)
+
+-   Clustering: Values tend to be similar in similar locations
+
+-   Neighbors are similar: More similar than under spatial randomness
+
+-   Compatible with diffusion but not necessarily caused by diffusion
+
+
+#### Negative Spatial Autocorrelation
+
+-   Checkerboard: Opposite of clustering 
+-   Different neighbors: More dissimilar than under randomness
+-   Compatible with competition but not necessarily caused by competition
+
+#### Measures of Global Spatial Autocorrelation
+
+-   Moran's I: How features differ from the values in the study area as a whole
+
+  -   I > 0: CLustered, observations tend ot be similar
+  -   I < 0: Dispersed, observations tend to be different
+  -   I near 0: Observations are arranged randomly over space
+  
+-   Geary's C: Describes how features differ from their immediate neighbors
+
+  -   C approaches 0 when clustered 
+  -   C approaches 3 when different values tend to cluster
+  -   High values of C corresponds with low I
+  -   Inverse relationship
+  
+#### Spatial Randomness
+-   Null Hypothesis $H_0$ 
+  -   Observed spatial pattern is equally as likely as any other pattern
+  -   Values at one location do not depend on neighbours
+  -   Under spatial randomness, value locations may be altered without affecting the information content of the data
+  
+-   Doubting the assumption of Moran's I on normality and randomisation
+  -   Use Monte Carlo simulation
+  -   Simulate Moran's I under the assumption of no spatial pattern
+  -   Assign all regions the mean value
+  -   Calculate Moran's I
+  -   Compare actual Moran's I to the simulations to obtain p-values
+  
+#### Measures of Global high/low clustering (Getis-Ord Global G)
+-   Concerns the overall concentration or lack thereof in all pairs of neighbours given the definition of "neighbour" (Rook or Queen?)
+-   Can only handle postiive values
+
+#### Interpreting Getis-Ord Global G
+-   p value not statistically significant
+  -   Cannot reject null hypothesis
+  
+-   p value statistically significant and z score is positive
+  -   Can reject null, spatial distribution of high values is more clustered than expected if random
+-   p value is statistically significant z score is negative
+  -   Can reject null, spatial distribution of low values is more clustered than expected if random
+  
+#### Local Spatial Autocorrelation Statistics
+-   Geospatial Statistical Analysis methods to analyse the location-related tendency (Clusters or not) in the attributes of geographically referenced data
+
+-   Can be indices from their global measures
+    -   Local Moran's I
+    -   Local Geary's C
+    -   Getis-Ord Gi*
+    
+    
+-   Good for 
+  -   Detecting clusters or outleirs
+  -   Identify hot or cold spot areas
+  -   Assess the assumptions of Stationarity
+  -   Identify distances beyond discernible associates (Long reaching influences?)
+  
+  
+#### Local Indicator of Spatial Association (LISA)
+-   Subset of localised geospatial statistics methods
+-   Any spatial stats method satisfying:
+  -   LISA for every observation indicates the extent of significant spatial clustering of similar values around that observation
+  -   Sum of LISAs for all observations is proportionate to a global indicator of spatial association
+  
+#### Detecting Spatial Clusters and Outliers
+-   Given a set of geospatial features and an analysis field, the spatial stats identify spatial clusters of features with high or low values. Also identifies spatial outliers 
+
+-   Local Moran's I is most popular
+-   Generally, the analysis calculates a local statistic value, z-score, pseudo p-value and code to represent the cluster type for every statistically signifcant feature.
+
+-   Use z-scores abd p-values to represent statistical significance of computed index values
+
+#### Local Moran's I
+-   Outlier: significant and negative if location i is associated with relatively low values in surrounding locations
+-   Cluster: significant and postive if location i is associated with relative high values in surrounding locations
+
+-   Common alphas: 0.1, 0.05, 0.01, 0.001
+  
+-   Consider the quadrants when plotting Local Moran in Scatterplot
+  -   LL & HH: Cluster, else outlier
+  -   LH & HL: Low/High outlier among low/high neighbours
+  
+
+#### Hot and Cold Spot Areas
+For a set of geospatial features in a study area, spatial stats tell us where values with high or low values cluster spatially
+
+-   Use the Gi* (Getis-Ord Gi*)
+-   Hot-spot: Significant and positive if location i is associated with relatively high values 
+
+-   Cold-spot: Significant and negative if location i is associated with relatively low values
+
+
+#### Fixed weighting schemes:
+Several considerations if using fixed distances
+
+-   All features need at least one neighbour
+-   No feature should be neighbours with all others
+-   Features should have about 8 neighbours each, especially if values for the inpout field are skewed
+-   Might proiduce large estiamte variances with sparse data and mask subtle local variations with dense data
+-   Fixed schemes may not be able to calibrate in local areas where data is too sparse to meet calibration requirements (Observations must be more than parameters)
+
+#### Adaptive weighting schemes
+Adjust themselves according to data density (Not a global thing)
+
+-   BWs are shorter with dense data and vice versa
+-   Finding NN is a common approach
+
+#### Best Practices
+-   Need at least 30 features
+-   Input field must be a continuous data type. Not categorical
+
+#### Spatial weighting method selection 
+-   Polygon continuity
+  -   Good if polygons are similar in size and distribution and when spatial relationships are a function of polygon proximity (shared borders increasing interaction)
+  
+  -   Select row standardization if available
+
+-   Fixed-distance works well for point data or where polygon data has large variance in polygon size and you want a consistent scale of analysis
+
+-   Inverse distance: Best with continuous data or to model processes where closer features are more likely to interact with or influence each other
+  -   In this approach, every polygon is potentially a neighbor. Computationally difficult
+  
+  
+#### Spatial weighing method selection
+-   KNN is good to ensure a minimum number of neighbours
+  -   Very good if values are skewed
+  -   Good with varying distributions
+  -   Note that spatial context of analysis changes with sparsity and density variations
+  -   When fixing scale is less important than number of neighbours, KNN is good
+  
+
+#### Fixed=dsitance bandwidth values
+-   Choose a distance based on known geographic extent of the spatial processes promoting clustering for the studied phenomena
+
+-   Needs to be big enough to guarantee at least one neighbour
+
+-   Need the following criteria
+  -   At least one neighbour
+  -   No feature should be neighbours with all others
+  -   About 8 if data is skewed
+  
+
+#### Emerging Hotspot Analysis (EHSA)
+-   Technique that falls under Exploratory Spatial Data Analysis (ESDA)
+-   Combines Hotspot analysis with Getis-Ord Gi* with time-series Mann-Kendall test for monotonic trends
+-   Evaluate how hot and cold spots change over time
+    -   Are they becoming increasingly hotter? Cooling down? Staying same?
+    
+
+#### Mann-Kendall test for trend overview
+-   Non-parametric, but should not have serial correlation
+-   If normal distribution, normal regression works
+
+-   Check rate of change over time and statiscal significance
+
+$H_0$ : No monotonic trend
+
+$H_1$ : A trend exists, can be postive, negative or non-null
+
+Does not assess the magnitude of change, can find trends in as few as 4 samples, but may not find it. Recommended at least 8-10 points
+
+
+#### Data requirements
+Ensure that
+-   Data is not collected seasonally (e.g. only in winter and summer). Needs the seasonal Kendall Test
+-   No covarities, i.e. other factos influencing data other than the plotted data
+-   Only one data point per time period. Use Median if more than one
+
+#### EHSA Patterns for Hot Spot Trends (Typically based on 90% of time-step intervals)
+-   No pattern
+-   New hot spot
+-   Consecutive hot spot
+-   Intensifying hot spot
+-   Persistent hot spot
+-   Diminishing hot spot
+-   Sporadic hot spot
+-   Oscillating hot spot
+-   Historical hot spot
+
+#### EHSA Patterns for Cold Spot Trends 
+-   New cold spot
+-   Consecutive cold spot
+-   Intensifying cold spot
+-   Persistent cold spot
+-   Diminishing cold spot
+-   Sporadic cold spot
+-   Oscillating cold spot
+-   Historical cold spot
+
+#### Spacetime cudes
+A spacetime object is a spacetime cube if every location has a value for every time index (each location has a regular time series)
+
+The basic unit of a spacetime cube is a bin
+-   Unique combo of location and time index
+    -   Collection at every location is a time-slice
+    
+    -   In every location, collection of evrey bin at each time index is a bin time-series
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
