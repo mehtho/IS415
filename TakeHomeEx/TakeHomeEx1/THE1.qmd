@@ -572,9 +572,6 @@ To check if Grab ride origins and destinations were clustered or even, I used th
 The L function's advantage over the K function is that it stabilises variances, while still being a representation of spatial dependence over a wider range. Unfortunately, L and K functions are too computationally intensive to run for about 28000 points each since they use more points. The formula the K function also appears to have a summation of a summation, leading me to believe that its runtime is perhaps O(n^2), which would not support 28000 points on my computer.
 
 ```{r}
-#| output: false
-#| code-fold: true
-#| code-summary: "Show the code"
 F_CK = Fest(destination_ppp.km)
 F_CK.csr <- envelope(destination_ppp.km, Fest, nsim = 249)
 plot(F_CK.csr)
