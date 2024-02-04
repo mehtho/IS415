@@ -1253,8 +1253,8 @@ Fraction of frame area: 0.499</code></pre>
 <p>To check if Grab ride origins and destinations were clustered or even, I used the F function.</p>
 <p>The L function’s advantage over the K function is that it stabilises variances, while still being a representation of spatial dependence over a wider range. Unfortunately, L and K functions are too computationally intensive to run for about 28000 points each since they use more points. The formula the K function also appears to have a summation of a summation, leading me to believe that its runtime is perhaps O(n^2), which would not support 28000 points on my computer.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>F_CK <span class="ot">=</span> <span class="fu">Fest</span>(destination_ppp.km)</span>
-<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a>F_CK.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(destination_ppp.km, Fest, <span class="at">nsim =</span> <span class="dv">249</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>F_d <span class="ot">=</span> <span class="fu">Fest</span>(destination_ppp.km)</span>
+<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a>F_d.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(destination_ppp.km, Fest, <span class="at">nsim =</span> <span class="dv">249</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Generating 249 simulations of CSR  ...
 1, 2, 3, 4.6.8.10.12.14.16.18.20.22.24.26.28.30.32.34
@@ -1268,7 +1268,7 @@ Fraction of frame area: 0.499</code></pre>
 
 Done.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_CK.csr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_d.csr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1276,8 +1276,8 @@ Done.</code></pre>
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>F_CK <span class="ot">=</span> <span class="fu">Fest</span>(origin_ppp.km)</span>
-<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>F_CK.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(destination_ppp.km, Fest, <span class="at">nsim =</span> <span class="dv">249</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>F_d <span class="ot">=</span> <span class="fu">Fest</span>(origin_ppp.km)</span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>F_d.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(destination_ppp.km, Fest, <span class="at">nsim =</span> <span class="dv">249</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Generating 249 simulations of CSR  ...
 1, 2, 3, 4.6.8.10.12.14.16.18.20.22.24.26.28.30.32.34
@@ -1285,19 +1285,13 @@ Done.</code></pre>
 .76.78.80.82.84.86.88.90.92.94.96.98.100.102.104.106.108.110.112.114
 .116.118.120.122.124.126.128.130.132.134.136.138.140.142.144.146.148.150.152.154
 .156.158.160.162.164.166.168.170.172.174.176.178.180.182.184.186.188.190.192.194
-.196.198 [4:08 remaining] .200 [3:56 remaining] .
-202 [3:44 remaining] .204 [3:33 remaining] .206 [3:22 remaining] .208
- [3:11 remaining] .210 [3:00 remaining] .212 [2:50 remaining] .214 [2:39 remaining] .
-216 [2:29 remaining] .218 [2:19 remaining] .220 [2:09 remaining] .222
- [1:59 remaining] .224 [1:49 remaining] .226 [1:40 remaining] .228 [1:31 remaining] .
-230 [1:21 remaining] .232 [1:12 remaining] .234 [1:03 remaining] .236
- [54 sec remaining] .238 [46 sec remaining] .240 [37 sec remaining] .242 [29 sec remaining] .
-244 [20 sec remaining] .246 [12 sec remaining] .248 [4 sec remaining] 
+.196.198.200.202.204.206.208.210.212.214.216.218.220.222.224.226.228.230.232.234
+.236.238.240.242.244.246.248
 249.
 
 Done.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_CK.csr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_d.csr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
