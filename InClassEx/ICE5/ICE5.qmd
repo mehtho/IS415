@@ -1,0 +1,133 @@
+---
+title: "In-Class Exercise 5: Global and Local Measures of Spatial Autocorrelation"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 02-05-2024
+description: |
+  In-class exercise 5
+categories:
+  - In-class Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+```{r}
+pacman::p_load(sf, tmap, sfdep, tidyverse)
+```
+
+```{r}
+hunan <- st_read(dsn = "data/geospatial", 
+                 layer = "Hunan")
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+```{r}
+hunan_GDPPC <- left_join(hunan, hunan2012) %>%
+  select(1:4, 7, 15)
+```
+
+```{r}
+tmap_mode("plot")
+tm_shape(hunan_GDPPC) +
+  tm_fill("GDPPC", 
+          style = "quantile", 
+          palette = "Blues",
+          title = "GDPPC") +
+  tm_layout(main.title = "Distribution of GDP per capita by district, Hunan Province",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha =0.2)
+```
+
+```{r}
+nb_queen <- hunan_GDPPC %>% 
+  mutate(nb = st_contiguity(geometry),
+         .before = 1)
+summary(nb_queen$nb)
+```
+```{r}
+nb_queen$County[c(2,3,4,57,85)]
+```
+
+```{r}
+nb_rook <- hunan_GDPPC %>% 
+  mutate(nb = st_contiguity(geometry,
+                            queen = FALSE),
+         .before = 1)
+```
+
+```{r}
+nb2_queen <- hunan_GDPPC %>% 
+  mutate(nb = st_contiguity(geometry),
+         nb2 = st_nb_lag_cumul(nb, 2),
+         .before = 1)
+nb2_queen
+```
+
+```{r}
+wm_q <- hunan_GDPPC %>%
+  mutate(nb = st_contiguity(geometry),
+         wt = st_weights(nb,
+                         style = "W"),
+         .before = 1) 
+wm_q
+```
+
+```{r}
+wm_r <- hunan %>%
+  mutate(nb = st_contiguity(geometry,
+                            queen = FALSE),
+         wt = st_weights(nb),
+         .before = 1) 
+wm_r
+```
+
+```{r}
+geo <- sf::st_geometry(hunan_GDPPC)
+nb <- st_knn(geo, longlat = TRUE)
+dists <- unlist(st_nb_dists(geo, nb))
+summary(dists)
+```
+
+```{r}
+moranI <- global_moran(wm_q$GDPPC,
+                       wm_q$nb,
+                       wm_q$wt)
+glimpse(moranI)
+```
+
+```{r}
+set.seed(1234)
+global_moran_perm(wm_q$GDPPC,
+                       wm_q$nb,
+                       wm_q$wt,
+                        nsim=99)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
