@@ -6,3 +6,5 @@ listing:
 ---
 
 Welcome to my IS415 Geospatial Analytics and Applications website! This website documents my weekly learning, progress and notes. I hope this will be as useful to you as it was to me!
+
+*Note: Hands On Exercise 6 is Merged with Hands On Exercise 5*

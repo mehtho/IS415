@@ -10,7 +10,7 @@
 <meta name="dcterms.date" content="2024-02-03">
 <meta name="description" content="Global and Local Measures of Spatial Autocorrelation">
 
-<title>Matt’s IS415 Experience - Hands-On Exercise 5: Global and Local Measures of Spatial Autocorrelation</title>
+<title>Matt’s IS415 Experience - Hands-On Exercise 5 &amp; 6: Global and Local Measures of Spatial Autocorrelation</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -176,7 +176,7 @@ window.Quarto = {
   </li>  
         <li>
     <a class="dropdown-item" href="../../HandsOnEx/HE5/HE5.html">
- <span class="dropdown-text">Hands-on Exercise 5</span></a>
+ <span class="dropdown-text">Hands-on Exercise 5 &amp; 6</span></a>
   </li>  
     </ul>
   </li>
@@ -213,6 +213,10 @@ window.Quarto = {
         <li>
     <a class="dropdown-item" href="../../InClassEx/ICE4/ICE4.html">
  <span class="dropdown-text">In-class Exercises 4</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE4/ICE5.html">
+ <span class="dropdown-text">In-class Exercises 5</span></a>
   </li>  
     </ul>
   </li>
@@ -271,7 +275,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Hands-On Exercise 5: Global and Local Measures of Spatial Autocorrelation</h1>
+<h1 class="title">Hands-On Exercise 5 &amp; 6: Global and Local Measures of Spatial Autocorrelation</h1>
   <div class="quarto-categories">
     <div class="quarto-category">Hands-On Exercise</div>
   </div>
@@ -300,6 +304,12 @@ window.Quarto = {
     </div>
   </div>
   
+    <div>
+    <div class="quarto-title-meta-heading">Modified</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date-modified">February 11, 2024</p>
+    </div>
+  </div>
     
   </div>
   
@@ -308,6 +318,7 @@ window.Quarto = {
 </header>
 
 
+<p><em>Note: HE5 &amp; 6 are combined in this webpage since they were released in the same week. I have removed repeated code from both exercises so they flow continuously. It has gotten a bit large, I might separate the notes and code accordingly later on!</em></p>
 <section id="notes" class="level2">
 <h2 class="anchored" data-anchor-id="notes">Notes</h2>
 <section id="toblers-first-law-of-geography" class="level4">
@@ -1005,12 +1016,15 @@ Zixing        -7.6849e-01 -8.8210e-02  9.4057e-01 -7.0144e-01         0.4830</co
 <span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">Pr.Ii =</span> Pr.z....E.Ii..)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(hunan.localMI) <span class="sc">+</span></span>
-<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"Ii"</span>, </span>
-<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">style =</span> <span class="st">"pretty"</span>,</span>
-<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"RdBu"</span>,</span>
-<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>          <span class="at">title =</span> <span class="st">"local moran statistics"</span>) <span class="sc">+</span></span>
-<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>hunan.localMI<span class="sc">$</span>Pr.Ii2 <span class="ot">&lt;-</span> <span class="fu">substr</span>(hunan.localMI<span class="sc">$</span>Pr.Ii, <span class="dv">1</span>, <span class="dv">5</span>)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(hunan.localMI) <span class="sc">+</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"Ii"</span>, </span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>          <span class="at">style =</span> <span class="st">"pretty"</span>,</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"RdBu"</span>,</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>          <span class="at">title =</span> <span class="st">"local moran statistics"</span>) <span class="sc">+</span></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_text</span>(<span class="st">"Pr.Ii2"</span>, <span class="at">size =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
