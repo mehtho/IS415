@@ -1,0 +1,135 @@
+---
+title: "Take-Home Exercise 1"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 01-19-2024
+description: |
+  Take-Home Exercise 1
+categories:
+  - Take-Home Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+## 1.0 Overview
+
+## 2.0 Wrangling
+```{r}
+pacman::p_load(sf, spdep, tmap, tidyverse, ggplot2, smoothr)
+```
+
+```{r}
+twv <- st_read(dsn = "data/geospatial", 
+                 layer = "TAINAN_VILLAGE")
+```
+```{r}
+dengued <- read_csv("data/aspatial/Dengue_Daily.csv")
+```
+```{r}
+dengued <- dengued[, c(1, 10, 11)]
+names(dengued)
+```
+```{r}
+names(dengued) <- c("Onset", "X", "Y")
+names(dengued)
+```
+
+```{r}
+head(dengued)
+```
+```{r}
+options(digits = 15)
+```
+
+
+```{r}
+dengued[, c(2, 3)] <- lapply(dengued[, c(2, 3)], as.numeric)
+head(dengued)
+```
+```{r}
+sum(apply(dengued, 1, function(x) any(is.na(x))))
+```
+
+```{r}
+dengued <- na.omit(dengued)
+```
+
+```{r}
+sum(apply(dengued, 1, function(x) any(is.na(x))))
+```
+
+```{r}
+hist(dengued$Onset, breaks = "days", xlab = "Date", ylab = "Frequency", main = "Histogram of Date Ranges")
+```
+```{r}
+st_crs(twv)
+```
+```{r}
+dengued_sf <- st_as_sf(dengued, coords = c("X", "Y"),
+                      crs = 3824)
+st_crs(dengued_sf)
+```
+```{r}
+head(dengued_sf)
+```
+```{r}
+twvsz <- twv[twv$TOWNID %in% c("D01", "D02", "D04", "D06", "D07", "D08", "D32", "D39"), ]
+```
+
+```{r}
+head(twvsz)
+```
+```{r}
+plot(twvsz)
+```
+```{r}
+u_twvsz <- st_union(twvsz)
+plot(u_twvsz)
+```
+```{r}
+unh_twvsz <- fill_holes(u_twvsz, units::set_units(1, "km^2"))
+plot(unh_twvsz)
+```
+```{r}
+diff_twvsz <- st_difference(unh_twvsz, u_twvsz)
+plot(diff_twvsz)
+```
+```{r}
+hole_victims <- st_intersection(dengued_sf, diff_twvsz)
+head(hole_victims)
+```
+Epi weeks 31-50 2023:
+30-07-23 to 16-12-23
+```{r}
+dengued_sf_epiweeks <- dengued_sf %>% filter(Onset >= as.Date("2023-07-30") & Onset <= as.Date("2023-12-16"))
+```
+
+
+```{r}
+dengue_sf <- st_intersection(dengued_sf_epiweeks, u_twvsz)
+```
+
+```{r}
+write_rds(dengue_sf, "data/rds/dengue_sf.rds")
+```
+
+```{r}
+tm_shape(u_twvsz) + 
+  tm_polygons() +
+tm_shape(dengue_sf) +
+  tm_dots(col = "red")
+```
+
+
+
+
+
+
+
+
