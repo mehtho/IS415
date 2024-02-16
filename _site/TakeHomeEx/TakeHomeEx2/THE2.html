@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Matthew Ho">
-<meta name="dcterms.date" content="2024-01-19">
-<meta name="description" content="Take-Home Exercise 1">
+<meta name="dcterms.date" content="2024-02-11">
+<meta name="description" content="Take-Home Exercise 2">
 
 <title>Matt’s IS415 Experience - Take-Home Exercise 1</title>
 <style>
@@ -215,6 +215,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">1.0 Overview</a></li>
   <li><a href="#wrangling" id="toc-wrangling" class="nav-link" data-scroll-target="#wrangling">2.0 Wrangling</a></li>
+  <li><a href="#eda" id="toc-eda" class="nav-link" data-scroll-target="#eda">3.0 EDA</a>
+  <ul class="collapse">
+  <li><a href="#global-spatial-autocorrelation" id="toc-global-spatial-autocorrelation" class="nav-link" data-scroll-target="#global-spatial-autocorrelation">3.1 Global Spatial Autocorrelation</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -231,7 +235,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <div>
   <div class="description">
-    <p>Take-Home Exercise 1</p>
+    <p>Take-Home Exercise 2</p>
   </div>
 </div>
 
@@ -248,7 +252,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 19, 2024</p>
+      <p class="date">February 11, 2024</p>
     </div>
   </div>
   
@@ -266,7 +270,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="wrangling" class="level2">
 <h2 class="anchored" data-anchor-id="wrangling">2.0 Wrangling</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spdep, tmap, tidyverse, ggplot2, smoothr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spdep, tmap, tidyverse, ggplot2, smoothr, lubridate, sfdep)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>twv <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/geospatial"</span>, </span>
@@ -430,12 +434,13 @@ Geodetic CRS:  TWD97
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>twvsz <span class="ot">&lt;-</span> twv[twv<span class="sc">$</span>TOWNID <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"D01"</span>, <span class="st">"D02"</span>, <span class="st">"D04"</span>, <span class="st">"D06"</span>, <span class="st">"D07"</span>, <span class="st">"D08"</span>, <span class="st">"D32"</span>, <span class="st">"D39"</span>), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>twvsz <span class="ot">&lt;-</span> twv[twv<span class="sc">$</span>TOWNID <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"D01"</span>, <span class="st">"D02"</span>, <span class="st">"D04"</span>, <span class="st">"D06"</span>, <span class="st">"D07"</span>, <span class="st">"D08"</span>, <span class="st">"D32"</span>, <span class="st">"D39"</span>), ] <span class="sc">%&gt;%</span> </span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">subset</span>(<span class="at">select =</span> <span class="sc">-</span>NOTE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Simple feature collection with 6 features and 10 fields
+<pre><code>Simple feature collection with 6 features and 9 fields
 Geometry type: POLYGON
 Dimension:     XY
 Bounding box:  xmin: 120.093638 ymin: 22.9155962890001 xmax: 120.258510056 ymax: 23.0882695690001
@@ -447,13 +452,13 @@ Geodetic CRS:  TWD97
 67 67000330004     臺南市     南區   大成里  Dacheng Vil.        D      67000
 68 67000350028     臺南市   安南區   城北里 Chengbei Vil.        D      67000
 69 67000350030     臺南市   安南區   城南里 Chengnan Vil.        D      67000
-   TOWNID TOWNCODE NOTE                       geometry
-2     D06 67000350 &lt;NA&gt; POLYGON ((120.117587175 23....
-18    D32 67000270 &lt;NA&gt; POLYGON ((120.230434632 22....
-66    D08 67000370 &lt;NA&gt; POLYGON ((120.201249051 22....
-67    D02 67000330 &lt;NA&gt; POLYGON ((120.198548305 22....
-68    D06 67000350 &lt;NA&gt; POLYGON ((120.129195464 23....
-69    D06 67000350 &lt;NA&gt; POLYGON ((120.124599602 23....</code></pre>
+   TOWNID TOWNCODE                       geometry
+2     D06 67000350 POLYGON ((120.117587175 23....
+18    D32 67000270 POLYGON ((120.230434632 22....
+66    D08 67000370 POLYGON ((120.201249051 22....
+67    D02 67000330 POLYGON ((120.198548305 22....
+68    D06 67000350 POLYGON ((120.129195464 23....
+69    D06 67000350 POLYGON ((120.124599602 23....</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -518,23 +523,200 @@ Geodetic CRS:  TWD97
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>dengue_sf <span class="ot">&lt;-</span> <span class="fu">st_intersection</span>(dengued_sf_epiweeks, u_twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(dengue_sf, <span class="st">"data/rds/dengue_sf.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>dengue_sf<span class="sc">$</span>epi_week <span class="ot">&lt;-</span> <span class="fu">epiweek</span>(dengue_sf<span class="sc">$</span>Onset)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(u_twvsz) <span class="sc">+</span> </span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_sf) <span class="sc">+</span></span>
-<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"red"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(dengue_sf, <span class="st">"data/rds/dengue_sf.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(u_twvsz) <span class="sc">+</span> </span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_sf) <span class="sc">+</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"red"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE2_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE2_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>geo_dupes <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">duplicated</span>(dengue_sf<span class="sc">$</span>geometry))</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>geo_dupes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>vil_dupes <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">duplicated</span>(twvsz<span class="sc">$</span>VILLCODE))</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>vil_dupes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+</div>
+<p>Keep the NA for geometry purposes</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf <span class="ot">&lt;-</span> <span class="fu">st_join</span>(twvsz, dengue_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf[<span class="sc">!</span><span class="fu">rownames</span>(dengue_vils_sf) <span class="sc">%in%</span> <span class="fu">rownames</span>(<span class="fu">na.omit</span>(dengue_vils_sf)), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 1 feature and 11 fields
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: 120.108900267 ymin: 23.0186038130001 xmax: 120.137943444 ymax: 23.0431984580001
+Geodetic CRS:  TWD97
+       VILLCODE COUNTYNAME TOWNNAME VILLNAME    VILLENG COUNTYID COUNTYCODE
+444 67000350035     臺南市   安南區   鹿耳里 Lu'er Vil.        D      67000
+    TOWNID TOWNCODE Onset epi_week                       geometry
+444    D06 67000350  &lt;NA&gt;       NA POLYGON ((120.13322373 23.0...</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf <span class="ot">&lt;-</span> dengue_vils_sf[<span class="sc">!</span><span class="fu">is.na</span>(dengue_vils_sf<span class="sc">$</span>VILLCODE), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Account for the NA village</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc <span class="ot">&lt;-</span> dengue_vils_sf <span class="sc">%&gt;%</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(VILLCODE) <span class="sc">%&gt;%</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">count =</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(epi_week)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc_epi <span class="ot">&lt;-</span> dengue_vils_sf <span class="sc">%&gt;%</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(VILLCODE, epi_week) <span class="sc">%&gt;%</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">count =</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(epi_week)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(dengue_vils_gb_vc_epi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="THE2_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>spt <span class="ot">&lt;-</span> <span class="fu">as_spacetime</span>(dengue_vils_gb_vc_epi, <span class="st">"VILLCODE"</span>, <span class="st">"epiweek"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">activate</span>(spt, <span class="st">"geometry"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 258 features and 1 field
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: 120.062662846 ymin: 22.8940068630001 xmax: 120.292497157 ymax: 23.091435597
+Geodetic CRS:  TWD97
+# A tibble: 258 × 2
+# Groups:   VILLCODE [258]
+   VILLCODE                                                             geometry
+ * &lt;chr&gt;                                                           &lt;POLYGON [°]&gt;
+ 1 67000270001 ((120.267199621 22.9965466200001, 120.266803062 22.996425774, 12…
+ 2 67000270002 ((120.265902836 22.9914598060001, 120.263120801 22.9913248080001…
+ 3 67000270003 ((120.24922797 22.9826484070001, 120.249236725 22.9824418960001,…
+ 4 67000270004 ((120.239006994 22.9801191660001, 120.238946159 22.9801121730001…
+ 5 67000270005 ((120.257650095 22.9743218020001, 120.257159134 22.9743164970001…
+ 6 67000270006 ((120.271278468 22.968037284, 120.271186859 22.968026335, 120.27…
+ 7 67000270007 ((120.240394094 22.959146869, 120.240370804 22.9588424400001, 12…
+ 8 67000270008 ((120.270074093 22.948409235, 120.268383742 22.9463228920001, 12…
+ 9 67000270011 ((120.230434145 22.9354366160001, 120.23014601 22.9351129940001,…
+10 67000270012 ((120.224656159 22.9616519420001, 120.224655578 22.9616484510001…
+# ℹ 248 more rows</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">activate</span>(spt, <span class="st">"data"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3,518 × 3
+# Groups:   VILLCODE [258]
+   VILLCODE    epi_week count
+ * &lt;chr&gt;          &lt;dbl&gt; &lt;int&gt;
+ 1 67000270001       33     1
+ 2 67000270001       34     1
+ 3 67000270001       35     2
+ 4 67000270001       36     2
+ 5 67000270001       37     6
+ 6 67000270001       38     3
+ 7 67000270001       39     4
+ 8 67000270001       40     1
+ 9 67000270001       41     1
+10 67000270001       42     2
+# ℹ 3,508 more rows</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(spt, <span class="st">"data/rds/spt.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="eda" class="level2">
+<h2 class="anchored" data-anchor-id="eda">3.0 EDA</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_options</span>(<span class="at">check.and.fix =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="global-spatial-autocorrelation" class="level3">
+<h3 class="anchored" data-anchor-id="global-spatial-autocorrelation">3.1 Global Spatial Autocorrelation</h3>
+<p>See 36 &lt;=</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(dengue_vils_gb_ew)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Inspired by</p>
+<p>https://jenpoer-is415-gaa-exercises.netlify.app/take-home-exercises/exe-02/the2#exploratory-data-analysis-eda-with-choropleth-maps</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>choropleth_map_small_multiples <span class="ot">&lt;-</span> <span class="cf">function</span>(df, varname, facet, colors) {</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(df) <span class="sc">+</span></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_polygons</span>(<span class="at">col=</span><span class="st">'white'</span>) <span class="sc">+</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(df) <span class="sc">+</span></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_polygons</span>(varname,</span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">palette =</span> colors,</span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">style=</span><span class="st">"quantile"</span>) <span class="sc">+</span></span>
+<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_facets</span>(<span class="at">by=</span>facet, <span class="at">free.coords =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb59-9"><a href="#cb59-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">choropleth_map_small_multiples</span>(dengue_vils_gb_vc_epi, <span class="st">"count"</span>, <span class="st">"epi_week"</span>, <span class="st">"Blues"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="THE2_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>dv_total_wm_q <span class="ot">&lt;-</span> <span class="fu">poly2nb</span>(dengue_vils_gb_vc, </span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>                <span class="at">queen=</span><span class="cn">TRUE</span>)</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>dv_total_rswm_q <span class="ot">&lt;-</span> <span class="fu">nb2listw</span>(dv_total_wm_q, </span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">style=</span><span class="st">"W"</span>, </span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">zero.policy =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dv_total_wm_q)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Neighbour list object:
+Number of regions: 258 
+Number of nonzero links: 1526 
+Percentage nonzero weights: 2.29253049696533 
+Average number of links: 5.91472868217054 
+Link number distribution:
+
+ 2  3  4  5  6  7  8  9 10 11 12 14 
+ 4 17 47 49 49 41 26 14  6  3  1  1 
+4 least connected regions:
+15 44 121 188 with 2 links
+1 most connected region:
+10 with 14 links</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># moran.test(dengue_vils_gb_vc$count, </span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a><span class="co">#            listw=dv_total_wm_q, </span></span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a><span class="co">#            zero.policy = TRUE, </span></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a><span class="co">#            na.action=na.omit)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

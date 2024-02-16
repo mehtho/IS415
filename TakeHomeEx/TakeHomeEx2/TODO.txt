@@ -1,0 +1,3 @@
+Global Spatial Autocorrelation
+Local Spatial Autocorrelation
+Emerging Hotspot

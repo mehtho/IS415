@@ -3,9 +3,9 @@ title: "Take-Home Exercise 1"
 author:
   - name: Matthew Ho
     url: https://www.linkedin.com/in/matthewhoyiwen/
-date: 01-19-2024
+date: 02-11-2024
 description: |
-  Take-Home Exercise 1
+  Take-Home Exercise 2
 categories:
   - Take-Home Exercise
 format:
@@ -20,21 +20,25 @@ execute:
 ## 1.0 Overview
 
 ## 2.0 Wrangling
+
 ```{r}
-pacman::p_load(sf, spdep, tmap, tidyverse, ggplot2, smoothr)
+pacman::p_load(sf, spdep, tmap, tidyverse, ggplot2, smoothr, lubridate, sfdep)
 ```
 
 ```{r}
 twv <- st_read(dsn = "data/geospatial", 
                  layer = "TAINAN_VILLAGE")
 ```
+
 ```{r}
 dengued <- read_csv("data/aspatial/Dengue_Daily.csv")
 ```
+
 ```{r}
 dengued <- dengued[, c(1, 10, 11)]
 names(dengued)
 ```
+
 ```{r}
 names(dengued) <- c("Onset", "X", "Y")
 names(dengued)
@@ -43,15 +47,16 @@ names(dengued)
 ```{r}
 head(dengued)
 ```
+
 ```{r}
 options(digits = 15)
 ```
-
 
 ```{r}
 dengued[, c(2, 3)] <- lapply(dengued[, c(2, 3)], as.numeric)
 head(dengued)
 ```
+
 ```{r}
 sum(apply(dengued, 1, function(x) any(is.na(x))))
 ```
@@ -67,53 +72,68 @@ sum(apply(dengued, 1, function(x) any(is.na(x))))
 ```{r}
 hist(dengued$Onset, breaks = "days", xlab = "Date", ylab = "Frequency", main = "Histogram of Date Ranges")
 ```
+
 ```{r}
 st_crs(twv)
 ```
+
 ```{r}
 dengued_sf <- st_as_sf(dengued, coords = c("X", "Y"),
                       crs = 3824)
 st_crs(dengued_sf)
 ```
+
 ```{r}
 head(dengued_sf)
 ```
+
 ```{r}
-twvsz <- twv[twv$TOWNID %in% c("D01", "D02", "D04", "D06", "D07", "D08", "D32", "D39"), ]
+twvsz <- twv[twv$TOWNID %in% c("D01", "D02", "D04", "D06", "D07", "D08", "D32", "D39"), ] %>% 
+  subset(select = -NOTE)
 ```
 
 ```{r}
 head(twvsz)
 ```
+
 ```{r}
 plot(twvsz)
 ```
+
 ```{r}
 u_twvsz <- st_union(twvsz)
 plot(u_twvsz)
 ```
+
 ```{r}
 unh_twvsz <- fill_holes(u_twvsz, units::set_units(1, "km^2"))
 plot(unh_twvsz)
 ```
+
 ```{r}
 diff_twvsz <- st_difference(unh_twvsz, u_twvsz)
 plot(diff_twvsz)
 ```
+
 ```{r}
 hole_victims <- st_intersection(dengued_sf, diff_twvsz)
 head(hole_victims)
 ```
-Epi weeks 31-50 2023:
-30-07-23 to 16-12-23
+
+Epi weeks 31-50 2023: 30-07-23 to 16-12-23
+
 ```{r}
 dengued_sf_epiweeks <- dengued_sf %>% filter(Onset >= as.Date("2023-07-30") & Onset <= as.Date("2023-12-16"))
 ```
 
-
 ```{r}
 dengue_sf <- st_intersection(dengued_sf_epiweeks, u_twvsz)
 ```
+
+```{r}
+dengue_sf$epi_week <- epiweek(dengue_sf$Onset)
+```
+
 
 ```{r}
 write_rds(dengue_sf, "data/rds/dengue_sf.rds")
@@ -125,6 +145,473 @@ tm_shape(u_twvsz) +
 tm_shape(dengue_sf) +
   tm_dots(col = "red")
 ```
+
+```{r}
+geo_dupes <- any(duplicated(dengue_sf$geometry))
+geo_dupes
+```
+
+```{r}
+vil_dupes <- any(duplicated(twvsz$VILLCODE))
+vil_dupes
+```
+
+Keep the NA for geometry purposes
+```{r}
+dengue_vils_sf <- st_join(twvsz, dengue_sf)
+```
+```{r}
+dengue_vils_sf[!rownames(dengue_vils_sf) %in% rownames(na.omit(dengue_vils_sf)), ]
+```
+
+```{r}
+dengue_vils_sf <- dengue_vils_sf[!is.na(dengue_vils_sf$VILLCODE), ]
+```
+
+Account for the NA village
+```{r}
+dengue_vils_gb_vc <- dengue_vils_sf %>%
+  group_by(VILLCODE) %>%
+  summarise(count = sum(!is.na(epi_week)))
+```
+```{r}
+dengue_vils_gb_vc_epi <- dengue_vils_sf %>%
+  group_by(VILLCODE, epi_week) %>%
+  summarise(count = sum(!is.na(epi_week)))
+```
+
+```{r}
+plot(dengue_vils_gb_vc_epi)
+```
+
+```{r}
+spt <- as_spacetime(dengue_vils_gb_vc_epi, "VILLCODE", "epiweek")
+```
+
+```{r}
+activate(spt, "geometry")
+```
+
+```{r}
+activate(spt, "data")
+```
+
+```{r}
+write_rds(spt, "data/rds/spt.rds")
+```
+
+## 3.0 EDA
+
+```{r}
+tmap_options(check.and.fix = TRUE)
+```
+
+### 3.1 Global Spatial Autocorrelation
+
+See 36 <=
+```{r}
+# plot(dengue_vils_gb_ew)
+```
+
+Inspired by 
+
+https://jenpoer-is415-gaa-exercises.netlify.app/take-home-exercises/exe-02/the2#exploratory-data-analysis-eda-with-choropleth-maps
+```{r}
+choropleth_map_small_multiples <- function(df, varname, facet, colors) {
+  tm_shape(df) +
+    tm_polygons(col='white') +
+  tm_shape(df) +
+    tm_polygons(varname,
+            palette = colors,
+            style="quantile") +
+    tm_facets(by=facet, free.coords = FALSE)
+}
+```
+
+```{r}
+choropleth_map_small_multiples(dengue_vils_gb_vc_epi, "count", "epi_week", "Blues")
+```
+
+```{r}
+dv_total_wm_q <- poly2nb(dengue_vils_gb_vc, 
+                queen=TRUE)
+
+dv_total_rswm_q <- nb2listw(dv_total_wm_q, 
+                   style="W", 
+                   zero.policy = TRUE)
+
+summary(dv_total_wm_q)
+```
+
+```{r}
+# moran.test(dengue_vils_gb_vc$count, 
+#            listw=dv_total_wm_q, 
+#            zero.policy = TRUE, 
+#            na.action=na.omit)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
