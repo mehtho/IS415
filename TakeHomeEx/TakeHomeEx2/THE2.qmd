@@ -171,7 +171,7 @@ dengue_vils_sf <- dengue_vils_sf[!is.na(dengue_vils_sf$VILLCODE), ]
 Account for the NA village
 ```{r}
 dengue_vils_gb_vc <- dengue_vils_sf %>%
-  group_by(VILLCODE) %>%
+  group_by(VILLCODE, VILLENG) %>%
   summarise(count = sum(!is.na(epi_week)))
 ```
 ```{r}
@@ -200,10 +200,13 @@ activate(spt, "data")
 write_rds(spt, "data/rds/spt.rds")
 ```
 
+If data is full of landmines, the NA value remaining partially throughout the process was a dirty needle. It doesn't hurt much now, but it might mess me up in the long run.
+
 ## 3.0 EDA
 
 ```{r}
-tmap_options(check.and.fix = TRUE)
+set.seed(42)
+# tmap_options(check.and.fix = TRUE)
 ```
 
 ### 3.1 Global Spatial Autocorrelation
@@ -244,18 +247,63 @@ summary(dv_total_wm_q)
 ```
 
 ```{r}
-# moran.test(dengue_vils_gb_vc$count, 
-#            listw=dv_total_wm_q, 
-#            zero.policy = TRUE, 
-#            na.action=na.omit)
+moran.test(dengue_vils_gb_vc$count,
+           listw=dv_total_rswm_q,
+           zero.policy = TRUE,
+           na.action=na.omit)
+```
+```{r}
+moran_mc_res = moran.mc(dengue_vils_gb_vc$count,
+                listw=dv_total_rswm_q, 
+                nsim=999, 
+                zero.policy = TRUE, 
+                na.action=na.omit)
+moran_mc_res
 ```
 
+```{r}
+summary(moran_mc_res$res[1:999])
+```
 
+```{r}
+var(moran_mc_res$res[1:999])
+```
+```{r}
+ggplot() + 
+  aes(moran_mc_res$res[1:999]) + 
+  geom_histogram(colour="black", fill="pink") + 
+  labs(title = "Histogram of Simulated Moran's I For Tainan City Dengue Cases",
+       x = "Simulated Moran's I",
+       y = "Occurences") +
+  theme_minimal()
+```
 
+```{r}
+MI_corr <- sp.correlogram(dv_total_wm_q, 
+                          dengue_vils_gb_vc$count, 
+                          order=8, 
+                          method="I", 
+                          style="W")
+plot(MI_corr)
+print(MI_corr)
+```
+### Local
+```{r}
+# moran.plot(dengue_vils_gb_vc$count, dv_total_rswm_q,
+#                   labels=dengue_vils_gb_vc$VILLENG,
+#                   xlab="Dengue Cases",
+#                   ylab="Spatial Lag of Dengue Cases")
+```
 
+```{r}
+dengue_vils_gb_vc$count_Z <- scale(dengue_vils_gb_vc$count) %>% 
+  as.vector 
 
-
-
+moran.plot(dengue_vils_gb_vc$count_Z, dv_total_rswm_q,
+                  labels=dengue_vils_gb_vc$VILLENG,
+                  xlab="Dengue Cases Standardised",
+                  ylab="Spatial Lag of Dengue Cases Standardised")
+```
 
 
 
