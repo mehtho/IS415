@@ -1,11 +1,11 @@
 ---
-title: "In-Class Exercise 5: Global and Local Measures of Spatial Autocorrelation"
+title: "In-Class Exercise 5 & 6: Global and Local Measures of Spatial Autocorrelation"
 author:
   - name: Matthew Ho
     url: https://www.linkedin.com/in/matthewhoyiwen/
-date: 02-05-2024
+date: 02-19-2024
 description: |
-  In-class exercise 5
+  In-class exercise 5 & 6
 categories:
   - In-class Exercise
 format:
@@ -18,7 +18,7 @@ execute:
 ---
 
 ```{r}
-pacman::p_load(sf, tmap, sfdep, tidyverse)
+pacman::p_load(sf, tmap, sfdep, tidyverse, plotly)
 ```
 
 ```{r}
@@ -57,6 +57,7 @@ nb_queen <- hunan_GDPPC %>%
          .before = 1)
 summary(nb_queen$nb)
 ```
+
 ```{r}
 nb_queen$County[c(2,3,4,57,85)]
 ```
@@ -85,6 +86,17 @@ wm_q <- hunan_GDPPC %>%
 wm_q
 ```
 
+ROOK method
+```{r}
+wm_r <- hunan %>%
+  mutate(nb = st_contiguity(geometry,
+                            queen = FALSE),
+         wt = st_weights(nb),
+         .before = 1) 
+wm_r
+```
+
+QUEEN method
 ```{r}
 wm_r <- hunan %>%
   mutate(nb = st_contiguity(geometry,
@@ -115,18 +127,125 @@ global_moran_perm(wm_q$GDPPC,
                        wm_q$wt,
                         nsim=99)
 ```
+```{r}
+lisa <- wm_q %>% 
+  mutate(local_moran = local_moran(
+    GDPPC, nb, wt, nsim = 99),
+         .before = 1) %>%
+  unnest(local_moran)
+```
 
+```{r}
+tmap_mode("plot")
+map1 <- tm_shape(lisa) +
+  tm_fill("ii") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8)) +
+  tm_layout(main.title = "local Moran's I of GDPPC",
+            main.title.size = 0.8)
 
+map2 <- tm_shape(lisa) +
+  tm_fill("p_ii",
+          breaks = c(0, 0.001, 0.01, 0.05, 1),
+              labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "p-value of local Moran's I",
+            main.title.size = 0.8)
 
+tmap_arrange(map1, map2, ncol = 2)
+```
 
+```{r}
+lisa_sig <- lisa  %>%
+  filter(p_ii < 0.05)
+tmap_mode("plot")
+tm_shape(lisa) +
+  tm_polygons() +
+  tm_borders(alpha = 0.5) +
+tm_shape(lisa_sig) +
+  tm_fill("mean") + 
+  tm_borders(alpha = 0.4)
+```
 
+```{r}
+wm_idw <- hunan_GDPPC %>%
+  mutate(nb = st_contiguity(geometry),
+         wts = st_inverse_distance(nb, geometry,
+                                   scale = 1,
+                                   alpha = 1),
+         .before = 1)
+```
 
+```{r}
+HCSA <- wm_idw %>% 
+  mutate(local_Gi = local_gstar_perm(
+    GDPPC, nb, wt, nsim = 99),
+         .before = 1) %>%
+  unnest(local_Gi)
+HCSA
+```
+```{r}
+tmap_mode("plot")
+tm_shape(HCSA) +
+  tm_fill("gi_star") + 
+  tm_borders(alpha = 0.5) +
+  tm_view(set.zoom.limits = c(6,8))
+```
 
+```{r}
+HCSA_sig <- HCSA  %>%
+  filter(p_sim < 0.05)
+tmap_mode("plot")
+tm_shape(HCSA) +
+  tm_polygons() +
+  tm_borders(alpha = 0.5) +
+tm_shape(HCSA_sig) +
+  tm_fill("gi_star") + 
+  tm_borders(alpha = 0.4)
+```
 
+### In class ex smaller
+```{r}
+GDPPC <- read_csv("data/aspatial/Hunan_GDPPC.csv")
+```
 
+```{r}
+GDPPC_st <- spacetime(GDPPC, hunan,
+                      .loc_col = "County",
+                      .time_col = "Year")
+is_spacetime_cube(GDPPC_st)
+```
 
+```{r}
+GDPPC_nb <- GDPPC_st %>%
+  activate("geometry") %>%
+  mutate(nb = include_self(st_contiguity(geometry)),
+         wt = st_inverse_distance(nb, geometry,
+                                  scale = 1,
+                                  alpha = 1),
+         .before = 1) %>%
+  set_nbs("nb") %>%
+  set_wts("wt")
+```
 
+```{r}
+head(GDPPC_nb)
+```
 
+```{r}
+gi_stars <- GDPPC_nb %>% 
+  group_by(Year) %>% 
+  mutate(gi_star = local_gstar_perm(
+    GDPPC, nb, wt)) %>% 
+  tidyr::unnest(gi_star)
+```
+
+```{r}
+cbg <- gi_stars %>% 
+  ungroup() %>% 
+  filter(County == "Changsha") |> 
+  select(County, Year, gi_star)
+```
 
 
 

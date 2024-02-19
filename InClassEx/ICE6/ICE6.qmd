@@ -1,0 +1,21 @@
+---
+title: "In-Class Exercise 6: "
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 02-19-2024
+description: |
+  In-class exercise 6
+categories:
+  - In-class Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+
+
