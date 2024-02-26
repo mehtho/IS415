@@ -22,7 +22,7 @@ execute:
 ## 2.0 Wrangling
 
 ```{r}
-pacman::p_load(sf, spdep, tmap, tidyverse, ggplot2, smoothr, lubridate, sfdep)
+pacman::p_load(sf, tmap, tidyverse, ggplot2, smoothr, lubridate, sfdep)
 ```
 
 ```{r}
@@ -185,7 +185,30 @@ plot(dengue_vils_gb_vc_epi)
 ```
 
 ```{r}
-spt <- as_spacetime(dengue_vils_gb_vc_epi, "VILLCODE", "epiweek")
+dengue_vils_gb_vc_epi$epi_week <- ifelse(is.na(dengue_vils_gb_vc_epi$epi_week), 31, dengue_vils_gb_vc_epi$epi_week)
+
+template <- expand.grid(VILLCODE = unique(dengue_vils_gb_vc_epi$VILLCODE),
+                        epi_week = unique(dengue_vils_gb_vc_epi$epi_week))
+
+merged_df <- merge(template, dengue_vils_gb_vc_epi, by = c("VILLCODE", "epi_week"), all.x = TRUE)
+
+merged_df$count[is.na(merged_df$count)] <- 0
+
+merged_df <- select(merged_df, -geometry)
+
+merged_df <- st_as_sf(distinct(merge(merged_df, dengue_vils_gb_vc_epi[, c("VILLCODE", "geometry")], 
+                  by = "VILLCODE", suffixes = c("", ".y"), all.x = TRUE)))
+```
+
+```{r}
+print(nrow(merged_df))
+print(length(unique(merged_df$VILLCODE)))
+print(length(unique(merged_df$epi_week)))
+```
+
+```{r}
+spt <- as_spacetime(merged_df, "VILLCODE", "epi_week")
+is_spacetime_cube(spt)
 ```
 
 ```{r}
@@ -236,25 +259,22 @@ choropleth_map_small_multiples(dengue_vils_gb_vc_epi, "count", "epi_week", "Blue
 ```
 
 ```{r}
-dv_total_wm_q <- poly2nb(dengue_vils_gb_vc, 
-                queen=TRUE)
-
-dv_total_rswm_q <- nb2listw(dv_total_wm_q, 
-                   style="W", 
-                   zero.policy = TRUE)
-
-summary(dv_total_wm_q)
+wm_q.nb <- st_contiguity(dengue_vils_gb_vc$geometry)
+wm_q.wt <- st_weights(wm_q.nb, style = "W")
+wm_q.count <- dengue_vils_gb_vc$count
 ```
 
 ```{r}
-moran.test(dengue_vils_gb_vc$count,
-           listw=dv_total_rswm_q,
+global_moran_test(wm_q.count,
+           wm_q.nb,
+           wm_q.wt,
            zero.policy = TRUE,
            na.action=na.omit)
 ```
 ```{r}
-moran_mc_res = moran.mc(dengue_vils_gb_vc$count,
-                listw=dv_total_rswm_q, 
+moran_mc_res = global_moran_perm(wm_q.count,
+                wm_q.nb,
+                wm_q.wt,
                 nsim=999, 
                 zero.policy = TRUE, 
                 na.action=na.omit)
@@ -268,6 +288,7 @@ summary(moran_mc_res$res[1:999])
 ```{r}
 var(moran_mc_res$res[1:999])
 ```
+
 ```{r}
 ggplot() + 
   aes(moran_mc_res$res[1:999]) + 
@@ -279,120 +300,65 @@ ggplot() +
 ```
 
 ```{r}
-MI_corr <- sp.correlogram(dv_total_wm_q, 
-                          dengue_vils_gb_vc$count, 
-                          order=8, 
-                          method="I", 
-                          style="W")
-plot(MI_corr)
-print(MI_corr)
+# MI_corr <- sp.correlogram(dv_total_wm_q, 
+#                           dengue_vils_gb_vc$count, 
+#                           order=8, 
+#                           method="I", 
+#                           style="W")
+# plot(MI_corr)
+# print(MI_corr)
 ```
 ### Local
 
 ```{r}
-fips <- order(dengue_vils_gb_vc$VILLCODE)
-localMI <- localmoran(dengue_vils_gb_vc$count, dv_total_rswm_q)
-head(localMI)
-```
-
-```{r}
-dengue_vils_gb_vc.localMI <- cbind(dengue_vils_gb_vc,localMI) %>%
-  rename(Pr.Ii = Pr.z....E.Ii..)
+wm_q.lisa <- local_moran(wm_q.count, wm_q.nb, wm_q.wt)
+dengue_vils_gb_vc <- cbind(dengue_vils_gb_vc, wm_q.lisa)
 ```
 
 ```{r}
 p_val_2_cats <- function(x) {
-  if (x <= 0.005) {
-    return("p <= 0.005")
-  } else if (x <= 0.01) {
-    return("p <= 0.01")
-  } else if (x <= 0.05) {
-    return("p <= 0.05")
+  if (x < 0.005) {
+    return("p < 0.005")
+  } else if (x < 0.01) {
+    return("p < 0.01")
+  } else if (x < 0.05) {
+    return("p < 0.05")
   } else {
     return("p > 0.05")
   }
 }
 
-dengue_vils_gb_vc.localMI <- dengue_vils_gb_vc.localMI %>%
-  mutate(p_values = sapply(Pr.Ii, p_val_2_cats))
+dengue_vils_gb_vc <- dengue_vils_gb_vc %>%
+  mutate(p_values = sapply(p_ii, p_val_2_cats))
 ```
 
 ```{r}
-tm_shape(dengue_vils_gb_vc.localMI) +
-  tm_fill(col = "Ii", 
+tm_shape(dengue_vils_gb_vc) +
+  tm_fill(col = "ii", 
           style = "pretty",
           palette = "RdBu",
           title = "local moran statistics") +
   tm_borders(alpha = 0.5) + 
   
-tm_shape(dengue_vils_gb_vc.localMI[dengue_vils_gb_vc.localMI$p_values != "p > 0.05", ]) +
+tm_shape(dengue_vils_gb_vc[dengue_vils_gb_vc$p_values != "p > 0.05", ]) +
   tm_symbols(col = "p_values",
              title.shape = "P Values:",
-             shapes.labels = c("p <= 0.05", "p <= 0.01", "p <= 0.005"),
+             shapes.labels = c("p < 0.05", "p < 0.01", "p < 0.005"),
              size = 0.1,
              palette=c('purple', 'hotpink', 'white'))
 ```
-
 ```{r}
-dengue_vils_gb_vc$count_Z <- scale(dengue_vils_gb_vc$count) %>% 
-  as.vector 
+lisa_sig <- dengue_vils_gb_vc  %>%
+  filter(p_ii < 0.05)
+tmap_mode("plot")
 
-moran.plot(dengue_vils_gb_vc$count_Z, dv_total_rswm_q,
-                  labels=dengue_vils_gb_vc$VILLENG,
-                  xlab="Dengue Cases Standardised",
-                  ylab="Spatial Lag of Dengue Cases Standardised")
+tm_shape(dengue_vils_gb_vc) +
+  tm_polygons() +
+  tm_borders(alpha = 0.5) +
+tm_shape(lisa_sig) +
+  tm_fill("mean") + 
+  tm_borders(alpha = 0.4)
 ```
-
-```{r}
-quadrant <- vector(mode="numeric",length=nrow(localMI))
-dengue_vils_gb_vc$lag_count <- lag.listw(dv_total_rswm_q, dengue_vils_gb_vc$count)
-DV <- dengue_vils_gb_vc$count - mean(dengue_vils_gb_vc$count)     
-LM_I <- localMI[,1]   
-signif <- 0.05       
-quadrant[DV <0 & LM_I>0] <- 1
-quadrant[DV >0 & LM_I<0] <- 2
-quadrant[DV <0 & LM_I<0] <- 3  
-quadrant[DV >0 & LM_I>0] <- 4    
-quadrant[localMI[,5]>signif] <- 0
-```
-
-```{r}
-dengue_vils_gb_vc.localMI$quadrant <- quadrant
-
-print(unique(dengue_vils_gb_vc.localMI$quadrant))
-
-colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
-clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
-
-tm_shape(dengue_vils_gb_vc.localMI) +
-  tm_fill(col = "quadrant", 
-          style = "cat", 
-          palette = colors[c(sort(unique(quadrant)))+1], 
-          labels = clusters[c(sort(unique(quadrant)))+1],
-          popup.vars = c("")) +
-  tm_borders(alpha=0.5)
-```
-
-```{r}
-dengue_count <- qtm(dengue_vils_gb_vc, "count")
-
-dengue_vils_gb_vc$quadrant <- quadrant
-colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
-clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
-
-LISAmap <- tm_shape(dengue_vils_gb_vc.localMI) +
-  tm_fill(col = "quadrant", 
-          style = "cat", 
-          palette = colors[c(sort(unique(quadrant)))+1], 
-          labels = clusters[c(sort(unique(quadrant)))+1],
-          popup.vars = c("")) +
-
-  tm_borders(alpha=0.5)
-
-tmap_arrange(dengue_count, LISAmap, 
-             asp=1, ncol=2)
-```
-
 
 ### Hot and Cold
 

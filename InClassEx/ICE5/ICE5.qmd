@@ -87,6 +87,7 @@ wm_q
 ```
 
 ROOK method
+
 ```{r}
 wm_r <- hunan %>%
   mutate(nb = st_contiguity(geometry,
@@ -97,6 +98,7 @@ wm_r
 ```
 
 QUEEN method
+
 ```{r}
 wm_r <- hunan %>%
   mutate(nb = st_contiguity(geometry,
@@ -127,6 +129,7 @@ global_moran_perm(wm_q$GDPPC,
                        wm_q$wt,
                         nsim=99)
 ```
+
 ```{r}
 lisa <- wm_q %>% 
   mutate(local_moran = local_moran(
@@ -184,6 +187,7 @@ HCSA <- wm_idw %>%
   unnest(local_Gi)
 HCSA
 ```
+
 ```{r}
 tmap_mode("plot")
 tm_shape(HCSA) +
@@ -205,6 +209,7 @@ tm_shape(HCSA_sig) +
 ```
 
 ### In class ex smaller
+
 ```{r}
 GDPPC <- read_csv("data/aspatial/Hunan_GDPPC.csv")
 ```
@@ -294,7 +299,3 @@ tm_shape(ehsa_sig) +
   tm_fill("classification") + 
   tm_borders(alpha = 0.4)
 ```
-
-
-
-
