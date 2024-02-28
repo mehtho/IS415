@@ -19,8 +19,8 @@ execute:
 
 ## 1.0 Overview
 
-## 2.0 Wrangling
-
+## 2.0 Setup
+### 2.1 Dependencies
 Loading the required packages
 
 1.  **sf** Needed to handle spatial data through the new simple features standard
@@ -40,7 +40,7 @@ Loading the required packages
 ```{r}
 pacman::p_load(sf, tmap, tidyverse, ggplot2, smoothr, lubridate, sfdep)
 ```
-
+### 2.2 Datasets
 Loading the TAINAN_VILLAGE dataset
 
 ```{r}
@@ -48,11 +48,21 @@ twv <- st_read(dsn = "data/geospatial",
                  layer = "TAINAN_VILLAGE")
 ```
 
-Loading the Dengue Daily apspatial dataset
+Loading the Dengue Daily aspatial dataset
 
 ```{r}
 dengued <- read_csv("data/aspatial/Dengue_Daily.csv")
 ```
+
+
+#### Setting random seed
+```{r}
+set.seed(42)
+```
+
+## 3.0 Wrangling
+
+### 3.1 Extracting Columns
 
 Unfortunately, I cannot read and understand Chinese characters. Leaving Chinese characters and words in my data would make work very difficult and error prone, so my first priority is to extract the right columns and translate them.
 
@@ -87,13 +97,16 @@ Before extracting those columns, I also wanted to see the types of additional in
 I had some issues loading coordinates in this dataset, but setting this solved the issue for me.
 
 ```{r}
-options(digits = 12)
+# options(digits = 12)
 ```
 
+Transforming the coordinate strings into numerical values
 ```{r}
 dengued[, c(2, 3)] <- lapply(dengued[, c(2, 3)], as.numeric)
 head(dengued)
 ```
+
+### 3.2 Dealing with Missing Data
 
 As expected, there are NA values in the dataset. I remove them here and check that they are gone.
 
@@ -109,6 +122,7 @@ dengued <- na.omit(dengued)
 sum(apply(dengued, 1, function(x) any(is.na(x))))
 ```
 
+### 3.3 CRS and Coordinates
 I check the CRS for the TAINAN VILLAGE dataset so I know which CRS to use when converting the Dengue dataset's latlongs.
 
 ```{r}
@@ -123,7 +137,8 @@ dengued_sf <- st_as_sf(dengued, coords = c("X", "Y"),
 st_crs(dengued_sf)
 ```
 
-Looks good to proceed. I now narrow down the study area to the given counties.
+### 3.4 Study Area
+Looks good to proceed. I now narrow down the study area to the given counties. I also removed the NOTE column since it did not provide much information, but kept the others. The other columns and names could help me debug or google what certain regions look like later on.
 
 ```{r}
 twvsz <- twv[twv$TOWNID %in% c("D01", "D02", "D04", "D06", "D07", "D08", "D32", "D39"), ] %>% 
@@ -136,6 +151,7 @@ Visualising the study area
 plot(twvsz)
 ```
 
+### 3.5 Geometry Holes
 I want to ensure that all of the points from the dengue dataset fall within a polygon and not within a small gap. I use st_union to check for any holes.
 
 ```{r}
@@ -160,6 +176,7 @@ hole_victims <- st_intersection(dengued_sf, diff_twvsz)
 head(hole_victims)
 ```
 
+### 3.6 Epiweeks
 I restrict the data range to epidemiology weeks 31-50 2023.
 
 Epi weeks 31-50 2023: 30-07-23 to 16-12-23
@@ -180,12 +197,6 @@ I then add the epi_week column according to the onset date.
 dengue_sf$epi_week <- epiweek(dengue_sf$Onset)
 ```
 
-Even though the processing was quite performant, I save the preprocessed data into a .rds file.
-
-```{r}
-write_rds(dengue_sf, "data/rds/dengue_sf.rds")
-```
-
 From the below plot, we can see that most cases are in the centre, around the urban centres. The northwest region appears to be mostly agricultural areas, where people are less likely to live.
 
 ```{r}
@@ -195,6 +206,8 @@ tm_shape(dengue_sf) +
   tm_dots(col = "red")
 ```
 
+#### Checking the Geometry
+
 Checking there is no duplicate geometry
 
 ```{r}
@@ -202,6 +215,7 @@ vil_dupes <- any(duplicated(twvsz$VILLCODE))
 vil_dupes
 ```
 
+### 3.7 Aggregating Dengue Cases
 I found a problem here.
 
 There was a village in the northwest that did not have any dengue cases. If I were to naively combine the tainan village and dengue datasets and remove NA values, I would lose a polygon, leading to inaccurate results later on. I had to remain aware that this problematic polygon exists until I aggregate the number of dengue case, after which it could simply be 0.
@@ -252,6 +266,7 @@ Here I can see that my approach worked correctly. I have preserved all polygons.
 plot(dengue_vils_gb_vc_epi)
 ```
 
+### 3.8 Spacetime Cube
 Now to create the spacetime cube, I create a 0 value for each combination that does not exist, expanding on the previous NA value handling.
 
 ```{r}
@@ -287,17 +302,15 @@ write_rds(spt, "data/rds/spt.rds")
 
 If data is full of landmines, the NA value remaining partially throughout the process was a dirty needle. It won't hurt too much immediately, but it might mess me up in the long run.
 
-## 3.0 EDA
-
-```{r}
-set.seed(42)
-```
+## 4.0 EDA
 
 I wanted to see how the number of new cases changed every week, taking inspiration from
 
 https://jenpoer-is415-gaa-exercises.netlify.app/take-home-exercises/exe-02/the2#exploratory-data-analysis-eda-with-choropleth-maps
 
 From the facets map, we can observe that cases originated from the central to southeast region before spreading and remaining the in central region. Infections then dissipated in the central regions, while some new cases kept emerging in the less central regions.
+
+### 4.1 Cases by Epidemiology Week
 
 ```{r}
 tm_shape(dengue_vils_gb_vc_epi) +
@@ -309,8 +322,12 @@ tm_shape(dengue_vils_gb_vc_epi) +
   tm_facets(by="epi_week", free.coords = FALSE)
 ```
 
+### 4.2 Overall Cases
+
 Overall, We can see that the majority of cases occurred in areas around the central and eastern regions. The central regions are likely lighter because they are smaller. Likewise, the larger central and eastern regions are darker than expected.
 
+::: panel-tabset
+## Quantile
 ```{r}
 tm_shape(dengue_vils_gb_vc) +
   tm_polygons("count",
@@ -318,26 +335,31 @@ tm_shape(dengue_vils_gb_vc) +
           style="quantile")
 ```
 
+## Equal
 ```{r}
 tm_shape(dengue_vils_gb_vc) +
   tm_polygons("count",
           palette = "Blues",
           style="equal")
 ```
+:::
 
-## 4.0 Global Measures of Spatial Autocorrelation
+## 5.0 Global Measures of Spatial Autocorrelation
 
-In this section, I use Moran's I to ascertain the presence of systemic spatial variations of dengue cases. In other words, how the number of dengue cases in each village varies according to its surround villages.
+To assess spatial autocorrelation in our dataset, or how the presence of dengue cases in a region may form clusters. 
 
-### 4.1 Calculating Neighbours and Weights
+### 5.1 Calculating Neighbours and Weights
+I decided to use Queen's neighbour criteria. This should also account for polygons that only share a corner. In realistic cases, polygons that share a corner are very likely to be close enough to influence each other. 
 
 ```{r}
-wm_q.nb <- st_contiguity(dengue_vils_gb_vc$geometry)
+wm_q.nb <- st_contiguity(dengue_vils_gb_vc, queen=TRUE)
 wm_q.wt <- st_weights(wm_q.nb, style = "W")
 wm_q.count <- dengue_vils_gb_vc$count
 ```
 
-### 4.2 Global Moran's I Test
+### 5.2 Global Moran's I Test
+
+In this section, I use Moran's I to ascertain the presence of systemic spatial variations of dengue cases. In other words, how the number of dengue cases in each village varies according to its surrounding villages compared to that under spatial randomness.
 
 ```{r}
 global_moran_test(wm_q.count,
@@ -395,20 +417,22 @@ ggplot() +
 # print(MI_corr)
 ```
 
-## 5.0 Local Measures of Spatial Autocorrelation
+## 6.0 Local Measures of Spatial Autocorrelation
 
-Local Indicators of Spatial Association, or LISA, let us evaluate clusters between regions. In simpler terms, it is a statistical method, where higher values denote that the region is more heavily influenced by its surroundings. 
+Local Indicators of Spatial Association, or LISA, let us evaluate clusters between regions. In simpler terms, it is a statistical method, where higher values denote that the region is more heavily influenced by its surroundings.
 
-It is also important to consider that not every local moran's I statistic will be statistically significant. 
+### 6.1 Local Moran's I
 
-Calculating local moran's I statistics and append the results to the original datafram as new columns.
+It is also important to consider that not every local Moran's I statistic will be statistically significant.
+
+Calculating local Moran's I statistics and append the results to the original dataframe as new columns.
 
 ```{r}
 local_mi <- local_moran(wm_q.count, wm_q.nb, wm_q.wt)
 dengue_vils_gb_vc <- cbind(dengue_vils_gb_vc, local_mi)
 ```
 
-From class examples, I found it very intuitive to plot a p-value chloropleth map next to the local Moran's I map, since it requires me to match complex shapes mentally from one map to the other. 
+From class examples, I found it very unintuitive to plot a p-value chloropleth map next to the local Moran's I map, since it requires me to match complex shapes mentally from one map to the other.
 
 To reduce the mental load, I have combined these maps after categorising the p-values.
 
@@ -429,9 +453,11 @@ dengue_vils_gb_vc <- dengue_vils_gb_vc %>%
   mutate(p_values = sapply(p_ii, p_val_2_cats))
 ```
 
-From this map, we can observe statisticaly significant spatial autocorrelation in some central regions and the north-western region. In the case of the north-western regions, the significant local Moran's I statistics tell us that for these areas with fewer infections, they were likely influenced by their neighbours' lack of infections.
+### 6.2 Local Moran's I Plots
 
-This kind of analysis can also show certain villages that are "outliers" in the sense that their number of infections does not align with their neighbours'. These outliers are the statistically significant red regions. 
+From this map, we can observe statistically significant spatial autocorrelation in some central regions and the north-western region. In the case of the north-western regions, the significant local Moran's I statistics tell us that for these areas with fewer infections, they were likely influenced by their neighbours' lack of infections.
+
+This kind of analysis can also show certain villages that are "outliers" in the sense that their number of infections does not align with their neighbours'. These outliers are the statistically significant red regions.
 
 These outliers suggest that there may be a reason why Dengue is not transmitted between two neighbours, such as inhabitants having little reason to travel to adjacent regions, or subtle environmental barriers inhibiting the range of vectors.
 
@@ -453,9 +479,14 @@ tm_shape(dengue_vils_gb_vc[dengue_vils_gb_vc$p_values != "p > 0.05", ]) +
              palette=c('purple', 'hotpink', 'white'))
 ```
 
-We can refine the map above to only display statistically significant results with LISA quadrants. 
+
+### 6.3 LISA Quadrant Map
+We can refine the map above to only display statistically significant results with LISA quadrants.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
 quadrant <- vector(length=nrow(dengue_vils_gb_vc))
 dengue_vils_gb_vc$lag_count <- st_lag(wm_q.count, wm_q.nb, wm_q.wt)
 DV <- dengue_vils_gb_vc$lag_count - mean(dengue_vils_gb_vc$lag_count)     
@@ -483,7 +514,21 @@ tm_shape(lisa_sig) +
   tm_borders(alpha = 0.4)
 ```
 
-## 6.0 EHSA
+## 7.0 EHSA
+
+In this section, we can analyse hot and spot spots, as well which type of hot/cold spot they are.
+
+### 7.1 Choosing Time Horizons
+However, something I noticed was that as region's hot/cold spots may change over time. This is natural since the calculations are done based on the data points provided.
+
+For example, a region could start as a new hotspot before becoming an oscillating hotspot.
+
+Based on the histogram below, I set points in time to conduct EHSA based on the progress of this dengue outbreak.
+
+-   Epiweek 35: Noticeable increase in cases
+-   Epiweek 39: The peak in cases
+-   Epiweek 45: Midway through the decline in cases
+-   Epiweek 50: When cases have dropped significantly (All of the spacetime object)
 
 ```{r}
 ggplot(spt, aes(x = epi_week, y = count)) +
@@ -492,8 +537,11 @@ ggplot(spt, aes(x = epi_week, y = count)) +
   ggtitle("Histogram of Epi Week")
 ```
 
+This is a chunk of code and function to ensure consistent coloring for each kind of hot/cold spot, making it easier to compare across maps.
 ```{r}
-# Function to create color mapping
+#| code-fold: true
+#| code-summary: "Show the code"
+
 create_color_mapping <- function(all_breaks, all_colors, map_breaks) {
   color_mapping <- rep(NA, length(map_breaks))
   for (i in seq_along(map_breaks)) {
@@ -505,7 +553,6 @@ create_color_mapping <- function(all_breaks, all_colors, map_breaks) {
   return(color_mapping)
 }
 
-# Example data
 all_breaks <- c("consecutive coldspot", "consecutive hotspot", "new coldspot", "new hotspot", "no pattern detected", "intensifying coldspot", "intensifying hotspot", "oscilating coldspot", "oscilating hotspot", "persistent coldspot", "persistent hotspot", "sporadic coldspot", "sporadic hotspot"
 )
 
@@ -514,7 +561,11 @@ all_colors <- c("#FF5733", "#66CDAA", "#BA55D3", "#20B2AA", "#DC143C", "#4169E1"
 
 ```
 
+The rule of "Do not repeat yourself" applies in R too. I have learnt from my previous takehome exercise and will use functions for repeated analysis to avoid duplicated code.
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
 ehsa_4_spt <- function(sptcube, week_lim, geom) {
   spt_n <- filter(spt, epi_week <= week_lim)
   
@@ -556,18 +607,29 @@ ehsa_4_spt <- function(sptcube, week_lim, geom) {
 }
 ```
 
+### 7.2 EHSA Maps
+
+From the below visualisations, we can see that during week 40, there were some clear consecutive and new hotspots around the peripheral areas of the central area. We could also clearly see the northwestern region becoming cold spots through the outbreak.
+
+::: panel-tabset
+## EW 30-35
 ```{r}
 ehsa_4_spt(spt, 35, twvsz)
 ```
-
+## EW 30-40
 ```{r}
-ehsa_4_spt(spt, 40, twvsz)
+ehsa_4_spt(spt, 39, twvsz)
 ```
-
+## EW 30-45
 ```{r}
 ehsa_4_spt(spt, 45, twvsz)
 ```
-
+## EW 30-50
 ```{r}
 ehsa_4_spt(spt, 50, twvsz)
 ```
+:::
+
+## 8.0 Conclusions
+
+## 9.0 Takeaways
