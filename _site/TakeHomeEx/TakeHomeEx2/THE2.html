@@ -215,12 +215,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">1.0 Overview</a></li>
   <li><a href="#wrangling" id="toc-wrangling" class="nav-link" data-scroll-target="#wrangling">2.0 Wrangling</a></li>
-  <li><a href="#eda" id="toc-eda" class="nav-link" data-scroll-target="#eda">3.0 EDA</a>
+  <li><a href="#eda" id="toc-eda" class="nav-link" data-scroll-target="#eda">3.0 EDA</a></li>
+  <li><a href="#global-measures-of-spatial-autocorrelation" id="toc-global-measures-of-spatial-autocorrelation" class="nav-link" data-scroll-target="#global-measures-of-spatial-autocorrelation">4.0 Global Measures of Spatial Autocorrelation</a>
   <ul class="collapse">
-  <li><a href="#global-spatial-autocorrelation" id="toc-global-spatial-autocorrelation" class="nav-link" data-scroll-target="#global-spatial-autocorrelation">3.1 Global Spatial Autocorrelation</a></li>
-  <li><a href="#local" id="toc-local" class="nav-link" data-scroll-target="#local">Local</a></li>
-  <li><a href="#hot-and-cold" id="toc-hot-and-cold" class="nav-link" data-scroll-target="#hot-and-cold">Hot and Cold</a></li>
+  <li><a href="#calculating-neighbours-and-weights" id="toc-calculating-neighbours-and-weights" class="nav-link" data-scroll-target="#calculating-neighbours-and-weights">4.1 Calculating Neighbours and Weights</a></li>
+  <li><a href="#global-morans-i-test" id="toc-global-morans-i-test" class="nav-link" data-scroll-target="#global-morans-i-test">4.2 Global Moran’s I Test</a></li>
   </ul></li>
+  <li><a href="#local-measures-of-spatial-autocorrelation" id="toc-local-measures-of-spatial-autocorrelation" class="nav-link" data-scroll-target="#local-measures-of-spatial-autocorrelation">5.0 Local Measures of Spatial Autocorrelation</a></li>
+  <li><a href="#ehsa" id="toc-ehsa" class="nav-link" data-scroll-target="#ehsa">6.0 EHSA</a></li>
   </ul>
 </nav>
     </div>
@@ -505,6 +507,7 @@ Geodetic CRS:  TWD97
 <div class="cell">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(dengue_sf, <span class="st">"data/rds/dengue_sf.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>From the below plot, we can see that most cases are in the centre, around the urban centres. The northwest region appears to be mostly agricultural areas, where people are less likely to live.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(u_twvsz) <span class="sc">+</span> </span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
@@ -518,26 +521,24 @@ Geodetic CRS:  TWD97
 </div>
 </div>
 </div>
+<p>Checking there is no duplicate geometry</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>geo_dupes <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">duplicated</span>(dengue_sf<span class="sc">$</span>geometry))</span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>geo_dupes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] TRUE</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>vil_dupes <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">duplicated</span>(twvsz<span class="sc">$</span>VILLCODE))</span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>vil_dupes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>vil_dupes <span class="ot">&lt;-</span> <span class="fu">any</span>(<span class="fu">duplicated</span>(twvsz<span class="sc">$</span>VILLCODE))</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>vil_dupes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] FALSE</code></pre>
 </div>
 </div>
-<p>Keep the NA for geometry purposes</p>
+<p>I found a problem here.</p>
+<p>There was a village in the northwest that did not have any dengue cases. If I were to naively combine the tainan village and dengue datasets and remove NA values, I would lose a polygon, leading to inaccurate results later on. I had to remain aware that this problematic polygon exists until I aggregate the number of dengue case, after which it could simply be 0.</p>
+<p>Here, I use st_join to associate each dengue case with a village.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf <span class="ot">&lt;-</span> <span class="fu">st_join</span>(twvsz, dengue_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf <span class="ot">&lt;-</span> <span class="fu">st_join</span>(twvsz, dengue_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Instead of simply omitting NA values, I remove only the rows without a village code, keeping the polygon with an NA value.</p>
+<p>Below is the problematic row, which I want to keep</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf[<span class="sc">!</span><span class="fu">rownames</span>(dengue_vils_sf) <span class="sc">%in%</span> <span class="fu">rownames</span>(<span class="fu">na.omit</span>(dengue_vils_sf)), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf[<span class="sc">!</span><span class="fu">rownames</span>(dengue_vils_sf) <span class="sc">%in%</span> <span class="fu">rownames</span>(<span class="fu">na.omit</span>(dengue_vils_sf)), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Simple feature collection with 1 feature and 11 fields
 Geometry type: POLYGON
@@ -551,44 +552,96 @@ Geodetic CRS:  TWD97
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf <span class="ot">&lt;-</span> dengue_vils_sf[<span class="sc">!</span><span class="fu">is.na</span>(dengue_vils_sf<span class="sc">$</span>VILLCODE), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_sf <span class="ot">&lt;-</span> dengue_vils_sf[<span class="sc">!</span><span class="fu">is.na</span>(dengue_vils_sf<span class="sc">$</span>VILLCODE), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Account for the NA village</p>
+<p>The below code create the aggregated data by counting the rows without NA values. For the dataframe grouped by epiweeks, I insert a 0 value to preserve the geometry, which will not interfere with further analysis.</p>
+<p>I create 2 dataframes, one grouped by village code and the other grouped by both village code and epiweek (total cases for each zone).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc <span class="ot">&lt;-</span> dengue_vils_sf <span class="sc">%&gt;%</span></span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(VILLCODE, VILLENG) <span class="sc">%&gt;%</span></span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">count =</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(epi_week)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc <span class="ot">&lt;-</span> dengue_vils_sf <span class="sc">%&gt;%</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(VILLCODE, VILLENG) <span class="sc">%&gt;%</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">count =</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(epi_week)))</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 258 features and 3 fields
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: 120.062662846 ymin: 22.894006863 xmax: 120.292497157 ymax: 23.091435597
+Geodetic CRS:  TWD97
+# A tibble: 258 × 4
+# Groups:   VILLCODE [258]
+   VILLCODE    VILLENG        count                                     geometry
+   &lt;chr&gt;       &lt;chr&gt;          &lt;int&gt;                                &lt;POLYGON [°]&gt;
+ 1 67000270001 Taizi Vil.        37 ((120.267199621 22.99654662, 120.266803062 …
+ 2 67000270002 Tuku Vil.         15 ((120.265902836 22.991459806, 120.263120801…
+ 3 67000270003 Yijia Vil.        39 ((120.24922797 22.982648407, 120.249236725 …
+ 4 67000270004 Rende Vil.       105 ((120.239006994 22.980119166, 120.238946159…
+ 5 67000270005 Renyi Vil.       163 ((120.257650095 22.974321802, 120.257159134…
+ 6 67000270006 Xintian Vil.      15 ((120.271278468 22.968037284, 120.271186859…
+ 7 67000270007 Houbi Vil.        41 ((120.240394094 22.959146869, 120.240370804…
+ 8 67000270008 Shanglun Vil.     30 ((120.270074093 22.948409235, 120.268383742…
+ 9 67000270011 Bao'an Vil.       19 ((120.230434145 22.935436616, 120.23014601 …
+10 67000270012 Chenggong Vil.    62 ((120.224656159 22.961651942, 120.224655578…
+# ℹ 248 more rows</code></pre>
+</div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc_epi <span class="ot">&lt;-</span> dengue_vils_sf <span class="sc">%&gt;%</span></span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(VILLCODE, epi_week) <span class="sc">%&gt;%</span></span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">count =</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(epi_week)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc_epi <span class="ot">&lt;-</span> dengue_vils_sf <span class="sc">%&gt;%</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(VILLCODE, epi_week) <span class="sc">%&gt;%</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">count =</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(epi_week)))</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc_epi<span class="sc">$</span>epi_week <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(dengue_vils_gb_vc_epi<span class="sc">$</span>epi_week), <span class="dv">31</span>, dengue_vils_gb_vc_epi<span class="sc">$</span>epi_week)</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc_epi</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 3518 features and 3 fields
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: 120.062662846 ymin: 22.894006863 xmax: 120.292497157 ymax: 23.091435597
+Geodetic CRS:  TWD97
+# A tibble: 3,518 × 4
+# Groups:   VILLCODE [258]
+   VILLCODE    epi_week count                                           geometry
+ * &lt;chr&gt;          &lt;dbl&gt; &lt;int&gt;                                      &lt;POLYGON [°]&gt;
+ 1 67000270001       33     1 ((120.267199621 22.99654662, 120.266803062 22.996…
+ 2 67000270001       34     1 ((120.267199621 22.99654662, 120.266803062 22.996…
+ 3 67000270001       35     2 ((120.267199621 22.99654662, 120.266803062 22.996…
+ 4 67000270001       36     2 ((120.267199621 22.99654662, 120.266803062 22.996…
+ 5 67000270001       37     6 ((120.267199621 22.99654662, 120.266803062 22.996…
+ 6 67000270001       38     3 ((120.267199621 22.99654662, 120.266803062 22.996…
+ 7 67000270001       39     4 ((120.267199621 22.99654662, 120.266803062 22.996…
+ 8 67000270001       40     1 ((120.267199621 22.99654662, 120.266803062 22.996…
+ 9 67000270001       41     1 ((120.267199621 22.99654662, 120.266803062 22.996…
+10 67000270001       42     2 ((120.267199621 22.99654662, 120.266803062 22.996…
+# ℹ 3,508 more rows</code></pre>
 </div>
+</div>
+<p>Here I can see that my approach worked correctly. I have preserved all polygons.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(dengue_vils_gb_vc_epi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE2_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE2_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
+<p>Now to create the spacetime cube, I create a 0 value for each combination that does not exist, expanding on the previous NA value handling.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc_epi<span class="sc">$</span>epi_week <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(dengue_vils_gb_vc_epi<span class="sc">$</span>epi_week), <span class="dv">31</span>, dengue_vils_gb_vc_epi<span class="sc">$</span>epi_week)</span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>template <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">VILLCODE =</span> <span class="fu">unique</span>(dengue_vils_gb_vc_epi<span class="sc">$</span>VILLCODE),</span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>                        <span class="at">epi_week =</span> <span class="fu">unique</span>(dengue_vils_gb_vc_epi<span class="sc">$</span>epi_week))</span>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>template <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">VILLCODE =</span> <span class="fu">unique</span>(dengue_vils_gb_vc_epi<span class="sc">$</span>VILLCODE),</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">epi_week =</span> <span class="fu">unique</span>(dengue_vils_gb_vc_epi<span class="sc">$</span>epi_week))</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>merged_df <span class="ot">&lt;-</span> <span class="fu">merge</span>(template, dengue_vils_gb_vc_epi, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"VILLCODE"</span>, <span class="st">"epi_week"</span>), <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>merged_df <span class="ot">&lt;-</span> <span class="fu">merge</span>(template, dengue_vils_gb_vc_epi, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"VILLCODE"</span>, <span class="st">"epi_week"</span>), <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>merged_df<span class="sc">$</span>count[<span class="fu">is.na</span>(merged_df<span class="sc">$</span>count)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
 <span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>merged_df<span class="sc">$</span>count[<span class="fu">is.na</span>(merged_df<span class="sc">$</span>count)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>merged_df <span class="ot">&lt;-</span> <span class="fu">select</span>(merged_df, <span class="sc">-</span>geometry)</span>
 <span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>merged_df <span class="ot">&lt;-</span> <span class="fu">select</span>(merged_df, <span class="sc">-</span>geometry)</span>
-<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>merged_df <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(<span class="fu">distinct</span>(<span class="fu">merge</span>(merged_df, dengue_vils_gb_vc_epi[, <span class="fu">c</span>(<span class="st">"VILLCODE"</span>, <span class="st">"geometry"</span>)], </span>
-<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>                  <span class="at">by =</span> <span class="st">"VILLCODE"</span>, <span class="at">suffixes =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">".y"</span>), <span class="at">all.x =</span> <span class="cn">TRUE</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>merged_df <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(<span class="fu">distinct</span>(<span class="fu">merge</span>(merged_df, dengue_vils_gb_vc_epi[, <span class="fu">c</span>(<span class="st">"VILLCODE"</span>, <span class="st">"geometry"</span>)], </span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">by =</span> <span class="st">"VILLCODE"</span>, <span class="at">suffixes =</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">".y"</span>), <span class="at">all.x =</span> <span class="cn">TRUE</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>I now check that the dimensions match up. It’s not exactly cube, but a block. It matches up, and I save the processed spacetime cube.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">nrow</span>(merged_df))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -613,48 +666,73 @@ Geodetic CRS:  TWD97
 <div class="cell">
 <div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(spt, <span class="st">"data/rds/spt.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>If data is full of landmines, the NA value remaining partially throughout the process was a dirty needle. It doesn’t hurt much now, but it might mess me up in the long run.</p>
+<p>If data is full of landmines, the NA value remaining partially throughout the process was a dirty needle. It won’t hurt too much immediately, but it might mess me up in the long run.</p>
 </section>
 <section id="eda" class="level2">
 <h2 class="anchored" data-anchor-id="eda">3.0 EDA</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="co"># tmap_options(check.and.fix = TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<section id="global-spatial-autocorrelation" class="level3">
-<h3 class="anchored" data-anchor-id="global-spatial-autocorrelation">3.1 Global Spatial Autocorrelation</h3>
-<p>See 36 &lt;=</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot(dengue_vils_gb_ew)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Inspired by</p>
+<p>I wanted to see how the number of new cases changed every week, taking inspiration from</p>
 <p>https://jenpoer-is415-gaa-exercises.netlify.app/take-home-exercises/exe-02/the2#exploratory-data-analysis-eda-with-choropleth-maps</p>
+<p>From the facets map, we can observe that cases originated from the central to southeast region before spreading and remaining the in central region. Infections then dissipated in the central regions, while some new cases kept emerging in the less central regions.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>choropleth_map_small_multiples <span class="ot">&lt;-</span> <span class="cf">function</span>(df, varname, facet, colors) {</span>
-<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(df) <span class="sc">+</span></span>
-<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_polygons</span>(<span class="at">col=</span><span class="st">'white'</span>) <span class="sc">+</span></span>
-<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(df) <span class="sc">+</span></span>
-<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_polygons</span>(varname,</span>
-<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">palette =</span> colors,</span>
-<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">style=</span><span class="st">"quantile"</span>) <span class="sc">+</span></span>
-<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_facets</span>(<span class="at">by=</span>facet, <span class="at">free.coords =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">choropleth_map_small_multiples</span>(dengue_vils_gb_vc_epi, <span class="st">"count"</span>, <span class="st">"epi_week"</span>, <span class="st">"Blues"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_vils_gb_vc_epi) <span class="sc">+</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col=</span><span class="st">'white'</span>) <span class="sc">+</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_vils_gb_vc_epi) <span class="sc">+</span></span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="st">"count"</span>,</span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"Blues"</span>,</span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>          <span class="at">style=</span><span class="st">"quantile"</span>) <span class="sc">+</span></span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_facets</span>(<span class="at">by=</span><span class="st">"epi_week"</span>, <span class="at">free.coords =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE2_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE2_files/figure-html/unnamed-chunk-36-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Overall, We can see that the majority of cases occurred in areas around the central and eastern regions. The central regions are likely lighter because they are smaller. Likewise, the larger central and eastern regions are darker than expected.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_vils_gb_vc) <span class="sc">+</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="st">"count"</span>,</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"Blues"</span>,</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">style=</span><span class="st">"quantile"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="THE2_files/figure-html/unnamed-chunk-37-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 <div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_vils_gb_vc) <span class="sc">+</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="st">"count"</span>,</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"Blues"</span>,</span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">style=</span><span class="st">"equal"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="THE2_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="global-measures-of-spatial-autocorrelation" class="level2">
+<h2 class="anchored" data-anchor-id="global-measures-of-spatial-autocorrelation">4.0 Global Measures of Spatial Autocorrelation</h2>
+<p>In this section, I use Moran’s I to ascertain the presence of systemic spatial variations of dengue cases. In other words, how the number of dengue cases in each village varies according to its surround villages.</p>
+<section id="calculating-neighbours-and-weights" class="level3">
+<h3 class="anchored" data-anchor-id="calculating-neighbours-and-weights">4.1 Calculating Neighbours and Weights</h3>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>wm_q.nb <span class="ot">&lt;-</span> <span class="fu">st_contiguity</span>(dengue_vils_gb_vc<span class="sc">$</span>geometry)</span>
 <span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>wm_q.wt <span class="ot">&lt;-</span> <span class="fu">st_weights</span>(wm_q.nb, <span class="at">style =</span> <span class="st">"W"</span>)</span>
 <span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>wm_q.count <span class="ot">&lt;-</span> dengue_vils_gb_vc<span class="sc">$</span>count</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="global-morans-i-test" class="level3">
+<h3 class="anchored" data-anchor-id="global-morans-i-test">4.2 Global Moran’s I Test</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">global_moran_test</span>(wm_q.count,</span>
 <span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>           wm_q.nb,</span>
@@ -676,6 +754,9 @@ Moran I statistic       Expectation          Variance
  0.46837064728942 -0.00389105058366  0.00134674097418 </code></pre>
 </div>
 </div>
+<p>From this test, the positive moran’s I statistic suggests that there is clustering, or a degree of spatial autocorrelation. This is natural, since infections, including those transmitted through vectors like mosquitoes, spread to those within their surrounding. This transmission however, will be limited by the availability of vectors in addition to humans.</p>
+<p>We can also see that the P-value is very small. From a frequentist approach, we can see that this is unlikely to have occured by chance.</p>
+<p>To strengthen our findings, we run a monte-carlo simulation and observe the results.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>moran_mc_res <span class="ot">=</span> <span class="fu">global_moran_perm</span>(wm_q.count,</span>
 <span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>                wm_q.nb,</span>
@@ -696,6 +777,7 @@ statistic = 0.4683706473, observed rank = 1000, p-value &lt; 2.220446e-16
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
+<p>From the above results, after 1000 simulations, our observed result outranks all of the random simulations. We can see the summary statistics below. As expected, the mean, min and max are close to 0, as would be the case for random distributions.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(moran_mc_res<span class="sc">$</span>res[<span class="dv">1</span><span class="sc">:</span><span class="dv">999</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -711,6 +793,7 @@ alternative hypothesis: two.sided</code></pre>
 <pre><code>[1] 0.00140296676313</code></pre>
 </div>
 </div>
+<p>To visualise the monte-carlo simulation results, we plot a histogram. Our observed result was 0.468, which falls well outside the results generated from our simulation. As such, we can deem the results to be unlikely to be due to chance and that there is a significant degree of spatial autocorrelation in the number of dengue cases per village.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
 <span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">aes</span>(moran_mc_res<span class="sc">$</span>res[<span class="dv">1</span><span class="sc">:</span><span class="dv">999</span>]) <span class="sc">+</span> </span>
@@ -722,7 +805,7 @@ alternative hypothesis: two.sided</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE2_files/figure-html/unnamed-chunk-45-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE2_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -737,12 +820,18 @@ alternative hypothesis: two.sided</code></pre>
 <span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a><span class="co"># print(MI_corr)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="local" class="level3">
-<h3 class="anchored" data-anchor-id="local">Local</h3>
+</section>
+<section id="local-measures-of-spatial-autocorrelation" class="level2">
+<h2 class="anchored" data-anchor-id="local-measures-of-spatial-autocorrelation">5.0 Local Measures of Spatial Autocorrelation</h2>
+<p>Local Indicators of Spatial Association, or LISA, let us evaluate clusters between regions. In simpler terms, it is a statistical method, where higher values denote that the region is more heavily influenced by its surroundings.</p>
+<p>It is also important to consider that not every local moran’s I statistic will be statistically significant.</p>
+<p>Calculating local moran’s I statistics and append the results to the original datafram as new columns.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>wm_q.lisa <span class="ot">&lt;-</span> <span class="fu">local_moran</span>(wm_q.count, wm_q.nb, wm_q.wt)</span>
-<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc <span class="ot">&lt;-</span> <span class="fu">cbind</span>(dengue_vils_gb_vc, wm_q.lisa)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>local_mi <span class="ot">&lt;-</span> <span class="fu">local_moran</span>(wm_q.count, wm_q.nb, wm_q.wt)</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc <span class="ot">&lt;-</span> <span class="fu">cbind</span>(dengue_vils_gb_vc, local_mi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>From class examples, I found it very intuitive to plot a p-value chloropleth map next to the local Moran’s I map, since it requires me to match complex shapes mentally from one map to the other.</p>
+<p>To reduce the mental load, I have combined these maps after categorising the p-values.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>p_val_2_cats <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
 <span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (x <span class="sc">&lt;</span> <span class="fl">0.005</span>) {</span>
@@ -759,6 +848,10 @@ alternative hypothesis: two.sided</code></pre>
 <span id="cb71-13"><a href="#cb71-13" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc <span class="ot">&lt;-</span> dengue_vils_gb_vc <span class="sc">%&gt;%</span></span>
 <span id="cb71-14"><a href="#cb71-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">p_values =</span> <span class="fu">sapply</span>(p_ii, p_val_2_cats))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>From this map, we can observe statisticaly significant spatial autocorrelation in some central regions and the north-western region. In the case of the north-western regions, the significant local Moran’s I statistics tell us that for these areas with fewer infections, they were likely influenced by their neighbours’ lack of infections.</p>
+<p>This kind of analysis can also show certain villages that are “outliers” in the sense that their number of infections does not align with their neighbours’. These outliers are the statistically significant red regions.</p>
+<p>These outliers suggest that there may be a reason why Dengue is not transmitted between two neighbours, such as inhabitants having little reason to travel to adjacent regions, or subtle environmental barriers inhibiting the range of vectors.</p>
+<p>TODO: Show the EDA map</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_vils_gb_vc) <span class="sc">+</span></span>
 <span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"ii"</span>, </span>
@@ -776,22 +869,37 @@ alternative hypothesis: two.sided</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE2_files/figure-html/unnamed-chunk-49-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE2_files/figure-html/unnamed-chunk-48-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
+<p>We can refine the map above to only display statistically significant results with LISA quadrants.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>lisa_sig <span class="ot">&lt;-</span> dengue_vils_gb_vc  <span class="sc">%&gt;%</span></span>
-<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(p_ii <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span>
-<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
-<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_vils_gb_vc) <span class="sc">+</span></span>
-<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
-<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(lisa_sig) <span class="sc">+</span></span>
-<span id="cb73-9"><a href="#cb73-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="st">"mean"</span>) <span class="sc">+</span> </span>
-<span id="cb73-10"><a href="#cb73-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>quadrant <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="fu">nrow</span>(dengue_vils_gb_vc))</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc<span class="sc">$</span>lag_count <span class="ot">&lt;-</span> <span class="fu">st_lag</span>(wm_q.count, wm_q.nb, wm_q.wt)</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>DV <span class="ot">&lt;-</span> dengue_vils_gb_vc<span class="sc">$</span>lag_count <span class="sc">-</span> <span class="fu">mean</span>(dengue_vils_gb_vc<span class="sc">$</span>lag_count)     </span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a>LM_I <span class="ot">&lt;-</span> local_mi[,<span class="dv">1</span>]   </span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a>signif <span class="ot">&lt;-</span> <span class="fl">0.05</span>       </span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>quadrant[DV <span class="sc">&lt;</span><span class="dv">0</span> <span class="sc">&amp;</span> LM_I<span class="sc">&gt;</span><span class="dv">0</span>] <span class="ot">&lt;-</span> <span class="st">"LOW - LOW"</span></span>
+<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a>quadrant[DV <span class="sc">&gt;</span><span class="dv">0</span> <span class="sc">&amp;</span> LM_I<span class="sc">&lt;</span><span class="dv">0</span>] <span class="ot">&lt;-</span> <span class="st">"LOW - HIGH"</span></span>
+<span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a>quadrant[DV <span class="sc">&lt;</span><span class="dv">0</span> <span class="sc">&amp;</span> LM_I<span class="sc">&lt;</span><span class="dv">0</span>] <span class="ot">&lt;-</span> <span class="st">"HIGH - LOW"</span>  </span>
+<span id="cb73-9"><a href="#cb73-9" aria-hidden="true" tabindex="-1"></a>quadrant[DV <span class="sc">&gt;</span><span class="dv">0</span> <span class="sc">&amp;</span> LM_I<span class="sc">&gt;</span><span class="dv">0</span>] <span class="ot">&lt;-</span> <span class="st">"HIGH - HIGH"</span>    </span>
+<span id="cb73-10"><a href="#cb73-10" aria-hidden="true" tabindex="-1"></a>quadrant[local_mi[,<span class="dv">5</span>]<span class="sc">&gt;</span>signif] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb73-11"><a href="#cb73-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-12"><a href="#cb73-12" aria-hidden="true" tabindex="-1"></a>dengue_vils_gb_vc<span class="sc">$</span>quadrant <span class="ot">&lt;-</span> quadrant</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>lisa_sig <span class="ot">&lt;-</span> dengue_vils_gb_vc  <span class="sc">%&gt;%</span></span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(p_ii <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(dengue_vils_gb_vc) <span class="sc">+</span></span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(lisa_sig) <span class="sc">+</span></span>
+<span id="cb74-9"><a href="#cb74-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="st">"quadrant"</span>) <span class="sc">+</span> </span>
+<span id="cb74-10"><a href="#cb74-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -801,13 +909,13 @@ alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
 </section>
-<section id="hot-and-cold" class="level3">
-<h3 class="anchored" data-anchor-id="hot-and-cold">Hot and Cold</h3>
+<section id="ehsa" class="level2">
+<h2 class="anchored" data-anchor-id="ehsa">6.0 EHSA</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(spt, <span class="fu">aes</span>(<span class="at">x =</span> epi_week, <span class="at">y =</span> count)) <span class="sc">+</span></span>
-<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">1</span>, <span class="at">fill =</span> <span class="st">"skyblue"</span>, <span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
-<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Epi Week"</span>, <span class="at">y =</span> <span class="st">"Count"</span>) <span class="sc">+</span></span>
-<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Histogram of Epi Week"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(spt, <span class="fu">aes</span>(<span class="at">x =</span> epi_week, <span class="at">y =</span> count)) <span class="sc">+</span></span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">binwidth =</span> <span class="dv">1</span>, <span class="at">fill =</span> <span class="st">"skyblue"</span>, <span class="at">stat =</span> <span class="st">"identity"</span>) <span class="sc">+</span></span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Epi Week"</span>, <span class="at">y =</span> <span class="st">"Count"</span>) <span class="sc">+</span></span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Histogram of Epi Week"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -817,68 +925,68 @@ alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to create color mapping</span></span>
-<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>create_color_mapping <span class="ot">&lt;-</span> <span class="cf">function</span>(all_breaks, all_colors, map_breaks) {</span>
-<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>  color_mapping <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(map_breaks))</span>
-<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(map_breaks)) {</span>
-<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a>    match_index <span class="ot">&lt;-</span> <span class="fu">match</span>(map_breaks[i], all_breaks)</span>
-<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(match_index)) {</span>
-<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>      color_mapping[i] <span class="ot">&lt;-</span> all_colors[match_index]</span>
-<span id="cb75-8"><a href="#cb75-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb75-9"><a href="#cb75-9" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb75-10"><a href="#cb75-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(color_mapping)</span>
-<span id="cb75-11"><a href="#cb75-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb75-12"><a href="#cb75-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb75-13"><a href="#cb75-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Example data</span></span>
-<span id="cb75-14"><a href="#cb75-14" aria-hidden="true" tabindex="-1"></a>all_breaks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"consecutive coldspot"</span>, <span class="st">"consecutive hotspot"</span>, <span class="st">"new coldspot"</span>, <span class="st">"new hotspot"</span>, <span class="st">"no pattern detected"</span>, <span class="st">"intensifying coldspot"</span>, <span class="st">"intensifying hotspot"</span>, <span class="st">"oscilating coldspot"</span>, <span class="st">"oscilating hotspot"</span>, <span class="st">"persistent coldspot"</span>, <span class="st">"persistent hotspot"</span>, <span class="st">"sporadic coldspot"</span>, <span class="st">"sporadic hotspot"</span></span>
-<span id="cb75-15"><a href="#cb75-15" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb75-16"><a href="#cb75-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb75-17"><a href="#cb75-17" aria-hidden="true" tabindex="-1"></a>all_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"#FF5733"</span>, <span class="st">"#66CDAA"</span>, <span class="st">"#BA55D3"</span>, <span class="st">"#20B2AA"</span>, <span class="st">"#DC143C"</span>, <span class="st">"#4169E1"</span>, <span class="st">"#8A2BE2"</span>, <span class="st">"#FFD700"</span>, <span class="st">"#00FF7F"</span>, <span class="st">"#FF4500"</span>, <span class="st">"#9932CC"</span>, <span class="st">"#32CD32"</span>, <span class="st">"#FF1493"</span></span>
-<span id="cb75-18"><a href="#cb75-18" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to create color mapping</span></span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>create_color_mapping <span class="ot">&lt;-</span> <span class="cf">function</span>(all_breaks, all_colors, map_breaks) {</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>  color_mapping <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(map_breaks))</span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(map_breaks)) {</span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>    match_index <span class="ot">&lt;-</span> <span class="fu">match</span>(map_breaks[i], all_breaks)</span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(match_index)) {</span>
+<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a>      color_mapping[i] <span class="ot">&lt;-</span> all_colors[match_index]</span>
+<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb76-10"><a href="#cb76-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(color_mapping)</span>
+<span id="cb76-11"><a href="#cb76-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb76-12"><a href="#cb76-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-13"><a href="#cb76-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Example data</span></span>
+<span id="cb76-14"><a href="#cb76-14" aria-hidden="true" tabindex="-1"></a>all_breaks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"consecutive coldspot"</span>, <span class="st">"consecutive hotspot"</span>, <span class="st">"new coldspot"</span>, <span class="st">"new hotspot"</span>, <span class="st">"no pattern detected"</span>, <span class="st">"intensifying coldspot"</span>, <span class="st">"intensifying hotspot"</span>, <span class="st">"oscilating coldspot"</span>, <span class="st">"oscilating hotspot"</span>, <span class="st">"persistent coldspot"</span>, <span class="st">"persistent hotspot"</span>, <span class="st">"sporadic coldspot"</span>, <span class="st">"sporadic hotspot"</span></span>
+<span id="cb76-15"><a href="#cb76-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb76-16"><a href="#cb76-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-17"><a href="#cb76-17" aria-hidden="true" tabindex="-1"></a>all_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"#FF5733"</span>, <span class="st">"#66CDAA"</span>, <span class="st">"#BA55D3"</span>, <span class="st">"#20B2AA"</span>, <span class="st">"#DC143C"</span>, <span class="st">"#4169E1"</span>, <span class="st">"#8A2BE2"</span>, <span class="st">"#FFD700"</span>, <span class="st">"#00FF7F"</span>, <span class="st">"#FF4500"</span>, <span class="st">"#9932CC"</span>, <span class="st">"#32CD32"</span>, <span class="st">"#FF1493"</span></span>
+<span id="cb76-18"><a href="#cb76-18" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a>ehsa_4_spt <span class="ot">&lt;-</span> <span class="cf">function</span>(sptcube, week_lim, geom) {</span>
-<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>  spt_n <span class="ot">&lt;-</span> <span class="fu">filter</span>(spt, epi_week <span class="sc">&lt;=</span> week_lim)</span>
-<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>  spt_nb <span class="ot">&lt;-</span> spt_n <span class="sc">%&gt;%</span></span>
-<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(<span class="st">"geometry"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">nb =</span> <span class="fu">include_self</span>(<span class="fu">st_contiguity</span>(geometry)),</span>
-<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">wt =</span> <span class="fu">st_inverse_distance</span>(nb, geometry,</span>
-<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">scale =</span> <span class="dv">1</span>,</span>
-<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">alpha =</span> <span class="dv">1</span>),</span>
-<span id="cb76-10"><a href="#cb76-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">.before =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span>  </span>
-<span id="cb76-11"><a href="#cb76-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_wts</span>(<span class="st">"wt"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb76-12"><a href="#cb76-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_nbs</span>(<span class="st">"nb"</span>)</span>
-<span id="cb76-13"><a href="#cb76-13" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb76-14"><a href="#cb76-14" aria-hidden="true" tabindex="-1"></a>  EHSA <span class="ot">&lt;-</span> <span class="fu">emerging_hotspot_analysis</span>(</span>
-<span id="cb76-15"><a href="#cb76-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> spt_n, </span>
-<span id="cb76-16"><a href="#cb76-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">.var =</span> <span class="st">"count"</span>, </span>
-<span id="cb76-17"><a href="#cb76-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">k =</span> <span class="dv">1</span>, </span>
-<span id="cb76-18"><a href="#cb76-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">nsim =</span> <span class="dv">99</span></span>
-<span id="cb76-19"><a href="#cb76-19" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb76-20"><a href="#cb76-20" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb76-21"><a href="#cb76-21" aria-hidden="true" tabindex="-1"></a>  gghist <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> EHSA,</span>
-<span id="cb76-22"><a href="#cb76-22" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> classification)) <span class="sc">+</span></span>
-<span id="cb76-23"><a href="#cb76-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">fill=</span><span class="st">"light blue"</span>) <span class="sc">+</span> </span>
-<span id="cb76-24"><a href="#cb76-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_flip</span>()</span>
-<span id="cb76-25"><a href="#cb76-25" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb76-26"><a href="#cb76-26" aria-hidden="true" tabindex="-1"></a>  twv_EHSA <span class="ot">&lt;-</span> twvsz <span class="sc">%&gt;%</span></span>
-<span id="cb76-27"><a href="#cb76-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(EHSA,</span>
-<span id="cb76-28"><a href="#cb76-28" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"VILLCODE"</span> <span class="ot">=</span> <span class="st">"location"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb76-29"><a href="#cb76-29" aria-hidden="true" tabindex="-1"></a>   <span class="fu">mutate</span>(<span class="st">`</span><span class="at">p_value</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">replace</span>(<span class="st">`</span><span class="at">p_value</span><span class="st">`</span>, <span class="st">`</span><span class="at">p_value</span><span class="st">`</span> <span class="sc">&gt;</span> <span class="fl">0.05</span>, <span class="cn">NA</span>),</span>
-<span id="cb76-30"><a href="#cb76-30" aria-hidden="true" tabindex="-1"></a>          <span class="st">`</span><span class="at">classification</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(<span class="st">`</span><span class="at">p_value</span><span class="st">`</span>), <span class="cn">NA</span>, <span class="st">`</span><span class="at">classification</span><span class="st">`</span>))</span>
-<span id="cb76-31"><a href="#cb76-31" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb76-32"><a href="#cb76-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(gghist)</span>
-<span id="cb76-33"><a href="#cb76-33" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb76-34"><a href="#cb76-34" aria-hidden="true" tabindex="-1"></a>  color_mapping <span class="ot">&lt;-</span> <span class="fu">create_color_mapping</span>(all_breaks, all_colors, <span class="fu">sort</span>(<span class="fu">unique</span>(twv_EHSA<span class="sc">$</span>classification)))</span>
-<span id="cb76-35"><a href="#cb76-35" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb76-36"><a href="#cb76-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(twv_EHSA) <span class="sc">+</span></span>
-<span id="cb76-37"><a href="#cb76-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"classification"</span>, <span class="at">title =</span> <span class="st">"Classification"</span>, <span class="at">palette =</span> color_mapping) <span class="sc">+</span></span>
-<span id="cb76-38"><a href="#cb76-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_borders</span>()</span>
-<span id="cb76-39"><a href="#cb76-39" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>ehsa_4_spt <span class="ot">&lt;-</span> <span class="cf">function</span>(sptcube, week_lim, geom) {</span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>  spt_n <span class="ot">&lt;-</span> <span class="fu">filter</span>(spt, epi_week <span class="sc">&lt;=</span> week_lim)</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>  spt_nb <span class="ot">&lt;-</span> spt_n <span class="sc">%&gt;%</span></span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">activate</span>(<span class="st">"geometry"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">nb =</span> <span class="fu">include_self</span>(<span class="fu">st_contiguity</span>(geometry)),</span>
+<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">wt =</span> <span class="fu">st_inverse_distance</span>(nb, geometry,</span>
+<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">scale =</span> <span class="dv">1</span>,</span>
+<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">alpha =</span> <span class="dv">1</span>),</span>
+<span id="cb77-10"><a href="#cb77-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">.before =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span>  </span>
+<span id="cb77-11"><a href="#cb77-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_wts</span>(<span class="st">"wt"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb77-12"><a href="#cb77-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_nbs</span>(<span class="st">"nb"</span>)</span>
+<span id="cb77-13"><a href="#cb77-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-14"><a href="#cb77-14" aria-hidden="true" tabindex="-1"></a>  EHSA <span class="ot">&lt;-</span> <span class="fu">emerging_hotspot_analysis</span>(</span>
+<span id="cb77-15"><a href="#cb77-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> spt_n, </span>
+<span id="cb77-16"><a href="#cb77-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">.var =</span> <span class="st">"count"</span>, </span>
+<span id="cb77-17"><a href="#cb77-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">k =</span> <span class="dv">1</span>, </span>
+<span id="cb77-18"><a href="#cb77-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">nsim =</span> <span class="dv">99</span></span>
+<span id="cb77-19"><a href="#cb77-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb77-20"><a href="#cb77-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-21"><a href="#cb77-21" aria-hidden="true" tabindex="-1"></a>  gghist <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> EHSA,</span>
+<span id="cb77-22"><a href="#cb77-22" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> classification)) <span class="sc">+</span></span>
+<span id="cb77-23"><a href="#cb77-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">fill=</span><span class="st">"light blue"</span>) <span class="sc">+</span> </span>
+<span id="cb77-24"><a href="#cb77-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_flip</span>()</span>
+<span id="cb77-25"><a href="#cb77-25" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-26"><a href="#cb77-26" aria-hidden="true" tabindex="-1"></a>  twv_EHSA <span class="ot">&lt;-</span> twvsz <span class="sc">%&gt;%</span></span>
+<span id="cb77-27"><a href="#cb77-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(EHSA,</span>
+<span id="cb77-28"><a href="#cb77-28" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"VILLCODE"</span> <span class="ot">=</span> <span class="st">"location"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb77-29"><a href="#cb77-29" aria-hidden="true" tabindex="-1"></a>   <span class="fu">mutate</span>(<span class="st">`</span><span class="at">p_value</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">replace</span>(<span class="st">`</span><span class="at">p_value</span><span class="st">`</span>, <span class="st">`</span><span class="at">p_value</span><span class="st">`</span> <span class="sc">&gt;</span> <span class="fl">0.05</span>, <span class="cn">NA</span>),</span>
+<span id="cb77-30"><a href="#cb77-30" aria-hidden="true" tabindex="-1"></a>          <span class="st">`</span><span class="at">classification</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(<span class="st">`</span><span class="at">p_value</span><span class="st">`</span>), <span class="cn">NA</span>, <span class="st">`</span><span class="at">classification</span><span class="st">`</span>))</span>
+<span id="cb77-31"><a href="#cb77-31" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-32"><a href="#cb77-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(gghist)</span>
+<span id="cb77-33"><a href="#cb77-33" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-34"><a href="#cb77-34" aria-hidden="true" tabindex="-1"></a>  color_mapping <span class="ot">&lt;-</span> <span class="fu">create_color_mapping</span>(all_breaks, all_colors, <span class="fu">sort</span>(<span class="fu">unique</span>(twv_EHSA<span class="sc">$</span>classification)))</span>
+<span id="cb77-35"><a href="#cb77-35" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb77-36"><a href="#cb77-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(twv_EHSA) <span class="sc">+</span></span>
+<span id="cb77-37"><a href="#cb77-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"classification"</span>, <span class="at">title =</span> <span class="st">"Classification"</span>, <span class="at">palette =</span> color_mapping) <span class="sc">+</span></span>
+<span id="cb77-38"><a href="#cb77-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_borders</span>()</span>
+<span id="cb77-39"><a href="#cb77-39" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ehsa_4_spt</span>(spt, <span class="dv">35</span>, twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ehsa_4_spt</span>(spt, <span class="dv">35</span>, twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -895,7 +1003,7 @@ alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ehsa_4_spt</span>(spt, <span class="dv">40</span>, twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ehsa_4_spt</span>(spt, <span class="dv">40</span>, twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -912,7 +1020,7 @@ alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ehsa_4_spt</span>(spt, <span class="dv">45</span>, twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ehsa_4_spt</span>(spt, <span class="dv">45</span>, twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -929,7 +1037,7 @@ alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ehsa_4_spt</span>(spt, <span class="dv">50</span>, twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ehsa_4_spt</span>(spt, <span class="dv">50</span>, twvsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -947,7 +1055,6 @@ alternative hypothesis: two.sided</code></pre>
 </div>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->

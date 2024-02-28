@@ -186,6 +186,8 @@ Even though the processing was quite performant, I save the preprocessed data in
 write_rds(dengue_sf, "data/rds/dengue_sf.rds")
 ```
 
+From the below plot, we can see that most cases are in the centre, around the urban centres. The northwest region appears to be mostly agricultural areas, where people are less likely to live.
+
 ```{r}
 tm_shape(u_twvsz) + 
   tm_polygons() +
@@ -193,21 +195,26 @@ tm_shape(dengue_sf) +
   tm_dots(col = "red")
 ```
 
-```{r}
-geo_dupes <- any(duplicated(dengue_sf$geometry))
-geo_dupes
-```
+Checking there is no duplicate geometry
 
 ```{r}
 vil_dupes <- any(duplicated(twvsz$VILLCODE))
 vil_dupes
 ```
 
-Keep the NA for geometry purposes
+I found a problem here.
+
+There was a village in the northwest that did not have any dengue cases. If I were to naively combine the tainan village and dengue datasets and remove NA values, I would lose a polygon, leading to inaccurate results later on. I had to remain aware that this problematic polygon exists until I aggregate the number of dengue case, after which it could simply be 0.
+
+Here, I use st_join to associate each dengue case with a village.
 
 ```{r}
 dengue_vils_sf <- st_join(twvsz, dengue_sf)
 ```
+
+Instead of simply omitting NA values, I remove only the rows without a village code, keeping the polygon with an NA value.
+
+Below is the problematic row, which I want to keep
 
 ```{r}
 dengue_vils_sf[!rownames(dengue_vils_sf) %in% rownames(na.omit(dengue_vils_sf)), ]
@@ -217,27 +224,37 @@ dengue_vils_sf[!rownames(dengue_vils_sf) %in% rownames(na.omit(dengue_vils_sf)),
 dengue_vils_sf <- dengue_vils_sf[!is.na(dengue_vils_sf$VILLCODE), ]
 ```
 
-Account for the NA village
+The below code create the aggregated data by counting the rows without NA values. For the dataframe grouped by epiweeks, I insert a 0 value to preserve the geometry, which will not interfere with further analysis.
+
+I create 2 dataframes, one grouped by village code and the other grouped by both village code and epiweek (total cases for each zone).
 
 ```{r}
 dengue_vils_gb_vc <- dengue_vils_sf %>%
   group_by(VILLCODE, VILLENG) %>%
   summarise(count = sum(!is.na(epi_week)))
+
+dengue_vils_gb_vc
 ```
 
 ```{r}
 dengue_vils_gb_vc_epi <- dengue_vils_sf %>%
   group_by(VILLCODE, epi_week) %>%
   summarise(count = sum(!is.na(epi_week)))
+
+dengue_vils_gb_vc_epi$epi_week <- ifelse(is.na(dengue_vils_gb_vc_epi$epi_week), 31, dengue_vils_gb_vc_epi$epi_week)
+
+dengue_vils_gb_vc_epi
 ```
+
+Here I can see that my approach worked correctly. I have preserved all polygons.
 
 ```{r}
 plot(dengue_vils_gb_vc_epi)
 ```
 
-```{r}
-dengue_vils_gb_vc_epi$epi_week <- ifelse(is.na(dengue_vils_gb_vc_epi$epi_week), 31, dengue_vils_gb_vc_epi$epi_week)
+Now to create the spacetime cube, I create a 0 value for each combination that does not exist, expanding on the previous NA value handling.
 
+```{r}
 template <- expand.grid(VILLCODE = unique(dengue_vils_gb_vc_epi$VILLCODE),
                         epi_week = unique(dengue_vils_gb_vc_epi$epi_week))
 
@@ -250,6 +267,8 @@ merged_df <- select(merged_df, -geometry)
 merged_df <- st_as_sf(distinct(merge(merged_df, dengue_vils_gb_vc_epi[, c("VILLCODE", "geometry")], 
                   by = "VILLCODE", suffixes = c("", ".y"), all.x = TRUE)))
 ```
+
+I now check that the dimensions match up. It's not exactly cube, but a block. It matches up, and I save the processed spacetime cube.
 
 ```{r}
 print(nrow(merged_df))
@@ -266,48 +285,59 @@ is_spacetime_cube(spt)
 write_rds(spt, "data/rds/spt.rds")
 ```
 
-If data is full of landmines, the NA value remaining partially throughout the process was a dirty needle. It doesn't hurt much now, but it might mess me up in the long run.
+If data is full of landmines, the NA value remaining partially throughout the process was a dirty needle. It won't hurt too much immediately, but it might mess me up in the long run.
 
 ## 3.0 EDA
 
 ```{r}
 set.seed(42)
-# tmap_options(check.and.fix = TRUE)
 ```
 
-### 3.1 Global Spatial Autocorrelation
-
-See 36 \<=
-
-```{r}
-# plot(dengue_vils_gb_ew)
-```
-
-Inspired by
+I wanted to see how the number of new cases changed every week, taking inspiration from
 
 https://jenpoer-is415-gaa-exercises.netlify.app/take-home-exercises/exe-02/the2#exploratory-data-analysis-eda-with-choropleth-maps
 
+From the facets map, we can observe that cases originated from the central to southeast region before spreading and remaining the in central region. Infections then dissipated in the central regions, while some new cases kept emerging in the less central regions.
+
 ```{r}
-choropleth_map_small_multiples <- function(df, varname, facet, colors) {
-  tm_shape(df) +
-    tm_polygons(col='white') +
-  tm_shape(df) +
-    tm_polygons(varname,
-            palette = colors,
-            style="quantile") +
-    tm_facets(by=facet, free.coords = FALSE)
-}
+tm_shape(dengue_vils_gb_vc_epi) +
+  tm_polygons(col='white') +
+tm_shape(dengue_vils_gb_vc_epi) +
+  tm_polygons("count",
+          palette = "Blues",
+          style="quantile") +
+  tm_facets(by="epi_week", free.coords = FALSE)
+```
+
+Overall, We can see that the majority of cases occurred in areas around the central and eastern regions. The central regions are likely lighter because they are smaller. Likewise, the larger central and eastern regions are darker than expected.
+
+```{r}
+tm_shape(dengue_vils_gb_vc) +
+  tm_polygons("count",
+          palette = "Blues",
+          style="quantile")
 ```
 
 ```{r}
-choropleth_map_small_multiples(dengue_vils_gb_vc_epi, "count", "epi_week", "Blues")
+tm_shape(dengue_vils_gb_vc) +
+  tm_polygons("count",
+          palette = "Blues",
+          style="equal")
 ```
+
+## 4.0 Global Measures of Spatial Autocorrelation
+
+In this section, I use Moran's I to ascertain the presence of systemic spatial variations of dengue cases. In other words, how the number of dengue cases in each village varies according to its surround villages.
+
+### 4.1 Calculating Neighbours and Weights
 
 ```{r}
 wm_q.nb <- st_contiguity(dengue_vils_gb_vc$geometry)
 wm_q.wt <- st_weights(wm_q.nb, style = "W")
 wm_q.count <- dengue_vils_gb_vc$count
 ```
+
+### 4.2 Global Moran's I Test
 
 ```{r}
 global_moran_test(wm_q.count,
@@ -316,6 +346,12 @@ global_moran_test(wm_q.count,
            zero.policy = TRUE,
            na.action=na.omit)
 ```
+
+From this test, the positive moran's I statistic suggests that there is clustering, or a degree of spatial autocorrelation. This is natural, since infections, including those transmitted through vectors like mosquitoes, spread to those within their surrounding. This transmission however, will be limited by the availability of vectors in addition to humans.
+
+We can also see that the P-value is very small. From a frequentist approach, we can see that this is unlikely to have occured by chance.
+
+To strengthen our findings, we run a monte-carlo simulation and observe the results.
 
 ```{r}
 moran_mc_res = global_moran_perm(wm_q.count,
@@ -327,6 +363,8 @@ moran_mc_res = global_moran_perm(wm_q.count,
 moran_mc_res
 ```
 
+From the above results, after 1000 simulations, our observed result outranks all of the random simulations. We can see the summary statistics below. As expected, the mean, min and max are close to 0, as would be the case for random distributions.
+
 ```{r}
 summary(moran_mc_res$res[1:999])
 ```
@@ -334,6 +372,8 @@ summary(moran_mc_res$res[1:999])
 ```{r}
 var(moran_mc_res$res[1:999])
 ```
+
+To visualise the monte-carlo simulation results, we plot a histogram. Our observed result was 0.468, which falls well outside the results generated from our simulation. As such, we can deem the results to be unlikely to be due to chance and that there is a significant degree of spatial autocorrelation in the number of dengue cases per village.
 
 ```{r}
 ggplot() + 
@@ -355,12 +395,22 @@ ggplot() +
 # print(MI_corr)
 ```
 
-### Local
+## 5.0 Local Measures of Spatial Autocorrelation
+
+Local Indicators of Spatial Association, or LISA, let us evaluate clusters between regions. In simpler terms, it is a statistical method, where higher values denote that the region is more heavily influenced by its surroundings. 
+
+It is also important to consider that not every local moran's I statistic will be statistically significant. 
+
+Calculating local moran's I statistics and append the results to the original datafram as new columns.
 
 ```{r}
-wm_q.lisa <- local_moran(wm_q.count, wm_q.nb, wm_q.wt)
-dengue_vils_gb_vc <- cbind(dengue_vils_gb_vc, wm_q.lisa)
+local_mi <- local_moran(wm_q.count, wm_q.nb, wm_q.wt)
+dengue_vils_gb_vc <- cbind(dengue_vils_gb_vc, local_mi)
 ```
+
+From class examples, I found it very intuitive to plot a p-value chloropleth map next to the local Moran's I map, since it requires me to match complex shapes mentally from one map to the other. 
+
+To reduce the mental load, I have combined these maps after categorising the p-values.
 
 ```{r}
 p_val_2_cats <- function(x) {
@@ -379,6 +429,14 @@ dengue_vils_gb_vc <- dengue_vils_gb_vc %>%
   mutate(p_values = sapply(p_ii, p_val_2_cats))
 ```
 
+From this map, we can observe statisticaly significant spatial autocorrelation in some central regions and the north-western region. In the case of the north-western regions, the significant local Moran's I statistics tell us that for these areas with fewer infections, they were likely influenced by their neighbours' lack of infections.
+
+This kind of analysis can also show certain villages that are "outliers" in the sense that their number of infections does not align with their neighbours'. These outliers are the statistically significant red regions. 
+
+These outliers suggest that there may be a reason why Dengue is not transmitted between two neighbours, such as inhabitants having little reason to travel to adjacent regions, or subtle environmental barriers inhibiting the range of vectors.
+
+TODO: Show the EDA map
+
 ```{r}
 tm_shape(dengue_vils_gb_vc) +
   tm_fill(col = "ii", 
@@ -395,6 +453,23 @@ tm_shape(dengue_vils_gb_vc[dengue_vils_gb_vc$p_values != "p > 0.05", ]) +
              palette=c('purple', 'hotpink', 'white'))
 ```
 
+We can refine the map above to only display statistically significant results with LISA quadrants. 
+
+```{r}
+quadrant <- vector(length=nrow(dengue_vils_gb_vc))
+dengue_vils_gb_vc$lag_count <- st_lag(wm_q.count, wm_q.nb, wm_q.wt)
+DV <- dengue_vils_gb_vc$lag_count - mean(dengue_vils_gb_vc$lag_count)     
+LM_I <- local_mi[,1]   
+signif <- 0.05       
+quadrant[DV <0 & LM_I>0] <- "LOW - LOW"
+quadrant[DV >0 & LM_I<0] <- "LOW - HIGH"
+quadrant[DV <0 & LM_I<0] <- "HIGH - LOW"  
+quadrant[DV >0 & LM_I>0] <- "HIGH - HIGH"    
+quadrant[local_mi[,5]>signif] <- 0
+
+dengue_vils_gb_vc$quadrant <- quadrant
+```
+
 ```{r}
 lisa_sig <- dengue_vils_gb_vc  %>%
   filter(p_ii < 0.05)
@@ -404,11 +479,11 @@ tm_shape(dengue_vils_gb_vc) +
   tm_polygons() +
   tm_borders(alpha = 0.5) +
 tm_shape(lisa_sig) +
-  tm_fill("mean") + 
+  tm_fill("quadrant") + 
   tm_borders(alpha = 0.4)
 ```
 
-### Hot and Cold
+## 6.0 EHSA
 
 ```{r}
 ggplot(spt, aes(x = epi_week, y = count)) +
