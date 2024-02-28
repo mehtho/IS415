@@ -21,18 +21,42 @@ execute:
 
 ## 2.0 Wrangling
 
+Loading the required packages
+
+1.  **sf** Needed to handle spatial data through the new simple features standard
+
+2.  **tmap** Create thematic maps, particularly chloropleth maps in our case
+
+3.  **tidyverse** For easy data manipulation and some visualisation
+
+4.  **ggplot2** A step above the usual visualisations, like histograms
+
+5.  **smoothr** I use it to remove hole in geometry
+
+6.  **lubridate** Makes handling dates easy, great for dealing with epidemiology weeks
+
+7.  **sfdep** Spatial dependence with spatial features, the highlight of this take home exercise. The spacetime object is particularly useful
+
 ```{r}
 pacman::p_load(sf, tmap, tidyverse, ggplot2, smoothr, lubridate, sfdep)
 ```
+
+Loading the TAINAN_VILLAGE dataset
 
 ```{r}
 twv <- st_read(dsn = "data/geospatial", 
                  layer = "TAINAN_VILLAGE")
 ```
 
+Loading the Dengue Daily apspatial dataset
+
 ```{r}
 dengued <- read_csv("data/aspatial/Dengue_Daily.csv")
 ```
+
+Unfortunately, I cannot read and understand Chinese characters. Leaving Chinese characters and words in my data would make work very difficult and error prone, so my first priority is to extract the right columns and translate them.
+
+I extract the needed rows and rename them.
 
 ```{r}
 dengued <- dengued[, c(1, 10, 11)]
@@ -48,14 +72,30 @@ names(dengued)
 head(dengued)
 ```
 
+Before extracting those columns, I also wanted to see the types of additional information useful to our analysis. Some notable considerations are as follows.
+
+-   Serotype
+
+    -   Arguably the most interesting, unfortunately, there were too many missing values
+
+-   Gender
+
+-   Age group
+
+-   Number of cases
+
+I had some issues loading coordinates in this dataset, but setting this solved the issue for me.
+
 ```{r}
-options(digits = 15)
+options(digits = 12)
 ```
 
 ```{r}
 dengued[, c(2, 3)] <- lapply(dengued[, c(2, 3)], as.numeric)
 head(dengued)
 ```
+
+As expected, there are NA values in the dataset. I remove them here and check that they are gone.
 
 ```{r}
 sum(apply(dengued, 1, function(x) any(is.na(x))))
@@ -69,13 +109,13 @@ dengued <- na.omit(dengued)
 sum(apply(dengued, 1, function(x) any(is.na(x))))
 ```
 
-```{r}
-hist(dengued$Onset, breaks = "days", xlab = "Date", ylab = "Frequency", main = "Histogram of Date Ranges")
-```
+I check the CRS for the TAINAN VILLAGE dataset so I know which CRS to use when converting the Dengue dataset's latlongs.
 
 ```{r}
 st_crs(twv)
 ```
+
+It's 3824, so I convert the dengue dataset's latlongs to match.
 
 ```{r}
 dengued_sf <- st_as_sf(dengued, coords = c("X", "Y"),
@@ -83,42 +123,44 @@ dengued_sf <- st_as_sf(dengued, coords = c("X", "Y"),
 st_crs(dengued_sf)
 ```
 
-```{r}
-head(dengued_sf)
-```
+Looks good to proceed. I now narrow down the study area to the given counties.
 
 ```{r}
 twvsz <- twv[twv$TOWNID %in% c("D01", "D02", "D04", "D06", "D07", "D08", "D32", "D39"), ] %>% 
   subset(select = -NOTE)
 ```
 
-```{r}
-head(twvsz)
-```
+Visualising the study area
 
 ```{r}
 plot(twvsz)
 ```
+
+I want to ensure that all of the points from the dengue dataset fall within a polygon and not within a small gap. I use st_union to check for any holes.
 
 ```{r}
 u_twvsz <- st_union(twvsz)
 plot(u_twvsz)
 ```
 
-```{r}
-unh_twvsz <- fill_holes(u_twvsz, units::set_units(1, "km^2"))
-plot(unh_twvsz)
-```
+Unfortunately, there were quite a few small slithers and holes. However, they seemed quite small.
 
 ```{r}
+unh_twvsz <- fill_holes(u_twvsz, units::set_units(1, "km^2"))
 diff_twvsz <- st_difference(unh_twvsz, u_twvsz)
 plot(diff_twvsz)
 ```
+
+To ensure that we were not losing any data or jeopardising the accuracy of our analysis by expanding polygons to fill the holes, I wanted to check how many points fell within the holes.
+
+Fortunately, we did not have any, meaning I did not have to modify the geometry.
 
 ```{r}
 hole_victims <- st_intersection(dengued_sf, diff_twvsz)
 head(hole_victims)
 ```
+
+I restrict the data range to epidemiology weeks 31-50 2023.
 
 Epi weeks 31-50 2023: 30-07-23 to 16-12-23
 
@@ -126,14 +168,19 @@ Epi weeks 31-50 2023: 30-07-23 to 16-12-23
 dengued_sf_epiweeks <- dengued_sf %>% filter(Onset >= as.Date("2023-07-30") & Onset <= as.Date("2023-12-16"))
 ```
 
+I now use st_intersection to restrict the points to those that fall within our study area. To reduce processing time, I did this after narrowing down our date range.
+
 ```{r}
 dengue_sf <- st_intersection(dengued_sf_epiweeks, u_twvsz)
 ```
+
+I then add the epi_week column according to the onset date.
 
 ```{r}
 dengue_sf$epi_week <- epiweek(dengue_sf$Onset)
 ```
 
+Even though the processing was quite performant, I save the preprocessed data into a .rds file.
 
 ```{r}
 write_rds(dengue_sf, "data/rds/dengue_sf.rds")
@@ -157,9 +204,11 @@ vil_dupes
 ```
 
 Keep the NA for geometry purposes
+
 ```{r}
 dengue_vils_sf <- st_join(twvsz, dengue_sf)
 ```
+
 ```{r}
 dengue_vils_sf[!rownames(dengue_vils_sf) %in% rownames(na.omit(dengue_vils_sf)), ]
 ```
@@ -169,11 +218,13 @@ dengue_vils_sf <- dengue_vils_sf[!is.na(dengue_vils_sf$VILLCODE), ]
 ```
 
 Account for the NA village
+
 ```{r}
 dengue_vils_gb_vc <- dengue_vils_sf %>%
   group_by(VILLCODE, VILLENG) %>%
   summarise(count = sum(!is.na(epi_week)))
 ```
+
 ```{r}
 dengue_vils_gb_vc_epi <- dengue_vils_sf %>%
   group_by(VILLCODE, epi_week) %>%
@@ -212,14 +263,6 @@ is_spacetime_cube(spt)
 ```
 
 ```{r}
-activate(spt, "geometry")
-```
-
-```{r}
-activate(spt, "data")
-```
-
-```{r}
 write_rds(spt, "data/rds/spt.rds")
 ```
 
@@ -234,14 +277,16 @@ set.seed(42)
 
 ### 3.1 Global Spatial Autocorrelation
 
-See 36 <=
+See 36 \<=
+
 ```{r}
 # plot(dengue_vils_gb_ew)
 ```
 
-Inspired by 
+Inspired by
 
 https://jenpoer-is415-gaa-exercises.netlify.app/take-home-exercises/exe-02/the2#exploratory-data-analysis-eda-with-choropleth-maps
+
 ```{r}
 choropleth_map_small_multiples <- function(df, varname, facet, colors) {
   tm_shape(df) +
@@ -271,6 +316,7 @@ global_moran_test(wm_q.count,
            zero.policy = TRUE,
            na.action=na.omit)
 ```
+
 ```{r}
 moran_mc_res = global_moran_perm(wm_q.count,
                 wm_q.nb,
@@ -308,6 +354,7 @@ ggplot() +
 # plot(MI_corr)
 # print(MI_corr)
 ```
+
 ### Local
 
 ```{r}
@@ -347,6 +394,7 @@ tm_shape(dengue_vils_gb_vc[dengue_vils_gb_vc$p_values != "p > 0.05", ]) +
              size = 0.1,
              palette=c('purple', 'hotpink', 'white'))
 ```
+
 ```{r}
 lisa_sig <- dengue_vils_gb_vc  %>%
   filter(p_ii < 0.05)
@@ -362,352 +410,89 @@ tm_shape(lisa_sig) +
 
 ### Hot and Cold
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+ggplot(spt, aes(x = epi_week, y = count)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", stat = "identity") +
+  labs(x = "Epi Week", y = "Count") +
+  ggtitle("Histogram of Epi Week")
+```
+
+```{r}
+# Function to create color mapping
+create_color_mapping <- function(all_breaks, all_colors, map_breaks) {
+  color_mapping <- rep(NA, length(map_breaks))
+  for (i in seq_along(map_breaks)) {
+    match_index <- match(map_breaks[i], all_breaks)
+    if (!is.na(match_index)) {
+      color_mapping[i] <- all_colors[match_index]
+    }
+  }
+  return(color_mapping)
+}
+
+# Example data
+all_breaks <- c("consecutive coldspot", "consecutive hotspot", "new coldspot", "new hotspot", "no pattern detected", "intensifying coldspot", "intensifying hotspot", "oscilating coldspot", "oscilating hotspot", "persistent coldspot", "persistent hotspot", "sporadic coldspot", "sporadic hotspot"
+)
+
+all_colors <- c("#FF5733", "#66CDAA", "#BA55D3", "#20B2AA", "#DC143C", "#4169E1", "#8A2BE2", "#FFD700", "#00FF7F", "#FF4500", "#9932CC", "#32CD32", "#FF1493"
+)
+
+```
+
+```{r}
+ehsa_4_spt <- function(sptcube, week_lim, geom) {
+  spt_n <- filter(spt, epi_week <= week_lim)
+  
+  spt_nb <- spt_n %>%
+  activate("geometry") %>% 
+  mutate(nb = include_self(st_contiguity(geometry)),
+         wt = st_inverse_distance(nb, geometry,
+                                  scale = 1,
+                                  alpha = 1),
+         .before = 1) %>%  
+  set_wts("wt") %>%
+  set_nbs("nb")
+  
+  EHSA <- emerging_hotspot_analysis(
+    x = spt_n, 
+    .var = "count", 
+    k = 1, 
+    nsim = 99
+  )
+  
+  gghist <- ggplot(data = EHSA,
+       aes(x = classification)) +
+  geom_bar(fill="light blue") + 
+    coord_flip()
+  
+  twv_EHSA <- twvsz %>%
+  left_join(EHSA,
+            by = c("VILLCODE" = "location")) %>%
+   mutate(`p_value` = replace(`p_value`, `p_value` > 0.05, NA),
+          `classification` = ifelse(is.na(`p_value`), NA, `classification`))
+  
+  plot(gghist)
+  
+  color_mapping <- create_color_mapping(all_breaks, all_colors, sort(unique(twv_EHSA$classification)))
+  
+  tm_shape(twv_EHSA) +
+    tm_fill(col = "classification", title = "Classification", palette = color_mapping) +
+    tm_borders()
+}
+```
+
+```{r}
+ehsa_4_spt(spt, 35, twvsz)
+```
+
+```{r}
+ehsa_4_spt(spt, 40, twvsz)
+```
+
+```{r}
+ehsa_4_spt(spt, 45, twvsz)
+```
+
+```{r}
+ehsa_4_spt(spt, 50, twvsz)
+```
