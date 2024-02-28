@@ -19,8 +19,24 @@ execute:
 
 ## 1.0 Overview
 
+### 1.1 Objectives
+
+1.  Process the data and confine the analysis to D01, D02, D04, D06, D07, D08, D32 and D39 counties of Tainan City, Taiwan.
+2.  Perform Global Spatial Autocorrelation with sfdep
+3.  Perform Local Spatial Autocorrelation with sfdep
+4.  Perform Emerging Hotspot Analysis with sdfep
+5.  Describe the spatial patterns observed
+
+### 1.2 Approach
+
+1.  Besides the usual procedures like checking CRS, I will aggregate point data into counts, which will be used for Global and Spatial Autocorrelation measurements
+2.  Global spatial autocorrelation should go beyond the frequentist approach
+3.  Global and Spatial Autocorrelation measures can use the full range of epidemiology weeks 31-50, but EHSA should use other smaller ranges
+
 ## 2.0 Setup
+
 ### 2.1 Dependencies
+
 Loading the required packages
 
 1.  **sf** Needed to handle spatial data through the new simple features standard
@@ -31,7 +47,7 @@ Loading the required packages
 
 4.  **ggplot2** A step above the usual visualisations, like histograms
 
-5.  **smoothr** I use it to remove hole in geometry
+5.  **smoothr** I use it to remove holes in geometry
 
 6.  **lubridate** Makes handling dates easy, great for dealing with epidemiology weeks
 
@@ -40,7 +56,9 @@ Loading the required packages
 ```{r}
 pacman::p_load(sf, tmap, tidyverse, ggplot2, smoothr, lubridate, sfdep)
 ```
+
 ### 2.2 Datasets
+
 Loading the TAINAN_VILLAGE dataset
 
 ```{r}
@@ -54,8 +72,8 @@ Loading the Dengue Daily aspatial dataset
 dengued <- read_csv("data/aspatial/Dengue_Daily.csv")
 ```
 
-
 #### Setting random seed
+
 ```{r}
 set.seed(42)
 ```
@@ -101,6 +119,7 @@ I had some issues loading coordinates in this dataset, but setting this solved t
 ```
 
 Transforming the coordinate strings into numerical values
+
 ```{r}
 dengued[, c(2, 3)] <- lapply(dengued[, c(2, 3)], as.numeric)
 head(dengued)
@@ -123,6 +142,7 @@ sum(apply(dengued, 1, function(x) any(is.na(x))))
 ```
 
 ### 3.3 CRS and Coordinates
+
 I check the CRS for the TAINAN VILLAGE dataset so I know which CRS to use when converting the Dengue dataset's latlongs.
 
 ```{r}
@@ -138,6 +158,7 @@ st_crs(dengued_sf)
 ```
 
 ### 3.4 Study Area
+
 Looks good to proceed. I now narrow down the study area to the given counties. I also removed the NOTE column since it did not provide much information, but kept the others. The other columns and names could help me debug or google what certain regions look like later on.
 
 ```{r}
@@ -152,6 +173,7 @@ plot(twvsz)
 ```
 
 ### 3.5 Geometry Holes
+
 I want to ensure that all of the points from the dengue dataset fall within a polygon and not within a small gap. I use st_union to check for any holes.
 
 ```{r}
@@ -177,6 +199,7 @@ head(hole_victims)
 ```
 
 ### 3.6 Epiweeks
+
 I restrict the data range to epidemiology weeks 31-50 2023.
 
 Epi weeks 31-50 2023: 30-07-23 to 16-12-23
@@ -216,6 +239,7 @@ vil_dupes
 ```
 
 ### 3.7 Aggregating Dengue Cases
+
 I found a problem here.
 
 There was a village in the northwest that did not have any dengue cases. If I were to naively combine the tainan village and dengue datasets and remove NA values, I would lose a polygon, leading to inaccurate results later on. I had to remain aware that this problematic polygon exists until I aggregate the number of dengue case, after which it could simply be 0.
@@ -267,6 +291,7 @@ plot(dengue_vils_gb_vc_epi)
 ```
 
 ### 3.8 Spacetime Cube
+
 Now to create the spacetime cube, I create a 0 value for each combination that does not exist, expanding on the previous NA value handling.
 
 ```{r}
@@ -328,6 +353,7 @@ Overall, We can see that the majority of cases occurred in areas around the cent
 
 ::: panel-tabset
 ## Quantile
+
 ```{r}
 tm_shape(dengue_vils_gb_vc) +
   tm_polygons("count",
@@ -336,6 +362,7 @@ tm_shape(dengue_vils_gb_vc) +
 ```
 
 ## Equal
+
 ```{r}
 tm_shape(dengue_vils_gb_vc) +
   tm_polygons("count",
@@ -346,10 +373,11 @@ tm_shape(dengue_vils_gb_vc) +
 
 ## 5.0 Global Measures of Spatial Autocorrelation
 
-To assess spatial autocorrelation in our dataset, or how the presence of dengue cases in a region may form clusters. 
+To assess spatial autocorrelation in our dataset, or how the presence of dengue cases in a region may form clusters.
 
 ### 5.1 Calculating Neighbours and Weights
-I decided to use Queen's neighbour criteria. This should also account for polygons that only share a corner. In realistic cases, polygons that share a corner are very likely to be close enough to influence each other. 
+
+I decided to use Queen's neighbour criteria. This should also account for polygons that only share a corner. In realistic cases, polygons that share a corner are very likely to be close enough to influence each other.
 
 ```{r}
 wm_q.nb <- st_contiguity(dengue_vils_gb_vc, queen=TRUE)
@@ -479,8 +507,8 @@ tm_shape(dengue_vils_gb_vc[dengue_vils_gb_vc$p_values != "p > 0.05", ]) +
              palette=c('purple', 'hotpink', 'white'))
 ```
 
-
 ### 6.3 LISA Quadrant Map
+
 We can refine the map above to only display statistically significant results with LISA quadrants.
 
 ```{r}
@@ -514,11 +542,28 @@ tm_shape(lisa_sig) +
   tm_borders(alpha = 0.4)
 ```
 
-## 7.0 EHSA
+## 7.0 Hot and Cold Spot Analysis
+
+```{r}
+hcsa <- dengue_vils_gb_vc %>% 
+  cbind(local_gstar_perm(wm_q.count, wm_q.nb, wm_q.wt, nsim=99)) %>%
+  mutate("p_sim" = replace(`p_sim`, `p_sim` > 0.05, NA),
+         "gi_star" = ifelse(is.na(`p_sim`), NA, `gi_star`))
+```
+
+```{r}
+tmap_mode("plot")
+tm_shape(hcsa) +
+  tm_fill("gi_star", palette="PuOr", midpoint=0, title="Gi*") + 
+  tm_borders(alpha = 0.5)
+```
+
+## 7.0 Emerging Hotspot Analysis
 
 In this section, we can analyse hot and spot spots, as well which type of hot/cold spot they are.
 
 ### 7.1 Choosing Time Horizons
+
 However, something I noticed was that as region's hot/cold spots may change over time. This is natural since the calculations are done based on the data points provided.
 
 For example, a region could start as a new hotspot before becoming an oscillating hotspot.
@@ -538,6 +583,7 @@ ggplot(spt, aes(x = epi_week, y = count)) +
 ```
 
 This is a chunk of code and function to ensure consistent coloring for each kind of hot/cold spot, making it easier to compare across maps.
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code"
@@ -562,6 +608,7 @@ all_colors <- c("#FF5733", "#66CDAA", "#BA55D3", "#20B2AA", "#DC143C", "#4169E1"
 ```
 
 The rule of "Do not repeat yourself" applies in R too. I have learnt from my previous takehome exercise and will use functions for repeated analysis to avoid duplicated code.
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code"
@@ -613,18 +660,25 @@ From the below visualisations, we can see that during week 40, there were some c
 
 ::: panel-tabset
 ## EW 30-35
+
 ```{r}
 ehsa_4_spt(spt, 35, twvsz)
 ```
+
 ## EW 30-40
+
 ```{r}
 ehsa_4_spt(spt, 39, twvsz)
 ```
+
 ## EW 30-45
+
 ```{r}
 ehsa_4_spt(spt, 45, twvsz)
 ```
+
 ## EW 30-50
+
 ```{r}
 ehsa_4_spt(spt, 50, twvsz)
 ```
