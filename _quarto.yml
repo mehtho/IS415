@@ -22,6 +22,7 @@ website:
         - text: "Take-home Exercise 1"
           href: TakeHomeEx/TakeHomeEx1/THE1.html
         - text: "Take-home Exercise 2"
+          href: TakeHomeEx/TakeHomeEx2/THE2.html
         - text: "Take-home Exercise 3"
     - text: "In-class Exercises"
       menu:
