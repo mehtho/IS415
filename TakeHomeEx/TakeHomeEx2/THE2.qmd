@@ -440,10 +440,38 @@ To assess spatial autocorrelation in our dataset, or how the presence of dengue 
 
 I decided to use Queen's neighbour criteria. This should also account for polygons that only share a corner. In realistic cases, polygons that share a corner are very likely to be close enough to influence each other.
 
+However, I will also calculate centroids and inverse distance neighbours and weights for processes later on.
+
 ```{r}
 wm_q.nb <- st_contiguity(dengue_vils_gb_vc, queen=TRUE)
 wm_q.wt <- st_weights(wm_q.nb, style = "W")
 wm_q.count <- dengue_vils_gb_vc$count
+```
+
+#### Computing Centroids
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+coords <- cbind(
+  map_dbl(dengue_vils_gb_vc$geometry, ~st_centroid(.x)[[1]]), 
+  map_dbl(dengue_vils_gb_vc$geometry, ~st_centroid(.x)[[2]])
+  )
+
+k1dists <- st_nb_dists(coords, wm_q.nb)
+summary(unlist(k1dists))
+```
+
+#### Inverse Distance Neighbours and Weights
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+wm_fd.nb <- st_dist_band(coords, lower=0, upper=0.04)
+wm_fd.wt <- st_inverse_distance(wm_fd.nb, dengue_vils_gb_vc$geometry)
+
+wm_ad.nb <- st_knn(coords, k=8)
+wm_ad.wt <- st_inverse_distance(wm_ad.nb, dengue_vils_gb_vc$geometry)
 ```
 
 ### 5.2 Global Moran's I Test
@@ -562,6 +590,7 @@ This means that it stands out from its neighbours. In this case, it is because i
 If the area has some factors inhibiting the travel of mosquitoes, the area might be constantly covered in an urban haze due to industrial processes or traffic, but this is groundless speculation. Our analysis will be unlikely to give us all the answers from this dataset alone. It is a very interesting result nonetheless.
 
 From this analysis, we can also observe several groups of regions near the centre with higher spatial autocorrelation. In contrast to the previous interpretation, these regions probably have a combination of more people and more mosquitoes. Dengue can be said to have spread easily between these regions, especially since these regions also had many dengue cases.
+
 ::: panel-tabset
 ## With P-Values
 ```{r}
@@ -588,6 +617,7 @@ tmap_arrange(m1,
              asp=1, 
              ncol=2)
 ```
+
 ## Without P-Values
 ```{r}
 m1 <- tm_shape(dengue_vils_gb_vc) +
@@ -667,36 +697,6 @@ tmap_arrange(m1,
 
 The local Gi* algorithm is an extension of the local Moran's I statistic, but it also focuses more on "hot" and "cold" spots compared to the local Moran's I, which is more about spatial autocorrelation alone. 
 
-The maps are quite similar in terms of highlighted areas, but the meanings are quite different. In these plots, the hot spots, the ring around the central region, are clearly identified compared to the cold spots in the north and south. 
-
-Each method can be used to tell a different story. If I were investigating the relationships between regions, I would choose Local Moran's, but use Local Gi* to identify hot and cold spots.
-
-However, both methods do not tell much of a story about the past, and perhaps the future.
-
-```{r}
-#| code-fold: true
-#| code-summary: "Show the code"
-
-coords <- cbind(
-  map_dbl(dengue_vils_gb_vc$geometry, ~st_centroid(.x)[[1]]), 
-  map_dbl(dengue_vils_gb_vc$geometry, ~st_centroid(.x)[[2]])
-  )
-
-k1dists <- st_nb_dists(coords, wm_q.nb)
-summary(unlist(k1dists))
-```
-
-```{r}
-#| code-fold: true
-#| code-summary: "Show the code"
-
-wm_fd.nb <- st_dist_band(coords, lower=0, upper=0.04)
-wm_fd.wt <- st_inverse_distance(wm_fd.nb, dengue_vils_gb_vc$geometry)
-
-wm_ad.nb <- st_knn(coords, k=8)
-wm_ad.wt <- st_inverse_distance(wm_ad.nb, dengue_vils_gb_vc$geometry)
-```
-
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code"
@@ -716,6 +716,16 @@ hcsa.ad <- dengue_vils_gb_vc %>%
   mutate("p_sim" = replace(`p_sim`, `p_sim` > 0.05, NA),
          "gi_star" = ifelse(is.na(`p_sim`), NA, `gi_star`))
 ```
+
+Comparing the results using different neighbour and weight calculations, it is clear that fixed distances have resulted in too much smoothing, which caused the central region to become a hotspot, even though it is not. 
+
+However, the adaptive distances make the observed ring of clusters around the central region clearer and highlight the colder spots in the north and south.
+
+The maps are quite similar in terms of highlighted areas, but the meanings are quite different. In these plots, the hot spots, the ring around the central region, are clearly identified compared to the cold spots in the north and south. 
+
+Each method can be used to tell a different story. If I were investigating the relationships between regions, I would choose Local Moran's, but use Local Gi* to identify hot and cold spots.
+
+However, both methods do not tell much of a story about the past, and perhaps the future.
 
 ::: panel-tabset
 ## Queen's Neighbours
@@ -802,7 +812,9 @@ all_colors <- c("#FF5733", "#66CDAA", "#BA55D3", "#20B2AA", "#DC143C", "#4169E1"
 
 ```
 
-The rule of "Do not repeat yourself" applies in R too. I have learnt from my previous takehome exercise and will use functions for repeated analysis to avoid duplicated code. I use inverse distance here since the size of polygons differ greatly. 
+The rule of "Do not repeat yourself" applies in R too. I have learnt from my previous takehome exercise and will use functions for repeated analysis to avoid duplicated code. 
+
+I use inverse distance here since the size of polygons differ greatly. The adaptive method proved accentuate patterns while remaining factual, so I will use those metrics here.
 
 ```{r}
 #| code-fold: true
@@ -813,10 +825,8 @@ ehsa_4_spt <- function(sptcube, week_lim, geom) {
   
   spt_nb <- spt_n %>%
   activate("geometry") %>% 
-  mutate(nb = include_self(st_contiguity(geometry)),
-         wt = st_inverse_distance(nb, geometry,
-                                  scale = 1,
-                                  alpha = 1),
+  mutate(nb = wm_ad.nb,
+         wt = wm_ad.wt,
          .before = 1) %>%  
   set_wts("wt") %>%
   set_nbs("nb")
@@ -850,8 +860,6 @@ ehsa_4_spt <- function(sptcube, week_lim, geom) {
 ```
 
 ### 7.2 EHSA Maps
-
-From the below visualisations, we can see that during week 40, there were some clear consecutive and new hotspots around the peripheral areas of the central area. We could also clearly see the northwestern region becoming cold spots through the outbreak.
 
 ::: panel-tabset
 ## EW 30-35
