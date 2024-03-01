@@ -3,7 +3,7 @@ title: "Hands-On Exercise 7: Geographical Segmentation with Spatially Constraine
 author:
   - name: Matthew Ho
     url: https://www.linkedin.com/in/matthewhoyiwen/
-date: 01-03-2024
+date: 03-01-2024
 date-modified: last-modified
 description: |
   Geographical Segmentation with Spatially Constrained Clustering Techniques
@@ -387,6 +387,7 @@ hclust_ward <- hclust(proxmat, method = 'ward.D')
 ```
 
 Plot the tree
+
 ```{r}
 plot(hclust_ward, cex = 0.6)
 ```
@@ -394,6 +395,7 @@ plot(hclust_ward, cex = 0.6)
 ### 4.6 Selecting Optimal Clustering Algorithm
 
 Use agnes to find optimal clustering structure
+
 ```{r}
 m <- c( "average", "single", "complete", "ward")
 names(m) <- c( "average", "single", "complete", "ward")
@@ -408,9 +410,11 @@ map_dbl(m, ac)
 ### 4.7 Determining Optimal Clusters
 
 #### Gap statistic method
-Compares the total within intra-cluster variation for different values of k with their expected values under null reference distribution of the data. 
 
-Optimise to maximise gap, i.e the clustering structure is far from the random uniform distribution of points. 
+Compares the total within intra-cluster variation for different values of k with their expected values under null reference distribution of the data.
+
+Optimise to maximise gap, i.e the clustering structure is far from the random uniform distribution of points.
+
 ```{r}
 set.seed(12345)
 gap_stat <- clusGap(shan_ict, 
@@ -423,11 +427,13 @@ print(gap_stat, method = "firstmax")
 ```
 
 Can visualise with fviz_gap_stat
+
 ```{r}
 fviz_gap_stat(gap_stat)
 ```
 
 Plot a dendrogram with a border around the selected clusters
+
 ```{r}
 plot(hclust_ward, cex = 0.6)
 rect.hclust(hclust_ward, 
@@ -436,12 +442,15 @@ rect.hclust(hclust_ward,
 ```
 
 ### 4.8 Visually-Driven Hierarchical Clustering Analysis
-Dataframe -> Matrix
+
+Dataframe -\> Matrix
+
 ```{r}
 shan_ict_mat <- data.matrix(shan_ict)
 ```
 
 Plot an interactive cluster heatmap
+
 ```{r}
 heatmaply(normalize(shan_ict_mat),
           Colv=NA,
@@ -460,35 +469,43 @@ heatmaply(normalize(shan_ict_mat),
 ```
 
 ### 4.9 Mapping the formed clusters
+
 6 Clusters were identified from the previous step. Use cutree to derive a k-cluster model
+
 ```{r}
 groups <- as.factor(cutree(hclust_ward, k=6))
 ```
 
 Append the groups object to the shan_sf simple feature object
+
 ```{r}
 shan_sf_cluster <- cbind(shan_sf, as.matrix(groups)) %>%
   rename(`CLUSTER`=`as.matrix.groups.`)
 ```
 
 Plot a quick tmap of formed clusters (Very fragmented)
+
 ```{r}
 qtm(shan_sf_cluster, "CLUSTER")
 ```
 
 ## 5.0 Spatially Constrained Clustering: SKATER
+
 ### 5.1 Convert to SpatialPolygonsDataFrame
+
 ```{r}
 shan_sp <- as_Spatial(shan_sf)
 ```
 
 ### 5.2 Compute Neighbour List
+
 ```{r}
 shan.nb <- poly2nb(shan_sp)
 summary(shan.nb)
 ```
 
 Plot the neighbours
+
 ```{r}
 sp::plot(shan_sp, 
      border=grey(.5))
@@ -499,12 +516,15 @@ plot(shan.nb,
 ```
 
 ### 5.3 Computing MST
+
 Get edge costs
+
 ```{r}
 lcosts <- nbcosts(shan.nb, shan_ict)
 ```
 
 Get weights without row standardisation
+
 ```{r}
 shan.w <- nb2listw(shan.nb, 
                    lcosts, 
@@ -512,7 +532,8 @@ shan.w <- nb2listw(shan.nb,
 summary(shan.w)
 ```
 
-Compute the MST 
+Compute the MST
+
 ```{r}
 shan.mst <- mstree(shan.w)
 ```
@@ -530,6 +551,7 @@ head(shan.mst)
 ```
 
 Plot the MST on the map
+
 ```{r}
 sp::plot(shan_sp, border=gray(.5))
 plot.mst(shan.mst, 
@@ -541,6 +563,7 @@ plot.mst(shan.mst,
 ```
 
 ### 5.4 Computing spatially constrained clusters using SKATER method
+
 ```{r}
 clust6 <- spdep::skater(edges = shan.mst[,1:2], 
                  data = shan_ict, 
@@ -553,17 +576,20 @@ str(clust6)
 ```
 
 Check cluster assignment
+
 ```{r}
 ccs6 <- clust6$groups
 ccs6
 ```
 
 See number of observations in a table
+
 ```{r}
 table(ccs6)
 ```
 
 Plot the pruned tree that shows the five clusters on top of the townshop area
+
 ```{r}
 sp::plot(shan_sp, border=gray(.5))
 plot(clust6, 
@@ -575,6 +601,7 @@ plot(clust6,
 ```
 
 ### 5.5 Visualising the New Clusters
+
 ```{r}
 groups_mat <- as.matrix(clust6$groups)
 shan_sf_spatialcluster <- cbind(shan_sf_cluster, as.factor(groups_mat)) %>%
@@ -598,6 +625,7 @@ tmap_arrange(hclust.map, shclust.map,
 ### 5.6 Spatially Constrained Clustering: ClustGeo Method
 
 #### Non-geographically constrained clusters
+
 ```{r}
 nongeo_cluster <- hclustgeo(proxmat)
 plot(nongeo_cluster, cex = 0.5)
@@ -607,6 +635,7 @@ rect.hclust(nongeo_cluster,
 ```
 
 #### Mapping the cluster
+
 ```{r}
 groups <- as.factor(cutree(nongeo_cluster, k=6))
 ```
@@ -621,6 +650,7 @@ qtm(shan_sf_ngeo_cluster, "CLUSTER")
 ```
 
 ### 5.7 Spatially Constrainted Hierarchical Clustering
+
 ```{r}
 dist <- st_distance(shan_sf, shan_sf)
 distmat <- as.dist(dist)
@@ -646,11 +676,13 @@ shan_sf_Gcluster <- cbind(shan_sf, as.matrix(groups)) %>%
 #### New set of clusters
 
 They are more spatially constrained, but not perfectly. Could be useful
+
 ```{r}
 qtm(shan_sf_Gcluster, "CLUSTER")
 ```
 
 ## 6.0 Visual Interpretation of Clusters
+
 ```{r}
 ggplot(data = shan_sf_ngeo_cluster,
        aes(x = CLUSTER, y = RADIO_PR)) +
@@ -658,6 +690,7 @@ ggplot(data = shan_sf_ngeo_cluster,
 ```
 
 ### 6.1 Multivariate Visualisation
+
 ```{r}
 ggparcoord(data = shan_sf_ngeo_cluster, 
            columns = c(17:21), 
