@@ -38,6 +38,8 @@ website:
           href: InClassEx/ICE4/ICE4.html
         - text: "In-class Exercises 5"
           href: InClassEx/ICE4/ICE5.html
+        - text: "In-class Exercises 7"
+          href: InClassEx/ICE4/ICE7.html
     right:
       - href: index.qmd
         text: Home
