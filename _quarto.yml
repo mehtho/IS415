@@ -19,6 +19,8 @@ website:
           href: HandsOnEx/HE5/HE5.html
         - text: "Hands-on Exercise 7"
           href: HandsOnEx/HE7/HE7.html
+        - text: "Hands-on Exercise 8"
+          href: HandsOnEx/HE7/HE8.html
     - text: "Take-home Exercises"
       menu:
         - text: "Take-home Exercise 1"
