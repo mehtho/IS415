@@ -21,24 +21,25 @@ execute:
 ## 1.0 Slides Notes
 
 #### Regression
- -    Model the relationships among variables
- -    Then estimate outcomes from the modelled relationship
- 
+
+-   Model the relationships among variables
+-   Then estimate outcomes from the modelled relationship
+
 #### Simple Applications
- -    Do 2-variable linear regression and do least-squares
- 
+
+-   Do 2-variable linear regression and do least-squares
+
 #### Assessing Goodness of Fit
- -    Total sum of squares (TSS)
- -    Explained sum of squares (ESS)
- -    Residual sum of squares (RSS)
- 
+
+-   Total sum of squares (TSS)
+-   Explained sum of squares (ESS)
+-   Residual sum of squares (RSS)
+
 $TSS = ESS + RSS$
- 
+
 $\sum^n_{i=1}(y_i-\bar{y})^2 = \sum^n_{i=1}(\hat{y}-{\bar{y}})^2 + \sum^n_{i=1}(y_i-\hat{y_i})^2$
 
-
 $R^2$ is the coefficient of determination (Proportion of the total explained variation in y)
-
 
 #### Regression Significance Testing
 
@@ -55,76 +56,81 @@ Test statistic is $\frac{b_observed - b_expected}{SE_b}$
 Degrees of freedom is $N-p-1$, where N is total sample size, p is number of predictors
 
 #### Variable Inflation Factors (VIF)
+
 Variables with high collinearity, these will just add unnecessary variance to the model
 
 #### Assumption of Linear Regression Models
- -    Linearity assumption: Rel. between dep. and indep. vars is approximately linear
- 
- -    Normality assumption: $\epsilon$ ~ Normal
- -    Homogeneity of residuals variance: Residuals should have constant variance (Homoscedasticity)
- -    Residuals are uncorrelated with each other (e.g. no serial correlation with time series data)
- -    Optional criteria $\epsilon ~ N(0, \sigma)$
- 
+
+-   Linearity assumption: Rel. between dep. and indep. vars is approximately linear
+
+-   Normality assumption: $\epsilon$ \~ Normal
+
+-   Homogeneity of residuals variance: Residuals should have constant variance (Homoscedasticity)
+
+-   Residuals are uncorrelated with each other (e.g. no serial correlation with time series data)
+
+-   Optional criteria $\epsilon ~ N(0, \sigma)$
 
 #### Linearity Assumption Confirmation
+
 When plotting the residuals vs fitted values, the fitted line from the plot should be horizontal without distinct patterns
 
 They should not spray everywhere or form curves
 
 #### Data Transformation
+
 Clarify this slide, what transformation wans applied to linearise the relationship?
 
 #### Normality Assumption (For the residuals)
+
 The histogram should show a gaussian dist.
 
 #### Checking for serial correlation
+
 E.g. checking for temporal correlation, make sure that they don't correlate with time (Show a pattern)
 
 #### Spatial Non-Stationary
+
 Naive applications of linear regression are assumed to be spatially stationary. Not good for modelling spatial processes
 
 #### How Relationships Vary Spatially?
+
 Sampling variation
 
- -    Nuisance variation: Not actually spatially non-stationary
- 
-Relationships intrinsically different across space
- -    The variation is actually dependent on space
- 
+-   Nuisance variation: Not actually spatially non-stationary
+
+Relationships intrinsically different across space - The variation is actually dependent on space
+
 Model misspecification
 
-
 #### Other Definitions
-Spatially non-stationarity: 
- -    Same stimulus but different response in different parts of the study region
 
-Global models:
- -    Location independent, spatially stationary
- 
- Local models:
- -    Not global, expected from spatial data
- 
- 
+Spatially non-stationarity: - Same stimulus but different response in different parts of the study region
+
+Global models: - Location independent, spatially stationary
+
+Local models: - Not global, expected from spatial data
+
 #### Assumption of Spatial Autocorrelation
+
 Goes back to local moran's
- 
- 
+
 #### Geographically Weighted Regression (GWR)
- -    LOCAL STATISTICAL TECHNIQUE to analyse spatial variations in relationships
- 
- -    Assumes spatial non-stationarity, will be tested
- 
- -    Follows first law of geography
- 
- 
+
+-   LOCAL STATISTICAL TECHNIQUE to analyse spatial variations in relationships
+
+-   Assumes spatial non-stationarity, will be tested
+
+-   Follows first law of geography
+
 $y_i = \beta_0(u_i, v_i) + \sum_k \beta_k(u_i,v_i)x_{ik} + \epsilon_i$
 
 Where $u_i, v_i$ are the coordinates of point $i$ and $\beta_k(u_i, v_i)$ is the realization of the continuous function at point i
 
 #### Calibration of GWR
-Use local weighted least squares
- -    Give weights based on the locations, following 1st law of geography
- 
+
+Use local weighted least squares - Give weights based on the locations, following 1st law of geography
+
 Weight examples
 
 Global model: $w_{ij} = 1$
@@ -134,15 +140,16 @@ Gaussian: $w_{ij}=exp(-\frac{1}{2}(\frac{d_{ij}}{b})^2)$
 Like different weighting schemes for other locations for a given location. Can be fixed or adaptive
 
 #### Calibration: Determining Bandwidth
- -    Least cross-validation score
- -    Least Akaike Information Criterion (AIC)
- 
+
+-   Least cross-validation score
+-   Least Akaike Information Criterion (AIC)
+
 #### Extras
-GWR reports should show
- -   Local $R^2$
- -   Intercept
+
+GWR reports should show - Local $R^2$ - Intercept
 
 ## 2.0 Dependencies
+
 ```{r}
 pacman::p_load(olsrr, corrplot, ggpubr, sf, spdep, GWmodel, tmap, tidyverse, gtsummary)
 ```
@@ -151,25 +158,28 @@ olsrr: OLS and performing diagnostics tests
 
 GWmodel: calibrating geographical weighted family of models
 
-
 ## 3.0 Wrangling
 
 #### Load
+
 ```{r}
 mpsz = st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL")
 ```
 
 #### CRS
+
 ```{r}
 mpsz_svy21 <- st_transform(mpsz, 3414)
 ```
 
 #### st_bbox
+
 ```{r}
 st_bbox(mpsz_svy21) 
 ```
 
 #### Aspatial Wrangling
+
 ```{r}
 condo_resale = read_csv("data/aspatial/Condo_resale_2015.csv")
 ```
@@ -183,6 +193,7 @@ summary(condo_resale)
 ```
 
 Aspatial to sf
+
 ```{r}
 condo_resale.sf <- st_as_sf(condo_resale,
                             coords = c("LONGITUDE", "LATITUDE"),
@@ -195,13 +206,16 @@ head(condo_resale.sf)
 ```
 
 ### 4.0 EDA
+
 See dist of SELLING_PRICE
+
 ```{r}
 ggplot(data=condo_resale.sf, aes(x=`SELLING_PRICE`)) +
   geom_histogram(bins=20, color="black", fill="light blue")
 ```
 
 Fix dist. with log
+
 ```{r}
 condo_resale.sf <- condo_resale.sf %>%
   mutate(`LOG_SELLING_PRICE` = log(SELLING_PRICE))
@@ -211,6 +225,7 @@ ggplot(data=condo_resale.sf, aes(x=`LOG_SELLING_PRICE`)) +
 ```
 
 Multiple barplot with ggarrange
+
 ```{r}
 AREA_SQM <- ggplot(data=condo_resale.sf, aes(x= `AREA_SQM`)) + 
   geom_histogram(bins=20, color="black", fill="light blue")
@@ -257,6 +272,7 @@ ggarrange(AREA_SQM, AGE, PROX_CBD, PROX_CHILDCARE, PROX_ELDERLYCARE,
 ```
 
 Statistical point map with tmap
+
 ```{r}
 tm_shape(mpsz_svy21)+
   tm_polygons() +
@@ -293,6 +309,7 @@ corrplot(cor(condo_resale[, 5:23]), diag = FALSE, order = "AOE",
 ```
 
 Using lm to calibrate the MLR model
+
 ```{r}
 condo.mlr <- lm(formula = SELLING_PRICE ~ AREA_SQM + AGE    + 
                   PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
@@ -305,6 +322,7 @@ summary(condo.mlr)
 ```
 
 Removing non-statisically significant variables
+
 ```{r}
 condo.mlr1 <- lm(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
                    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
@@ -316,11 +334,13 @@ ols_regress(condo.mlr1)
 ```
 
 Publication quality tables
+
 ```{r}
 tbl_regression(condo.mlr1, intercept = TRUE)
 ```
 
 Same thing for model stats
+
 ```{r}
 tbl_regression(condo.mlr1, 
                intercept = TRUE) %>% 
@@ -332,21 +352,25 @@ tbl_regression(condo.mlr1,
 ```
 
 Multicollinearity check with olsrr: Using ols_vif_tol
+
 ```{r}
 ols_vif_tol(condo.mlr1)
 ```
 
 Non-linearity test
+
 ```{r}
 ols_plot_resid_fit(condo.mlr1)
 ```
 
 Normality assumption test
+
 ```{r}
 ols_plot_resid_hist(condo.mlr1)
 ```
 
 Normality test: Formal statistical test method
+
 ```{r}
 ols_test_normality(condo.mlr1)
 ```
@@ -354,11 +378,13 @@ ols_test_normality(condo.mlr1)
 #### Test for spatial autocorrelation
 
 Export the hedonic pricing model as a df
+
 ```{r}
 mlr.output <- as.data.frame(condo.mlr1$residuals)
 ```
 
 Combine w/ sf object
+
 ```{r}
 condo_resale.res.sf <- cbind(condo_resale.sf, 
                         condo.mlr1$residuals) %>%
@@ -366,12 +392,14 @@ rename(`MLR_RES` = `condo.mlr1.residuals`)
 ```
 
 Data conversion process
+
 ```{r}
 condo_resale.sp <- as_Spatial(condo_resale.res.sf)
 condo_resale.sp
 ```
 
 Visualise interactive point symbol map
+
 ```{r}
 tmap_mode("view")
 
@@ -387,6 +415,7 @@ tmap_mode("plot")
 ```
 
 Make neighbour and weight matrix for local moran
+
 ```{r}
 nb <- dnearneigh(coordinates(condo_resale.sp), 0, 1500, longlat = FALSE)
 summary(nb)
@@ -396,6 +425,7 @@ summary(nb_lw)
 ```
 
 Run the local moran's test (Another library)
+
 ```{r}
 lm.morantest(condo.mlr1, nb_lw)
 ```
@@ -403,6 +433,7 @@ lm.morantest(condo.mlr1, nb_lw)
 ## 6.0 Building Hedonic Pricing Models using GWmodel
 
 Fixed bandwidth GWR model
+
 ```{r}
 bw.fixed <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
                      PROX_CHILDCARE + PROX_ELDERLYCARE  + PROX_URA_GROWTH_AREA + 
@@ -417,6 +448,7 @@ bw.fixed <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD +
 ```
 
 The result is in metres because the input CRS has metres as the unit, seen in +units=m
+
 ```{r}
 condo_resale.sp
 ```
@@ -442,6 +474,7 @@ gwr.fixed
 #### Building Adaptive Bandwidth GWR Model
 
 Set adaptive to true
+
 ```{r}
 bw.adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
                         PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    + 
@@ -456,6 +489,7 @@ bw.adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE  +
 ```
 
 Constructing the adaptive bandwidth gwr model
+
 ```{r}
 gwr.adaptive <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
                             PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE + 
@@ -469,24 +503,25 @@ gwr.adaptive <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE +
 ```
 
 Showing the model output
+
 ```{r}
 gwr.adaptive
 ```
 
 ## 7.0 Visualising the GWR Output
 
-Terminology
- -    Condition Number: Evaluates local collinearity. If strong local collinearity, result can be unstable. >30 may be unreliable
- 
- -    Local R2: Between 0.0 and 1.0, indicates how well the local regression model fits observed y values. Low values indivate poor performance. Can map the local R2 vals to see where GWR fails, gives clues to missing variables in the model
- 
- -    Predicted: Estimated or fitted y values computed by GWR
- 
- -    Residuals: Should be ~ N(0, 1)
- 
- -    Coefficient standard error: Measures reliability of each coefficient estimate. Higher confidence when standard error are small compared to the actual coefficent values. Large errors can indicate local collinearity issues
- 
+Terminology - Condition Number: Evaluates local collinearity. If strong local collinearity, result can be unstable. \>30 may be unreliable
+
+-   Local R2: Between 0.0 and 1.0, indicates how well the local regression model fits observed y values. Low values indivate poor performance. Can map the local R2 vals to see where GWR fails, gives clues to missing variables in the model
+
+-   Predicted: Estimated or fitted y values computed by GWR
+
+-   Residuals: Should be \~ N(0, 1)
+
+-   Coefficient standard error: Measures reliability of each coefficient estimate. Higher confidence when standard error are small compared to the actual coefficent values. Large errors can indicate local collinearity issues
+
 #### Turning SDF into sf dataframe
+
 ```{r}
 condo_resale.sf.adaptive <- st_as_sf(gwr.adaptive$SDF) %>%
   st_transform(crs=3414)
@@ -511,6 +546,7 @@ summary(gwr.adaptive$SDF$yhat)
 ```
 
 #### Visualising local R2
+
 ```{r}
 tmap_mode("view")
 tm_shape(mpsz_svy21)+
@@ -524,6 +560,7 @@ tmap_mode("plot")
 ```
 
 Visualising coefficient estimates
+
 ```{r}
 tmap_mode("view")
 AREA_SQM_SE <- tm_shape(mpsz_svy21)+
@@ -549,6 +586,7 @@ tmap_mode("plot")
 ```
 
 Limited to URA planning Regions
+
 ```{r}
 tm_shape(mpsz_svy21[mpsz_svy21$REGION_N=="CENTRAL REGION", ])+
   tm_polygons()+
@@ -558,28 +596,3 @@ tm_shape(condo_resale.sf.adaptive) +
            border.col = "gray60",
            border.lwd = 1)
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

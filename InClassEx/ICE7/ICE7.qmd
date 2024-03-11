@@ -18,6 +18,7 @@ execute:
 ---
 
 ## Loading R Packages
+
 ```{r}
 pacman::p_load(spdep, sp, tmap, sf, ClustGeo, 
                ggpubr, cluster, factoextra, NbClust,
@@ -27,6 +28,7 @@ pacman::p_load(spdep, sp, tmap, sf, ClustGeo,
 ## Data Imports and Preparation
 
 ### Import Geospatial
+
 ```{r}
 shan_sf <- st_read(dsn = "data/geospatial", 
                    layer = "myanmar_township_boundaries") %>%
@@ -37,6 +39,7 @@ shan_sf
 ```
 
 ### Importing Aspatial
+
 ```{r}
 ict <- read_csv("data/aspatial/Shan-ICT.csv")
 ```
@@ -163,7 +166,8 @@ cluster_vars <- shan_sf %>%
   st_set_geometry(NULL) %>%
   select("TS.x", "RADIO_PR", "TV_PR", "LLPHONE_PR", "MPHONE_PR", "COMPUTER_PR")
 head(cluster_vars,10)
-``` 
+```
+
 ```{r}
 row.names(cluster_vars) <- cluster_vars$"TS.x"
 head(cluster_vars,10)
@@ -177,11 +181,14 @@ head(shan_ict, 10)
 ## Standardisation
 
 ### Min Max
+
 ```{r}
 shan_ict.std <- normalize(shan_ict)
 summary(shan_ict.std)
 ```
+
 ### Z-Score
+
 ```{r}
 shan_ict.z <- scale(shan_ict)
 describe(shan_ict.z)
@@ -243,11 +250,14 @@ ggarrange(r, s, z,
 ```
 
 ## Proximity Matrix
+
 ```{r}
 proxmat <- dist(shan_ict, method = 'euclidean')
 proxmat
 ```
+
 ## Cluster Dendrogram
+
 ```{r}
 hclust_ward <- hclust(proxmat, method = 'ward.D')
 plot(hclust_ward, cex = 0.6)
@@ -266,6 +276,7 @@ fviz_gap_stat(gap_stat)
 ```
 
 ## Cluster Dendrogram and Clusters
+
 ```{r}
 plot(hclust_ward, cex = 0.6)
 rect.hclust(hclust_ward, 
@@ -273,8 +284,8 @@ rect.hclust(hclust_ward,
             border = 2:5)
 ```
 
-
 ## Mapping Formed Clusters
+
 ```{r}
 groups <- as.factor(cutree(hclust_ward, k=6))
 ```
@@ -285,9 +296,10 @@ shan_sf_cluster <- cbind(shan_sf, as.matrix(groups)) %>%
 
 qtm(shan_sf_cluster, "CLUSTER")
 ```
+
 ## Conversion with sf
 
-Don't need to shan_sp <- as_Spatial(shan_sf)
+Don't need to shan_sp \<- as_Spatial(shan_sf)
 
 ```{r}
 shan.nb <- poly2nb(shan_sf)
@@ -303,7 +315,6 @@ pts <- st_coordinates(st_centroid(shan_sf))
 plot(shan.nb, pts, col="blue", add=TRUE)
 ```
 
-
 ```{r}
 shan_sf_ngeo_cluster <- cbind(shan_sf, as.matrix(groups)) %>%
   rename(`CLUSTER` = `as.matrix.groups.`)
@@ -317,19 +328,3 @@ ggparcoord(data = shan_sf_ngeo_cluster,
   facet_grid(~ CLUSTER) + 
   theme(axis.text.x = element_text(angle = 30))
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

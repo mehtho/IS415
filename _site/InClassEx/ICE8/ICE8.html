@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.536">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Matthew Ho">
+<meta name="dcterms.date" content="2024-03-04">
+<meta name="description" content="In-class exercise 8">
+
+<title>Matt’s IS415 Experience - In-Class Exercise 8: Geographically Weighted Regression</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Matt’s IS415 Experience</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-hands-on-exercises" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercises</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-hands-on-exercises">    
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE1/HE1.html">
+ <span class="dropdown-text">Hands-on Exercise 1</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE2/HE2.html">
+ <span class="dropdown-text">Hands-on Exercise 2</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE3/HE3.html">
+ <span class="dropdown-text">Hands-on Exercise 3</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE4/HE4.html">
+ <span class="dropdown-text">Hands-on Exercise 4</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE5/HE5.html">
+ <span class="dropdown-text">Hands-on Exercise 5 &amp; 6</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE7/HE7.html">
+ <span class="dropdown-text">Hands-on Exercise 7</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE7/HE8.html">
+ <span class="dropdown-text">Hands-on Exercise 8</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-take-home-exercises" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Take-home Exercises</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-take-home-exercises">    
+        <li>
+    <a class="dropdown-item" href="../../TakeHomeEx/TakeHomeEx1/THE1.html">
+ <span class="dropdown-text">Take-home Exercise 1</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../TakeHomeEx/TakeHomeEx2/THE2.html">
+ <span class="dropdown-text">Take-home Exercise 2</span></a>
+  </li>  
+        <li class="dropdown-header">Take-home Exercise 3</li>
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-in-class-exercises" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">In-class Exercises</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-in-class-exercises">    
+        <li>
+    <a class="dropdown-item" href="../../InclassEx/ICE2/ICE2.html">
+ <span class="dropdown-text">In-class Exercises 2</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE3/ICE3.html">
+ <span class="dropdown-text">In-class Exercises 3</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE3/ICE3_1.html">
+ <span class="dropdown-text">In-class Exercises 3.1</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE4/ICE4.html">
+ <span class="dropdown-text">In-class Exercises 4</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE5/ICE5.html">
+ <span class="dropdown-text">In-class Exercises 5</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE7/ICE7.html">
+ <span class="dropdown-text">In-class Exercises 7</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE8/ICE8.html">
+ <span class="dropdown-text">In-class Exercises 8</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">In-Class Exercise 8: Geographically Weighted Regression</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">In-class Exercise</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    <p>In-class exercise 8</p>
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p><a href="https://www.linkedin.com/in/matthewhoyiwen/">Matthew Ho</a> </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">March 4, 2024</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(olsrr, corrplot, ggpubr, sf, spdep, GWmodel, tmap, tidyverse, gtsummary, ggstatsplot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>mpsz <span class="ot">=</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/geospatial"</span>, <span class="at">layer =</span> <span class="st">"MP14_SUBZONE_WEB_PL"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `MP14_SUBZONE_WEB_PL' from data source 
+  `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/InClassEx/ICE8/data/geospatial' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 323 features and 15 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33
+Projected CRS: SVY21</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>mpsz_svy21 <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(mpsz, <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>condo_resale <span class="ot">=</span> <span class="fu">read_csv</span>(<span class="st">"data/aspatial/Condo_resale_2015.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>condo_resale.sf <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(condo_resale,</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                            <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"LONGITUDE"</span>, <span class="st">"LATITUDE"</span>),</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">crs=</span><span class="dv">4326</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs=</span><span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>condo_resale.sp <span class="ot">&lt;-</span> <span class="fu">as_Spatial</span>(condo_resale.sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggcorrmat</span>(condo_resale[, <span class="dv">5</span><span class="sc">:</span><span class="dv">23</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ICE8_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="1152"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>condo.mlr <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="at">formula =</span> SELLING_PRICE <span class="sc">~</span> AREA_SQM <span class="sc">+</span> AGE <span class="sc">+</span> </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                   PROX_CBD <span class="sc">+</span> PROX_CHILDCARE <span class="sc">+</span> PROX_ELDERLYCARE <span class="sc">+</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                   PROX_URA_GROWTH_AREA <span class="sc">+</span> PROX_MRT  <span class="sc">+</span> PROX_PARK <span class="sc">+</span> </span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                   PROX_PRIMARY_SCH <span class="sc">+</span> PROX_SHOPPING_MALL    <span class="sc">+</span> PROX_BUS_STOP <span class="sc">+</span> </span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                   NO_Of_UNITS <span class="sc">+</span> FAMILY_FRIENDLY <span class="sc">+</span> FREEHOLD,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                 <span class="at">data=</span>condo_resale.sf)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ols_regress</span>(condo.mlr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                Model Summary                                 
+-----------------------------------------------------------------------------
+R                            0.807       RMSE                     751998.679 
+R-Squared                    0.651       MSE                571471422208.592 
+Adj. R-Squared               0.647       Coef. Var                    43.168 
+Pred R-Squared               0.638       AIC                       42966.758 
+MAE                     414819.628       SBC                       43051.072 
+-----------------------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+ AIC: Akaike Information Criteria 
+ SBC: Schwarz Bayesian Criteria 
+
+                                     ANOVA                                       
+--------------------------------------------------------------------------------
+                    Sum of                                                      
+                   Squares          DF         Mean Square       F         Sig. 
+--------------------------------------------------------------------------------
+Regression    1.512586e+15          14        1.080418e+14    189.059    0.0000 
+Residual      8.120609e+14        1421    571471422208.592                      
+Total         2.324647e+15        1435                                          
+--------------------------------------------------------------------------------
+
+                                               Parameter Estimates                                                
+-----------------------------------------------------------------------------------------------------------------
+               model           Beta    Std. Error    Std. Beta       t        Sig           lower          upper 
+-----------------------------------------------------------------------------------------------------------------
+         (Intercept)     527633.222    108183.223                   4.877    0.000     315417.244     739849.200 
+            AREA_SQM      12777.523       367.479        0.584     34.771    0.000      12056.663      13498.382 
+                 AGE     -24687.739      2754.845       -0.167     -8.962    0.000     -30091.739     -19283.740 
+            PROX_CBD     -77131.323      5763.125       -0.263    -13.384    0.000     -88436.469     -65826.176 
+      PROX_CHILDCARE    -318472.751    107959.512       -0.084     -2.950    0.003    -530249.889    -106695.613 
+    PROX_ELDERLYCARE     185575.623     39901.864        0.090      4.651    0.000     107302.737     263848.510 
+PROX_URA_GROWTH_AREA      39163.254     11754.829        0.060      3.332    0.001      16104.571      62221.936 
+            PROX_MRT    -294745.107     56916.367       -0.112     -5.179    0.000    -406394.234    -183095.980 
+           PROX_PARK     570504.807     65507.029        0.150      8.709    0.000     442003.938     699005.677 
+    PROX_PRIMARY_SCH     159856.136     60234.599        0.062      2.654    0.008      41697.849     278014.424 
+  PROX_SHOPPING_MALL    -220947.251     36561.832       -0.115     -6.043    0.000    -292668.213    -149226.288 
+       PROX_BUS_STOP     682482.221    134513.243        0.134      5.074    0.000     418616.359     946348.082 
+         NO_Of_UNITS       -245.480        87.947       -0.053     -2.791    0.005       -418.000        -72.961 
+     FAMILY_FRIENDLY     146307.576     46893.021        0.057      3.120    0.002      54320.593     238294.560 
+            FREEHOLD     350599.812     48506.485        0.136      7.228    0.000     255447.802     445751.821 
+-----------------------------------------------------------------------------------------------------------------</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tbl_regression</span>(condo.mlr, </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>               <span class="at">intercept =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_glance_source_note</span>(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="fu">list</span>(sigma <span class="sc">~</span> <span class="st">"\U03C3"</span>),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">include =</span> <span class="fu">c</span>(r.squared, adj.r.squared, </span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>                AIC, statistic,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>                p.value, sigma))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="iqqajcyvhd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#iqqajcyvhd table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#iqqajcyvhd thead, #iqqajcyvhd tbody, #iqqajcyvhd tfoot, #iqqajcyvhd tr, #iqqajcyvhd td, #iqqajcyvhd th {
+  border-style: none;
+}
+
+#iqqajcyvhd p {
+  margin: 0;
+  padding: 0;
+}
+
+#iqqajcyvhd .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#iqqajcyvhd .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#iqqajcyvhd .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#iqqajcyvhd .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#iqqajcyvhd .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#iqqajcyvhd .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#iqqajcyvhd .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#iqqajcyvhd .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#iqqajcyvhd .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#iqqajcyvhd .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#iqqajcyvhd .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#iqqajcyvhd .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#iqqajcyvhd .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#iqqajcyvhd .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#iqqajcyvhd .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#iqqajcyvhd .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#iqqajcyvhd .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#iqqajcyvhd .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#iqqajcyvhd .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#iqqajcyvhd .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#iqqajcyvhd .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#iqqajcyvhd .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#iqqajcyvhd .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#iqqajcyvhd .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#iqqajcyvhd .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#iqqajcyvhd .gt_left {
+  text-align: left;
+}
+
+#iqqajcyvhd .gt_center {
+  text-align: center;
+}
+
+#iqqajcyvhd .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#iqqajcyvhd .gt_font_normal {
+  font-weight: normal;
+}
+
+#iqqajcyvhd .gt_font_bold {
+  font-weight: bold;
+}
+
+#iqqajcyvhd .gt_font_italic {
+  font-style: italic;
+}
+
+#iqqajcyvhd .gt_super {
+  font-size: 65%;
+}
+
+#iqqajcyvhd .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#iqqajcyvhd .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#iqqajcyvhd .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#iqqajcyvhd .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#iqqajcyvhd .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#iqqajcyvhd .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#iqqajcyvhd .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+  <thead>
+    <tr class="gt_col_headings">
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="<strong>Characteristic</strong>"><strong>Characteristic</strong></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="<strong>Beta</strong>"><strong>Beta</strong></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="<strong>95% CI</strong><span class=&quot;gt_footnote_marks&quot; style=&quot;white-space:nowrap;font-style:italic;font-weight:normal;&quot;><sup>1</sup></span>"><strong>95% CI</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1" scope="col" id="<strong>p-value</strong>"><strong>p-value</strong></th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr><td headers="label" class="gt_row gt_left">(Intercept)</td>
+<td headers="estimate" class="gt_row gt_center">527,633</td>
+<td headers="ci" class="gt_row gt_center">315,417, 739,849</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">AREA_SQM</td>
+<td headers="estimate" class="gt_row gt_center">12,778</td>
+<td headers="ci" class="gt_row gt_center">12,057, 13,498</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">AGE</td>
+<td headers="estimate" class="gt_row gt_center">-24,688</td>
+<td headers="ci" class="gt_row gt_center">-30,092, -19,284</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_CBD</td>
+<td headers="estimate" class="gt_row gt_center">-77,131</td>
+<td headers="ci" class="gt_row gt_center">-88,436, -65,826</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_CHILDCARE</td>
+<td headers="estimate" class="gt_row gt_center">-318,473</td>
+<td headers="ci" class="gt_row gt_center">-530,250, -106,696</td>
+<td headers="p.value" class="gt_row gt_center">0.003</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_ELDERLYCARE</td>
+<td headers="estimate" class="gt_row gt_center">185,576</td>
+<td headers="ci" class="gt_row gt_center">107,303, 263,849</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_URA_GROWTH_AREA</td>
+<td headers="estimate" class="gt_row gt_center">39,163</td>
+<td headers="ci" class="gt_row gt_center">16,105, 62,222</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_MRT</td>
+<td headers="estimate" class="gt_row gt_center">-294,745</td>
+<td headers="ci" class="gt_row gt_center">-406,394, -183,096</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_PARK</td>
+<td headers="estimate" class="gt_row gt_center">570,505</td>
+<td headers="ci" class="gt_row gt_center">442,004, 699,006</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_PRIMARY_SCH</td>
+<td headers="estimate" class="gt_row gt_center">159,856</td>
+<td headers="ci" class="gt_row gt_center">41,698, 278,014</td>
+<td headers="p.value" class="gt_row gt_center">0.008</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_SHOPPING_MALL</td>
+<td headers="estimate" class="gt_row gt_center">-220,947</td>
+<td headers="ci" class="gt_row gt_center">-292,668, -149,226</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">PROX_BUS_STOP</td>
+<td headers="estimate" class="gt_row gt_center">682,482</td>
+<td headers="ci" class="gt_row gt_center">418,616, 946,348</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">NO_Of_UNITS</td>
+<td headers="estimate" class="gt_row gt_center">-245</td>
+<td headers="ci" class="gt_row gt_center">-418, -73</td>
+<td headers="p.value" class="gt_row gt_center">0.005</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">FAMILY_FRIENDLY</td>
+<td headers="estimate" class="gt_row gt_center">146,308</td>
+<td headers="ci" class="gt_row gt_center">54,321, 238,295</td>
+<td headers="p.value" class="gt_row gt_center">0.002</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">FREEHOLD</td>
+<td headers="estimate" class="gt_row gt_center">350,600</td>
+<td headers="ci" class="gt_row gt_center">255,448, 445,752</td>
+<td headers="p.value" class="gt_row gt_center">&lt;0.001</td></tr>
+  </tbody>
+  <tfoot class="gt_sourcenotes">
+    <tr>
+      <td class="gt_sourcenote" colspan="4">R² = 0.651; Adjusted R² = 0.647; AIC = 42,967; Statistic = 189; p-value = &lt;0.001; σ = 755,957</td>
+    </tr>
+  </tfoot>
+  <tfoot class="gt_footnotes">
+    <tr>
+      <td class="gt_footnote" colspan="4"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;"><sup>1</sup></span> CI = Confidence Interval</td>
+    </tr>
+  </tfoot>
+</table>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggcoefstats</span>(condo.mlr, <span class="at">sort=</span><span class="st">'ascending'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ICE8_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="1152"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>bw.fixed <span class="ot">&lt;-</span> <span class="fu">bw.gwr</span>(<span class="at">formula =</span> SELLING_PRICE <span class="sc">~</span> AREA_SQM <span class="sc">+</span> AGE <span class="sc">+</span> PROX_CBD <span class="sc">+</span> </span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                     PROX_CHILDCARE <span class="sc">+</span> PROX_ELDERLYCARE  <span class="sc">+</span> PROX_URA_GROWTH_AREA <span class="sc">+</span> </span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                     PROX_MRT   <span class="sc">+</span> PROX_PARK <span class="sc">+</span> PROX_PRIMARY_SCH <span class="sc">+</span> </span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                     PROX_SHOPPING_MALL <span class="sc">+</span> PROX_BUS_STOP <span class="sc">+</span> NO_Of_UNITS <span class="sc">+</span> </span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                     FAMILY_FRIENDLY <span class="sc">+</span> FREEHOLD, </span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">data=</span>condo_resale.sp, </span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">approach=</span><span class="st">"CV"</span>, </span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                   <span class="at">kernel=</span><span class="st">"gaussian"</span>, </span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">adaptive=</span><span class="cn">FALSE</span>, </span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">longlat=</span><span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fixed bandwidth: 17660.96 CV score: 8.259118e+14 
+Fixed bandwidth: 10917.26 CV score: 7.970454e+14 
+Fixed bandwidth: 6749.419 CV score: 7.273273e+14 
+Fixed bandwidth: 4173.553 CV score: 6.300006e+14 
+Fixed bandwidth: 2581.58 CV score: 5.404958e+14 
+Fixed bandwidth: 1597.687 CV score: 4.857515e+14 
+Fixed bandwidth: 989.6077 CV score: 4.722431e+14 
+Fixed bandwidth: 613.7939 CV score: 1.379526e+16 
+Fixed bandwidth: 1221.873 CV score: 4.778717e+14 
+Fixed bandwidth: 846.0596 CV score: 4.791629e+14 
+Fixed bandwidth: 1078.325 CV score: 4.751406e+14 
+Fixed bandwidth: 934.7772 CV score: 4.72518e+14 
+Fixed bandwidth: 1023.495 CV score: 4.730305e+14 
+Fixed bandwidth: 968.6643 CV score: 4.721317e+14 
+Fixed bandwidth: 955.7206 CV score: 4.722072e+14 
+Fixed bandwidth: 976.6639 CV score: 4.721387e+14 
+Fixed bandwidth: 963.7202 CV score: 4.721484e+14 
+Fixed bandwidth: 971.7199 CV score: 4.721293e+14 
+Fixed bandwidth: 973.6083 CV score: 4.721309e+14 
+Fixed bandwidth: 970.5527 CV score: 4.721295e+14 
+Fixed bandwidth: 972.4412 CV score: 4.721296e+14 
+Fixed bandwidth: 971.2741 CV score: 4.721292e+14 
+Fixed bandwidth: 970.9985 CV score: 4.721293e+14 
+Fixed bandwidth: 971.4443 CV score: 4.721292e+14 
+Fixed bandwidth: 971.5496 CV score: 4.721293e+14 
+Fixed bandwidth: 971.3793 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3391 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3143 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3545 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3296 CV score: 4.721292e+14 
+Fixed bandwidth: 971.345 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3355 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3413 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3377 CV score: 4.721292e+14 
+Fixed bandwidth: 971.34 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3405 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3396 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3402 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3398 CV score: 4.721292e+14 
+Fixed bandwidth: 971.34 CV score: 4.721292e+14 
+Fixed bandwidth: 971.3399 CV score: 4.721292e+14 
+Fixed bandwidth: 971.34 CV score: 4.721292e+14 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>gwr.fixed <span class="ot">&lt;-</span> <span class="fu">gwr.basic</span>(<span class="at">formula =</span> SELLING_PRICE <span class="sc">~</span> AREA_SQM <span class="sc">+</span> AGE <span class="sc">+</span> PROX_CBD <span class="sc">+</span> </span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                         PROX_CHILDCARE <span class="sc">+</span> PROX_ELDERLYCARE  <span class="sc">+</span> PROX_URA_GROWTH_AREA <span class="sc">+</span> </span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                         PROX_MRT   <span class="sc">+</span> PROX_PARK <span class="sc">+</span> PROX_PRIMARY_SCH <span class="sc">+</span> </span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                         PROX_SHOPPING_MALL <span class="sc">+</span> PROX_BUS_STOP <span class="sc">+</span> NO_Of_UNITS <span class="sc">+</span> </span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                         FAMILY_FRIENDLY <span class="sc">+</span> FREEHOLD, </span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                       <span class="at">data=</span>condo_resale.sp, </span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                       <span class="at">bw=</span>bw.fixed, </span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                       <span class="at">kernel =</span> <span class="st">'gaussian'</span>, </span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                       <span class="at">longlat =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>gwr.fixed</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   ***********************************************************************
+   *                       Package   GWmodel                             *
+   ***********************************************************************
+   Program starts at: 2024-03-11 11:29:04.299577 
+   Call:
+   gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
+    PROX_CHILDCARE + PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
+    PROX_MRT + PROX_PARK + PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + 
+    PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, 
+    data = condo_resale.sp, bw = bw.fixed, kernel = "gaussian", 
+    longlat = FALSE)
+
+   Dependent (y) variable:  SELLING_PRICE
+   Independent variables:  AREA_SQM AGE PROX_CBD PROX_CHILDCARE PROX_ELDERLYCARE PROX_URA_GROWTH_AREA PROX_MRT PROX_PARK PROX_PRIMARY_SCH PROX_SHOPPING_MALL PROX_BUS_STOP NO_Of_UNITS FAMILY_FRIENDLY FREEHOLD
+   Number of data points: 1436
+   ***********************************************************************
+   *                    Results of Global Regression                     *
+   ***********************************************************************
+
+   Call:
+    lm(formula = formula, data = data)
+
+   Residuals:
+     Min       1Q   Median       3Q      Max 
+-3470778  -298119   -23481   248917 12234210 
+
+   Coefficients:
+                          Estimate Std. Error t value Pr(&gt;|t|)    
+   (Intercept)           527633.22  108183.22   4.877 1.20e-06 ***
+   AREA_SQM               12777.52     367.48  34.771  &lt; 2e-16 ***
+   AGE                   -24687.74    2754.84  -8.962  &lt; 2e-16 ***
+   PROX_CBD              -77131.32    5763.12 -13.384  &lt; 2e-16 ***
+   PROX_CHILDCARE       -318472.75  107959.51  -2.950 0.003231 ** 
+   PROX_ELDERLYCARE      185575.62   39901.86   4.651 3.61e-06 ***
+   PROX_URA_GROWTH_AREA   39163.25   11754.83   3.332 0.000885 ***
+   PROX_MRT             -294745.11   56916.37  -5.179 2.56e-07 ***
+   PROX_PARK             570504.81   65507.03   8.709  &lt; 2e-16 ***
+   PROX_PRIMARY_SCH      159856.14   60234.60   2.654 0.008046 ** 
+   PROX_SHOPPING_MALL   -220947.25   36561.83  -6.043 1.93e-09 ***
+   PROX_BUS_STOP         682482.22  134513.24   5.074 4.42e-07 ***
+   NO_Of_UNITS             -245.48      87.95  -2.791 0.005321 ** 
+   FAMILY_FRIENDLY       146307.58   46893.02   3.120 0.001845 ** 
+   FREEHOLD              350599.81   48506.48   7.228 7.98e-13 ***
+
+   ---Significance stars
+   Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+   Residual standard error: 756000 on 1421 degrees of freedom
+   Multiple R-squared: 0.6507
+   Adjusted R-squared: 0.6472 
+   F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16 
+   ***Extra Diagnostic information
+   Residual sum of squares: 8.120609e+14
+   Sigma(hat): 752522.9
+   AIC:  42966.76
+   AICc:  42967.14
+   BIC:  41731.39
+   ***********************************************************************
+   *          Results of Geographically Weighted Regression              *
+   ***********************************************************************
+
+   *********************Model calibration information*********************
+   Kernel function: gaussian 
+   Fixed bandwidth: 971.34 
+   Regression points: the same locations as observations are used.
+   Distance metric: Euclidean distance metric is used.
+
+   ****************Summary of GWR coefficient estimates:******************
+                               Min.     1st Qu.      Median     3rd Qu.
+   Intercept            -3.5988e+07 -5.1998e+05  7.6780e+05  1.7412e+06
+   AREA_SQM              1.0003e+03  5.2758e+03  7.4740e+03  1.2301e+04
+   AGE                  -1.3475e+05 -2.0813e+04 -8.6260e+03 -3.7784e+03
+   PROX_CBD             -7.7047e+07 -2.3608e+05 -8.3599e+04  3.4646e+04
+   PROX_CHILDCARE       -6.0097e+06 -3.3667e+05 -9.7426e+04  2.9007e+05
+   PROX_ELDERLYCARE     -3.5001e+06 -1.5970e+05  3.1970e+04  1.9577e+05
+   PROX_URA_GROWTH_AREA -3.0170e+06 -8.2013e+04  7.0749e+04  2.2612e+05
+   PROX_MRT             -3.5282e+06 -6.5836e+05 -1.8833e+05  3.6922e+04
+   PROX_PARK            -1.2062e+06 -2.1732e+05  3.5383e+04  4.1335e+05
+   PROX_PRIMARY_SCH     -2.2695e+07 -1.7066e+05  4.8472e+04  5.1555e+05
+   PROX_SHOPPING_MALL   -7.2585e+06 -1.6684e+05 -1.0517e+04  1.5923e+05
+   PROX_BUS_STOP        -1.4676e+06 -4.5207e+04  3.7601e+05  1.1664e+06
+   NO_Of_UNITS          -1.3170e+03 -2.4822e+02 -3.0846e+01  2.5496e+02
+   FAMILY_FRIENDLY      -2.2749e+06 -1.1140e+05  7.6214e+03  1.6107e+05
+   FREEHOLD             -9.2067e+06  3.8074e+04  1.5169e+05  3.7528e+05
+                             Max.
+   Intercept            112794435
+   AREA_SQM                 21575
+   AGE                     434203
+   PROX_CBD               2704604
+   PROX_CHILDCARE         1654086
+   PROX_ELDERLYCARE      38867861
+   PROX_URA_GROWTH_AREA  78515805
+   PROX_MRT               3124325
+   PROX_PARK             18122439
+   PROX_PRIMARY_SCH       4637517
+   PROX_SHOPPING_MALL     1529953
+   PROX_BUS_STOP         11342209
+   NO_Of_UNITS              12907
+   FAMILY_FRIENDLY        1720745
+   FREEHOLD               6073642
+   ************************Diagnostic information*************************
+   Number of data points: 1436 
+   Effective number of parameters (2trace(S) - trace(S'S)): 438.3807 
+   Effective degrees of freedom (n-2trace(S) + trace(S'S)): 997.6193 
+   AICc (GWR book, Fotheringham, et al. 2002, p. 61, eq 2.33): 42263.61 
+   AIC (GWR book, Fotheringham, et al. 2002,GWR p. 96, eq. 4.22): 41632.36 
+   BIC (GWR book, Fotheringham, et al. 2002,GWR p. 61, eq. 2.34): 42515.71 
+   Residual sum of squares: 2.534069e+14 
+   R-square value:  0.8909912 
+   Adjusted R-square value:  0.8430418 
+
+   ***********************************************************************
+   Program stops at: 2024-03-11 11:29:05.23791 </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>bw.adaptive <span class="ot">&lt;-</span> <span class="fu">bw.gwr</span>(<span class="at">formula =</span> SELLING_PRICE <span class="sc">~</span> AREA_SQM <span class="sc">+</span> AGE  <span class="sc">+</span> </span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                        PROX_CBD <span class="sc">+</span> PROX_CHILDCARE <span class="sc">+</span> PROX_ELDERLYCARE    <span class="sc">+</span> </span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                        PROX_URA_GROWTH_AREA <span class="sc">+</span> PROX_MRT <span class="sc">+</span> PROX_PARK <span class="sc">+</span> </span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                        PROX_PRIMARY_SCH <span class="sc">+</span> PROX_SHOPPING_MALL   <span class="sc">+</span> PROX_BUS_STOP <span class="sc">+</span> </span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                        NO_Of_UNITS <span class="sc">+</span> FAMILY_FRIENDLY <span class="sc">+</span> FREEHOLD, </span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data=</span>condo_resale.sp, </span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                      <span class="at">approach=</span><span class="st">"CV"</span>, </span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                      <span class="at">kernel=</span><span class="st">"gaussian"</span>, </span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                      <span class="at">adaptive=</span><span class="cn">TRUE</span>, </span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                      <span class="at">longlat=</span><span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Adaptive bandwidth: 895 CV score: 7.952401e+14 
+Adaptive bandwidth: 561 CV score: 7.667364e+14 
+Adaptive bandwidth: 354 CV score: 6.953454e+14 
+Adaptive bandwidth: 226 CV score: 6.15223e+14 
+Adaptive bandwidth: 147 CV score: 5.674373e+14 
+Adaptive bandwidth: 98 CV score: 5.426745e+14 
+Adaptive bandwidth: 68 CV score: 5.168117e+14 
+Adaptive bandwidth: 49 CV score: 4.859631e+14 
+Adaptive bandwidth: 37 CV score: 4.646518e+14 
+Adaptive bandwidth: 30 CV score: 4.422088e+14 
+Adaptive bandwidth: 25 CV score: 4.430816e+14 
+Adaptive bandwidth: 32 CV score: 4.505602e+14 
+Adaptive bandwidth: 27 CV score: 4.462172e+14 
+Adaptive bandwidth: 30 CV score: 4.422088e+14 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>gwr.adaptive <span class="ot">&lt;-</span> <span class="fu">gwr.basic</span>(<span class="at">formula =</span> SELLING_PRICE <span class="sc">~</span> AREA_SQM <span class="sc">+</span> AGE <span class="sc">+</span> </span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                            PROX_CBD <span class="sc">+</span> PROX_CHILDCARE <span class="sc">+</span> PROX_ELDERLYCARE <span class="sc">+</span> </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                            PROX_URA_GROWTH_AREA <span class="sc">+</span> PROX_MRT <span class="sc">+</span> PROX_PARK <span class="sc">+</span> </span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                            PROX_PRIMARY_SCH <span class="sc">+</span> PROX_SHOPPING_MALL <span class="sc">+</span> PROX_BUS_STOP <span class="sc">+</span> </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                            NO_Of_UNITS <span class="sc">+</span> FAMILY_FRIENDLY <span class="sc">+</span> FREEHOLD, </span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">data=</span>condo_resale.sp, <span class="at">bw=</span>bw.adaptive, </span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">kernel =</span> <span class="st">'gaussian'</span>, </span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">adaptive=</span><span class="cn">TRUE</span>, </span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">longlat =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>gwr.adaptive</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   ***********************************************************************
+   *                       Package   GWmodel                             *
+   ***********************************************************************
+   Program starts at: 2024-03-11 11:29:12.477253 
+   Call:
+   gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
+    PROX_CHILDCARE + PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
+    PROX_MRT + PROX_PARK + PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + 
+    PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, 
+    data = condo_resale.sp, bw = bw.adaptive, kernel = "gaussian", 
+    adaptive = TRUE, longlat = FALSE)
+
+   Dependent (y) variable:  SELLING_PRICE
+   Independent variables:  AREA_SQM AGE PROX_CBD PROX_CHILDCARE PROX_ELDERLYCARE PROX_URA_GROWTH_AREA PROX_MRT PROX_PARK PROX_PRIMARY_SCH PROX_SHOPPING_MALL PROX_BUS_STOP NO_Of_UNITS FAMILY_FRIENDLY FREEHOLD
+   Number of data points: 1436
+   ***********************************************************************
+   *                    Results of Global Regression                     *
+   ***********************************************************************
+
+   Call:
+    lm(formula = formula, data = data)
+
+   Residuals:
+     Min       1Q   Median       3Q      Max 
+-3470778  -298119   -23481   248917 12234210 
+
+   Coefficients:
+                          Estimate Std. Error t value Pr(&gt;|t|)    
+   (Intercept)           527633.22  108183.22   4.877 1.20e-06 ***
+   AREA_SQM               12777.52     367.48  34.771  &lt; 2e-16 ***
+   AGE                   -24687.74    2754.84  -8.962  &lt; 2e-16 ***
+   PROX_CBD              -77131.32    5763.12 -13.384  &lt; 2e-16 ***
+   PROX_CHILDCARE       -318472.75  107959.51  -2.950 0.003231 ** 
+   PROX_ELDERLYCARE      185575.62   39901.86   4.651 3.61e-06 ***
+   PROX_URA_GROWTH_AREA   39163.25   11754.83   3.332 0.000885 ***
+   PROX_MRT             -294745.11   56916.37  -5.179 2.56e-07 ***
+   PROX_PARK             570504.81   65507.03   8.709  &lt; 2e-16 ***
+   PROX_PRIMARY_SCH      159856.14   60234.60   2.654 0.008046 ** 
+   PROX_SHOPPING_MALL   -220947.25   36561.83  -6.043 1.93e-09 ***
+   PROX_BUS_STOP         682482.22  134513.24   5.074 4.42e-07 ***
+   NO_Of_UNITS             -245.48      87.95  -2.791 0.005321 ** 
+   FAMILY_FRIENDLY       146307.58   46893.02   3.120 0.001845 ** 
+   FREEHOLD              350599.81   48506.48   7.228 7.98e-13 ***
+
+   ---Significance stars
+   Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+   Residual standard error: 756000 on 1421 degrees of freedom
+   Multiple R-squared: 0.6507
+   Adjusted R-squared: 0.6472 
+   F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16 
+   ***Extra Diagnostic information
+   Residual sum of squares: 8.120609e+14
+   Sigma(hat): 752522.9
+   AIC:  42966.76
+   AICc:  42967.14
+   BIC:  41731.39
+   ***********************************************************************
+   *          Results of Geographically Weighted Regression              *
+   ***********************************************************************
+
+   *********************Model calibration information*********************
+   Kernel function: gaussian 
+   Adaptive bandwidth: 30 (number of nearest neighbours)
+   Regression points: the same locations as observations are used.
+   Distance metric: Euclidean distance metric is used.
+
+   ****************Summary of GWR coefficient estimates:******************
+                               Min.     1st Qu.      Median     3rd Qu.
+   Intercept            -1.3487e+08 -2.4669e+05  7.7928e+05  1.6194e+06
+   AREA_SQM              3.3188e+03  5.6285e+03  7.7825e+03  1.2738e+04
+   AGE                  -9.6746e+04 -2.9288e+04 -1.4043e+04 -5.6119e+03
+   PROX_CBD             -2.5330e+06 -1.6256e+05 -7.7242e+04  2.6624e+03
+   PROX_CHILDCARE       -1.2790e+06 -2.0175e+05  8.7158e+03  3.7778e+05
+   PROX_ELDERLYCARE     -1.6212e+06 -9.2050e+04  6.1029e+04  2.8184e+05
+   PROX_URA_GROWTH_AREA -7.2686e+06 -3.0350e+04  4.5869e+04  2.4613e+05
+   PROX_MRT             -4.3781e+07 -6.7282e+05 -2.2115e+05 -7.4593e+04
+   PROX_PARK            -2.9020e+06 -1.6782e+05  1.1601e+05  4.6572e+05
+   PROX_PRIMARY_SCH     -8.6418e+05 -1.6627e+05 -7.7853e+03  4.3222e+05
+   PROX_SHOPPING_MALL   -1.8272e+06 -1.3175e+05 -1.4049e+04  1.3799e+05
+   PROX_BUS_STOP        -2.0579e+06 -7.1461e+04  4.1104e+05  1.2071e+06
+   NO_Of_UNITS          -2.1993e+03 -2.3685e+02 -3.4699e+01  1.1657e+02
+   FAMILY_FRIENDLY      -5.9879e+05 -5.0927e+04  2.6173e+04  2.2481e+05
+   FREEHOLD             -1.6340e+05  4.0765e+04  1.9023e+05  3.7960e+05
+                            Max.
+   Intercept            18758355
+   AREA_SQM                23064
+   AGE                     13303
+   PROX_CBD             11346650
+   PROX_CHILDCARE        2892127
+   PROX_ELDERLYCARE      2465671
+   PROX_URA_GROWTH_AREA  7384059
+   PROX_MRT              1186242
+   PROX_PARK             2588497
+   PROX_PRIMARY_SCH      3381462
+   PROX_SHOPPING_MALL   38038564
+   PROX_BUS_STOP        12081592
+   NO_Of_UNITS              1010
+   FAMILY_FRIENDLY       2072414
+   FREEHOLD              1813995
+   ************************Diagnostic information*************************
+   Number of data points: 1436 
+   Effective number of parameters (2trace(S) - trace(S'S)): 350.3088 
+   Effective degrees of freedom (n-2trace(S) + trace(S'S)): 1085.691 
+   AICc (GWR book, Fotheringham, et al. 2002, p. 61, eq 2.33): 41982.22 
+   AIC (GWR book, Fotheringham, et al. 2002,GWR p. 96, eq. 4.22): 41546.74 
+   BIC (GWR book, Fotheringham, et al. 2002,GWR p. 61, eq. 2.34): 41914.08 
+   Residual sum of squares: 2.528227e+14 
+   R-square value:  0.8912425 
+   Adjusted R-square value:  0.8561185 
+
+   ***********************************************************************
+   Program stops at: 2024-03-11 11:29:13.475209 </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>condo_resale.res.sf <span class="ot">&lt;-</span> <span class="fu">cbind</span>(condo_resale.sf, </span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                        condo.mlr<span class="sc">$</span>residuals) <span class="sc">%&gt;%</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rename</span>(<span class="st">`</span><span class="at">MLR_RES</span><span class="st">`</span> <span class="ot">=</span> <span class="st">`</span><span class="at">condo.mlr.residuals</span><span class="st">`</span>)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>condo_resale.sf.adaptive <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(gwr.adaptive<span class="sc">$</span>SDF) <span class="sc">%&gt;%</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs=</span><span class="dv">3414</span>)</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>condo_resale.sf.adaptive.svy21 <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(condo_resale.sf.adaptive, <span class="dv">3414</span>)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>condo_resale.sf.adaptive.svy21  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 1436 features and 51 fields
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: 14940.85 ymin: 24765.67 xmax: 43352.45 ymax: 48382.81
+Projected CRS: SVY21 / Singapore TM
+First 10 features:
+    Intercept  AREA_SQM        AGE  PROX_CBD PROX_CHILDCARE PROX_ELDERLYCARE
+1   2050011.7  9561.892  -9514.634 -120681.9      319266.92       -393417.79
+2   1633128.2 16576.853 -58185.479 -149434.2      441102.18        325188.74
+3   3433608.2 13091.861 -26707.386 -259397.8     -120116.82        535855.81
+4    234358.9 20730.601 -93308.988 2426853.7      480825.28        314783.72
+5   2285804.9  6722.836 -17608.018 -316835.5       90764.78       -137384.61
+6  -3568877.4  6039.581 -26535.592  327306.1     -152531.19       -700392.85
+7  -2874842.4 16843.575 -59166.727 -983577.2     -177810.50       -122384.02
+8   2038086.0  6905.135 -17681.897 -285076.6       70259.40        -96012.78
+9   1718478.4  9580.703 -14401.128  105803.4     -657698.02       -123276.00
+10  3457054.0 14072.011 -31579.884 -234895.4       79961.45        548581.04
+   PROX_URA_GROWTH_AREA    PROX_MRT  PROX_PARK PROX_PRIMARY_SCH
+1            -159980.20  -299742.96 -172104.47        242668.03
+2            -142290.39 -2510522.23  523379.72       1106830.66
+3            -253621.21  -936853.28  209099.85        571462.33
+4           -2679297.89 -2039479.50 -759153.26       3127477.21
+5             303714.81   -44567.05  -10284.62         30413.56
+6             -28051.25   733566.47 1511488.92        320878.23
+7            1397676.38 -2745430.34  710114.74       1786570.95
+8             269368.71   -14552.99   73533.34         53359.73
+9            -361974.72  -476785.32 -132067.59        -40128.92
+10           -150024.38 -1503835.53  574155.47        108996.67
+   PROX_SHOPPING_MALL PROX_BUS_STOP  NO_Of_UNITS FAMILY_FRIENDLY  FREEHOLD
+1          300881.390     1210615.4  104.8290640       -9075.370  303955.6
+2          -87693.378     1843587.2 -288.3441183      310074.664  396221.3
+3         -126732.712     1411924.9   -9.5532945        5949.746  168821.7
+4          -29593.342     7225577.5 -161.3551620     1556178.531 1212515.6
+5           -7490.586      677577.0   42.2659674       58986.951  328175.2
+6          258583.881     1086012.6 -214.3671271      201992.641  471873.1
+7         -384251.210     5094060.5   -0.9212521      359659.512  408871.9
+8          -39634.902      735767.1   30.1741069       55602.506  347075.0
+9          276718.757     2815772.4  675.1615559      -30453.297  503872.8
+10        -454726.822     2123557.0  -21.3044311     -100935.586  213324.6
+         y    yhat    residual CV_Score Stud_residual Intercept_SE AREA_SQM_SE
+1  3000000 2886532   113468.16        0    0.38207013     516105.5    823.2860
+2  3880000 3466801   413198.52        0    1.01433140     488083.5    825.2380
+3  3325000 3616527  -291527.20        0   -0.83780678     963711.4    988.2240
+4  4250000 5435482 -1185481.63        0   -2.84614670     444185.5    617.4007
+5  1400000 1388166    11834.26        0    0.03404453    2119620.6   1376.2778
+6  1320000 1516702  -196701.95        0   -0.72065801   28572883.7   2348.0091
+7  3410000 3266881   143118.77        0    0.41291992     679546.6    893.5893
+8  1420000 1431955   -11955.27        0   -0.03033109    2217773.1   1415.2604
+9  2025000 1832799   192200.83        0    0.52018109     814281.8    943.8434
+10 2550000 2223364   326635.53        0    1.10559735    2410252.0   1271.4073
+      AGE_SE PROX_CBD_SE PROX_CHILDCARE_SE PROX_ELDERLYCARE_SE
+1   5889.782    37411.22          319111.1           120633.34
+2   6226.916    23615.06          299705.3            84546.69
+3   6510.236    56103.77          349128.5           129687.07
+4   6010.511   469337.41          304965.2           127150.69
+5   8180.361   410644.47          698720.6           327371.55
+6  14601.909  5272846.47         1141599.8          1653002.19
+7   8970.629   346164.20          530101.1           148598.71
+8   8661.309   438035.69          742532.8           399221.05
+9  11791.208    89148.35          704630.7           329683.30
+10  9941.980   173532.77          500976.2           281876.74
+   PROX_URA_GROWTH_AREA_SE PROX_MRT_SE PROX_PARK_SE PROX_PRIMARY_SCH_SE
+1                 56207.39    185181.3     205499.6            152400.7
+2                 76956.50    281133.9     229358.7            165150.7
+3                 95774.60    275483.7     314124.3            196662.6
+4                470762.12    279877.1     227249.4            240878.9
+5                474339.56    363830.0     364580.9            249087.7
+6               5496627.21    730453.2    1741712.0            683265.5
+7                371692.97    375511.9     297400.9            344602.8
+8                517977.91    423155.4     440984.4            261251.2
+9                153436.22    285325.4     304998.4            278258.5
+10               239182.57    571355.7     599131.8            331284.8
+   PROX_SHOPPING_MALL_SE PROX_BUS_STOP_SE NO_Of_UNITS_SE FAMILY_FRIENDLY_SE
+1               109268.8         600668.6       218.1258           131474.7
+2                98906.8         410222.1       208.9410           114989.1
+3               119913.3         464156.7       210.9828           146607.2
+4               177104.1         562810.8       361.7767           108726.6
+5               301032.9         740922.4       299.5034           160663.7
+6              2931208.6        1418333.3       602.5571           331727.0
+7               249969.5         821236.4       532.1978           129241.2
+8               351634.0         775038.4       338.6777           171895.1
+9               289872.7         850095.5       439.9037           220223.4
+10              265529.7         631399.2       259.0169           189125.5
+   FREEHOLD_SE Intercept_TV AREA_SQM_TV     AGE_TV PROX_CBD_TV
+1     115954.0    3.9720784   11.614302  -1.615447 -3.22582173
+2     130110.0    3.3460017   20.087361  -9.344188 -6.32792021
+3     141031.5    3.5629010   13.247868  -4.102368 -4.62353528
+4     138239.1    0.5276150   33.577223 -15.524302  5.17080808
+5     210641.1    1.0784029    4.884795  -2.152474 -0.77155660
+6     374347.3   -0.1249043    2.572214  -1.817269  0.06207388
+7     182216.9   -4.2305303   18.849348  -6.595605 -2.84136028
+8     216649.4    0.9189786    4.879056  -2.041481 -0.65080678
+9     220473.7    2.1104224   10.150733  -1.221345  1.18682383
+10    206346.2    1.4343123   11.068059  -3.176418 -1.35360852
+   PROX_CHILDCARE_TV PROX_ELDERLYCARE_TV PROX_URA_GROWTH_AREA_TV PROX_MRT_TV
+1         1.00048819          -3.2612693            -2.846248368 -1.61864578
+2         1.47178634           3.8462625            -1.848971738 -8.92998600
+3        -0.34404755           4.1319138            -2.648105057 -3.40075727
+4         1.57665606           2.4756745            -5.691404992 -7.28705261
+5         0.12990138          -0.4196596             0.640289855 -0.12249416
+6        -0.13361179          -0.4237096            -0.005103357  1.00426206
+7        -0.33542751          -0.8235874             3.760298131 -7.31116712
+8         0.09462126          -0.2405003             0.520038994 -0.03439159
+9        -0.93339393          -0.3739225            -2.359121712 -1.67102293
+10        0.15961128           1.9461735            -0.627237944 -2.63204802
+   PROX_PARK_TV PROX_PRIMARY_SCH_TV PROX_SHOPPING_MALL_TV PROX_BUS_STOP_TV
+1   -0.83749312           1.5923022            2.75358842        2.0154464
+2    2.28192684           6.7019454           -0.88662640        4.4941192
+3    0.66565951           2.9058009           -1.05686949        3.0419145
+4   -3.34061770          12.9836105           -0.16709578       12.8383775
+5   -0.02820944           0.1220998           -0.02488294        0.9145046
+6    0.86781794           0.4696245            0.08821750        0.7656963
+7    2.38773567           5.1844351           -1.53719231        6.2029165
+8    0.16674816           0.2042469           -0.11271635        0.9493299
+9   -0.43301073          -0.1442145            0.95462153        3.3123012
+10   0.95831249           0.3290120           -1.71252687        3.3632555
+   NO_Of_UNITS_TV FAMILY_FRIENDLY_TV FREEHOLD_TV  Local_R2
+1     0.480589953        -0.06902748    2.621347 0.8846744
+2    -1.380026395         2.69655779    3.045280 0.8899773
+3    -0.045279967         0.04058290    1.197050 0.8947007
+4    -0.446007570        14.31276425    8.771149 0.9073605
+5     0.141120178         0.36714544    1.557983 0.9510057
+6    -0.355762335         0.60891234    1.260522 0.9247586
+7    -0.001731033         2.78285441    2.243875 0.8310458
+8     0.089093858         0.32346758    1.602012 0.9463936
+9     1.534793921        -0.13828365    2.285410 0.8380365
+10   -0.082251138        -0.53369623    1.033819 0.9080753
+                    geometry
+1  POINT (22085.12 29951.54)
+2   POINT (25656.84 34546.2)
+3   POINT (23963.99 32890.8)
+4  POINT (27044.28 32319.77)
+5  POINT (41042.56 33743.64)
+6   POINT (39717.04 32943.1)
+7   POINT (28419.1 33513.37)
+8  POINT (40763.57 33879.61)
+9  POINT (23595.63 28884.78)
+10 POINT (24586.56 33194.31)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>gwr.adaptive.output <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(gwr.adaptive<span class="sc">$</span>SDF)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>condo_resale.sf.adaptive <span class="ot">&lt;-</span> <span class="fu">cbind</span>(condo_resale.res.sf, <span class="fu">as.matrix</span>(gwr.adaptive.output))</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(condo_resale.sf.adaptive)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 1,436
+Columns: 76
+$ POSTCODE                &lt;dbl&gt; 118635, 288420, 267833, 258380, 467169, 466472…
+$ SELLING_PRICE           &lt;dbl&gt; 3000000, 3880000, 3325000, 4250000, 1400000, 1…
+$ AREA_SQM                &lt;dbl&gt; 309, 290, 248, 127, 145, 139, 218, 141, 165, 1…
+$ AGE                     &lt;dbl&gt; 30, 32, 33, 7, 28, 22, 24, 24, 27, 31, 17, 22,…
+$ PROX_CBD                &lt;dbl&gt; 7.941259, 6.609797, 6.898000, 4.038861, 11.783…
+$ PROX_CHILDCARE          &lt;dbl&gt; 0.16597932, 0.28027246, 0.42922669, 0.39473543…
+$ PROX_ELDERLYCARE        &lt;dbl&gt; 2.5198118, 1.9333338, 0.5021395, 1.9910316, 1.…
+$ PROX_URA_GROWTH_AREA    &lt;dbl&gt; 6.618741, 7.505109, 6.463887, 4.906512, 6.4106…
+$ PROX_HAWKER_MARKET      &lt;dbl&gt; 1.76542207, 0.54507614, 0.37789301, 1.68259969…
+$ PROX_KINDERGARTEN       &lt;dbl&gt; 0.05835552, 0.61592412, 0.14120309, 0.38200076…
+$ PROX_MRT                &lt;dbl&gt; 0.5607188, 0.6584461, 0.3053433, 0.6910183, 0.…
+$ PROX_PARK               &lt;dbl&gt; 1.1710446, 0.1992269, 0.2779886, 0.9832843, 0.…
+$ PROX_PRIMARY_SCH        &lt;dbl&gt; 1.6340256, 0.9747834, 1.4715016, 1.4546324, 0.…
+$ PROX_TOP_PRIMARY_SCH    &lt;dbl&gt; 3.3273195, 0.9747834, 1.4715016, 2.3006394, 0.…
+$ PROX_SHOPPING_MALL      &lt;dbl&gt; 2.2102717, 2.9374279, 1.2256850, 0.3525671, 1.…
+$ PROX_SUPERMARKET        &lt;dbl&gt; 0.9103958, 0.5900617, 0.4135583, 0.4162219, 0.…
+$ PROX_BUS_STOP           &lt;dbl&gt; 0.10336166, 0.28673408, 0.28504777, 0.29872340…
+$ NO_Of_UNITS             &lt;dbl&gt; 18, 20, 27, 30, 30, 31, 32, 32, 32, 32, 34, 34…
+$ FAMILY_FRIENDLY         &lt;dbl&gt; 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0…
+$ FREEHOLD                &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1…
+$ LEASEHOLD_99YR          &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+$ MLR_RES                 &lt;dbl&gt; -1489099.55, 415494.57, 194129.69, 1088992.71,…
+$ Intercept               &lt;dbl&gt; 2050011.67, 1633128.24, 3433608.17, 234358.91,…
+$ AREA_SQM.1              &lt;dbl&gt; 9561.892, 16576.853, 13091.861, 20730.601, 672…
+$ AGE.1                   &lt;dbl&gt; -9514.634, -58185.479, -26707.386, -93308.988,…
+$ PROX_CBD.1              &lt;dbl&gt; -120681.94, -149434.22, -259397.77, 2426853.66…
+$ PROX_CHILDCARE.1        &lt;dbl&gt; 319266.925, 441102.177, -120116.816, 480825.28…
+$ PROX_ELDERLYCARE.1      &lt;dbl&gt; -393417.795, 325188.741, 535855.806, 314783.72…
+$ PROX_URA_GROWTH_AREA.1  &lt;dbl&gt; -159980.203, -142290.389, -253621.206, -267929…
+$ PROX_MRT.1              &lt;dbl&gt; -299742.96, -2510522.23, -936853.28, -2039479.…
+$ PROX_PARK.1             &lt;dbl&gt; -172104.47, 523379.72, 209099.85, -759153.26, …
+$ PROX_PRIMARY_SCH.1      &lt;dbl&gt; 242668.03, 1106830.66, 571462.33, 3127477.21, …
+$ PROX_SHOPPING_MALL.1    &lt;dbl&gt; 300881.390, -87693.378, -126732.712, -29593.34…
+$ PROX_BUS_STOP.1         &lt;dbl&gt; 1210615.44, 1843587.22, 1411924.90, 7225577.51…
+$ NO_Of_UNITS.1           &lt;dbl&gt; 104.8290640, -288.3441183, -9.5532945, -161.35…
+$ FAMILY_FRIENDLY.1       &lt;dbl&gt; -9075.370, 310074.664, 5949.746, 1556178.531, …
+$ FREEHOLD.1              &lt;dbl&gt; 303955.61, 396221.27, 168821.75, 1212515.58, 3…
+$ y                       &lt;dbl&gt; 3000000, 3880000, 3325000, 4250000, 1400000, 1…
+$ yhat                    &lt;dbl&gt; 2886531.8, 3466801.5, 3616527.2, 5435481.6, 13…
+$ residual                &lt;dbl&gt; 113468.16, 413198.52, -291527.20, -1185481.63,…
+$ CV_Score                &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+$ Stud_residual           &lt;dbl&gt; 0.38207013, 1.01433140, -0.83780678, -2.846146…
+$ Intercept_SE            &lt;dbl&gt; 516105.5, 488083.5, 963711.4, 444185.5, 211962…
+$ AREA_SQM_SE             &lt;dbl&gt; 823.2860, 825.2380, 988.2240, 617.4007, 1376.2…
+$ AGE_SE                  &lt;dbl&gt; 5889.782, 6226.916, 6510.236, 6010.511, 8180.3…
+$ PROX_CBD_SE             &lt;dbl&gt; 37411.22, 23615.06, 56103.77, 469337.41, 41064…
+$ PROX_CHILDCARE_SE       &lt;dbl&gt; 319111.1, 299705.3, 349128.5, 304965.2, 698720…
+$ PROX_ELDERLYCARE_SE     &lt;dbl&gt; 120633.34, 84546.69, 129687.07, 127150.69, 327…
+$ PROX_URA_GROWTH_AREA_SE &lt;dbl&gt; 56207.39, 76956.50, 95774.60, 470762.12, 47433…
+$ PROX_MRT_SE             &lt;dbl&gt; 185181.3, 281133.9, 275483.7, 279877.1, 363830…
+$ PROX_PARK_SE            &lt;dbl&gt; 205499.6, 229358.7, 314124.3, 227249.4, 364580…
+$ PROX_PRIMARY_SCH_SE     &lt;dbl&gt; 152400.7, 165150.7, 196662.6, 240878.9, 249087…
+$ PROX_SHOPPING_MALL_SE   &lt;dbl&gt; 109268.8, 98906.8, 119913.3, 177104.1, 301032.…
+$ PROX_BUS_STOP_SE        &lt;dbl&gt; 600668.6, 410222.1, 464156.7, 562810.8, 740922…
+$ NO_Of_UNITS_SE          &lt;dbl&gt; 218.1258, 208.9410, 210.9828, 361.7767, 299.50…
+$ FAMILY_FRIENDLY_SE      &lt;dbl&gt; 131474.73, 114989.07, 146607.22, 108726.62, 16…
+$ FREEHOLD_SE             &lt;dbl&gt; 115954.0, 130110.0, 141031.5, 138239.1, 210641…
+$ Intercept_TV            &lt;dbl&gt; 3.9720784, 3.3460017, 3.5629010, 0.5276150, 1.…
+$ AREA_SQM_TV             &lt;dbl&gt; 11.614302, 20.087361, 13.247868, 33.577223, 4.…
+$ AGE_TV                  &lt;dbl&gt; -1.6154474, -9.3441881, -4.1023685, -15.524301…
+$ PROX_CBD_TV             &lt;dbl&gt; -3.22582173, -6.32792021, -4.62353528, 5.17080…
+$ PROX_CHILDCARE_TV       &lt;dbl&gt; 1.000488185, 1.471786337, -0.344047555, 1.5766…
+$ PROX_ELDERLYCARE_TV     &lt;dbl&gt; -3.26126929, 3.84626245, 4.13191383, 2.4756745…
+$ PROX_URA_GROWTH_AREA_TV &lt;dbl&gt; -2.846248368, -1.848971738, -2.648105057, -5.6…
+$ PROX_MRT_TV             &lt;dbl&gt; -1.61864578, -8.92998600, -3.40075727, -7.2870…
+$ PROX_PARK_TV            &lt;dbl&gt; -0.83749312, 2.28192684, 0.66565951, -3.340617…
+$ PROX_PRIMARY_SCH_TV     &lt;dbl&gt; 1.59230221, 6.70194543, 2.90580089, 12.9836104…
+$ PROX_SHOPPING_MALL_TV   &lt;dbl&gt; 2.753588422, -0.886626400, -1.056869486, -0.16…
+$ PROX_BUS_STOP_TV        &lt;dbl&gt; 2.0154464, 4.4941192, 3.0419145, 12.8383775, 0…
+$ NO_Of_UNITS_TV          &lt;dbl&gt; 0.480589953, -1.380026395, -0.045279967, -0.44…
+$ FAMILY_FRIENDLY_TV      &lt;dbl&gt; -0.06902748, 2.69655779, 0.04058290, 14.312764…
+$ FREEHOLD_TV             &lt;dbl&gt; 2.6213469, 3.0452799, 1.1970499, 8.7711485, 1.…
+$ Local_R2                &lt;dbl&gt; 0.8846744, 0.8899773, 0.8947007, 0.9073605, 0.…
+$ coords.x1               &lt;dbl&gt; 22085.12, 25656.84, 23963.99, 27044.28, 41042.…
+$ coords.x2               &lt;dbl&gt; 29951.54, 34546.20, 32890.80, 32319.77, 33743.…
+$ geometry                &lt;POINT [m]&gt; POINT (22085.12 29951.54), POINT (25656.…</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsz_svy21)<span class="sc">+</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tmap_options</span>(<span class="at">check.and.fix =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(condo_resale.res.sf) <span class="sc">+</span>  </span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"MLR_RES"</span>,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>          <span class="at">alpha =</span> <span class="fl">0.6</span>,</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>          <span class="at">style=</span><span class="st">"quantile"</span>) <span class="sc">+</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_view</span>(<span class="at">set.zoom.limits =</span> <span class="fu">c</span>(<span class="dv">11</span>,<span class="dv">14</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ICE8_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>AREA_SQM_SE <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(mpsz_svy21)<span class="sc">+</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">alpha =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(condo_resale.sf.adaptive) <span class="sc">+</span>  </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"AREA_SQM_SE"</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>          <span class="at">border.col =</span> <span class="st">"gray60"</span>,</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>          <span class="at">border.lwd =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_view</span>(<span class="at">set.zoom.limits =</span> <span class="fu">c</span>(<span class="dv">11</span>,<span class="dv">14</span>))</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>AREA_SQM_TV <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(mpsz_svy21)<span class="sc">+</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">alpha =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(condo_resale.sf.adaptive) <span class="sc">+</span>  </span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"AREA_SQM_TV"</span>,</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">border.col =</span> <span class="st">"gray60"</span>,</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">border.lwd =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_view</span>(<span class="at">set.zoom.limits =</span> <span class="fu">c</span>(<span class="dv">11</span>,<span class="dv">14</span>))</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_arrange</span>(AREA_SQM_SE, AREA_SQM_TV, </span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>             <span class="at">asp=</span><span class="dv">1</span>, <span class="at">ncol=</span><span class="dv">2</span>,</span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>             <span class="at">sync =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ICE8_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsz_svy21[mpsz_svy21<span class="sc">$</span>REGION_N<span class="sc">==</span><span class="st">"CENTRAL REGION"</span>, ])<span class="sc">+</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>()<span class="sc">+</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(condo_resale.sf.adaptive) <span class="sc">+</span> </span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_bubbles</span>(<span class="at">col =</span> <span class="st">"Local_R2"</span>,</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">size =</span> <span class="fl">0.15</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">border.col =</span> <span class="st">"gray60"</span>,</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">border.lwd =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ICE8_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
