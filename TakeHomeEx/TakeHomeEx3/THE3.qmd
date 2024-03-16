@@ -1,0 +1,706 @@
+---
+title: "Take-Home Exercise 3"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 03-10-2024
+description: |
+  Take-Home Exercise 3
+categories:
+  - Take-Home Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+## Overview and Objectives
+
+## Data Wrangling
+
+```{r}
+pacman::p_load(tidyverse, tmap, sf, dplyr, smoothr, tmap, SpatialAcc, hash, ggplotify, cowplot)
+```
+
+```{r}
+mpsz <- st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaKML.kml") %>% 
+  mutate(Match=str_match_all(Description,"<td>(.*?)</td>")) %>% 
+  mutate(Match=map(Match, ~ .[,2])) %>% 
+  mutate(Match=map(Match,setNames,c("SUBZONE_NO","SUBZONE_N","SUBZONE_C", "CA_IND", "PLN_AREA_N", "PLN_AREA_C", "REGION_N", "REGION_C", "INC_CRC", "FMEL_UPD_D"))) %>% 
+  unnest_wider(Match) %>%
+  st_as_sf() %>% dplyr::select('Name', 'geometry', 'SUBZONE_NO', 'SUBZONE_N', 'PLN_AREA_N', 'PLN_AREA_C', 'REGION_N', 'REGION_C') %>% 
+  st_make_valid() %>%
+  st_zm() %>%
+  st_transform(crs = 3414) %>%
+  write_rds('data/rds/mpsz.rds')
+```
+::: panel-tabset
+## Planning Area Level
+```{r}
+pop2020_pa <- read_rds('data/rds/pop2020.rds') %>%
+  mutate(Total = as.numeric(Total)) %>%
+  group_by(Planning_Area) %>%
+  summarise(Total = sum(Total), .groups = "drop")
+
+mpsz_pa <- mpsz %>%
+  group_by(PLN_AREA_N) %>%
+  summarise(geometry = st_union(geometry), .groups = "drop") %>% 
+  merge(pop2020_pa, by.x="PLN_AREA_N", by.y="Planning_Area") %>% 
+  mutate(Total = as.numeric(Total),
+           area = st_area(geometry), 
+           pop_dens = Total / area)
+
+mpsz_pa$area <- st_area(mpsz_pa$geometry)
+mpsz_pa$pop_dens <- mpsz_pa$Total / mpsz_pa$area
+
+write_rds(mpsz_pa, 'data/rds/mpsz_pa.rds')
+```
+
+## Subzone Level
+
+```{r}
+pop2020_sz <- read_rds('data/rds/pop2020.rds') %>%
+  mutate(Total = as.numeric(Total)) %>%
+  group_by(Subzone) %>%
+  summarise(Total = sum(Total), .groups = "drop")
+
+mpsz_sz <- mpsz %>%
+  group_by(SUBZONE_N) %>%
+  summarise(geometry = st_union(geometry), .groups = "drop") %>% 
+  merge(pop2020_sz, by.x="SUBZONE_N", by.y="Subzone") %>% 
+  mutate(Total = as.numeric(Total),
+           area = st_area(geometry), 
+           pop_dens = Total / area)
+
+mpsz_sz$area <- st_area(mpsz_sz$geometry)
+mpsz_sz$pop_dens <- mpsz_sz$Total / mpsz_sz$area
+
+write_rds(mpsz_sz, 'data/rds/mpsz_sz.rds')
+```
+
+:::
+
+#### Getting Mainland Singapore
+```{r}
+mainland_sg <- st_union(mpsz_pa) %>%
+    st_cast("POLYGON")
+
+mainland_sg <- mainland_sg[c(15)] %>% 
+  fill_holes(units::set_units(1, "km^2")) %>%
+  st_as_sf() %>%
+  write_rds('data/rds/mainland_sg.rds')
+
+plot(mainland_sg)
+```
+
+## Grid Generation Process
+
+#### Function to add "demand" 
+```{r}
+add_weights <- function(grids, pop) {
+  joined <- st_join(grids, pop, join = st_intersects)  %>%
+    mutate(intersect_area = st_area(x),
+           demand = intersect_area * pop_dens) %>%
+    st_drop_geometry()
+  
+  grids <- grids %>%
+    left_join(joined %>%
+                group_by(ID) %>%
+                summarise(total_demand = sum(demand)),
+              by = "ID") %>%
+    mutate(demand = ifelse(is.na(total_demand), 0, total_demand)) %>%
+    select(-total_demand)
+}
+```
+
+#### Make a grid over mainland Singapore
+```{r}
+sg_2_grid <- function(sg, g_size, is_square, name, pop) {
+  grids <- st_make_grid(sg, cellsize = g_size, square = is_square) %>%
+  st_intersection(mainland_sg) %>%
+  st_as_sf() %>%
+    mutate(demand = 0, ID = row_number())
+  
+  grids_w_demand <- add_weights(grids, pop) %>%
+  rename(geometry = x)
+  
+  write_rds(grids_w_demand, paste(name, '.rds', sep = ""))
+  
+  return(grids_w_demand)
+}
+```
+
+#### Generate the grids and distance matrices
+```{r}
+grids_and_dist_matrices <- function(sg, pop, g_size, is_square, subz) {
+  name <- paste('data/rds/grid_', g_size, ifelse(is_square, "_square", "_hexagon"), ifelse(subz, "_sz", "_pa"), sep = "")
+  grid <- sg_2_grid(sg, g_size, is_square, name, pop)
+  return(grid)
+}
+```
+
+#### Writing the grids with population as demand
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+# for(di in c(250, 500, 750, 1000)) {
+#   grids_and_dist_matrices(mainland_sg, mpsz_sz, di, FALSE, TRUE)
+#   grids_and_dist_matrices(mainland_sg, mpsz_sz, di, TRUE, TRUE)
+#   grids_and_dist_matrices(mainland_sg, mpsz_pa, di, FALSE, FALSE)
+#   grids_and_dist_matrices(mainland_sg, mpsz_pa, di, TRUE, FALSE)
+# }
+```
+
+### Functional Demo
+```{r}
+demo <- grids_and_dist_matrices(mainland_sg, mpsz_sz, 500, FALSE, TRUE)
+
+tm_shape(demo) + 
+  tm_fill(col='demand',
+            n = 7,
+            style = "quantile",
+            border.col = "black",
+            border.lwd = 1,
+            na.rm = TRUE)
+```
+## Step by Step Demo
+
+#### Generating the grid
+```{r}
+grids <- st_make_grid(mainland_sg, cellsize = 500, square = FALSE)
+plot(grids)
+```
+
+```{r}
+grids <- grids %>%
+st_intersection(mainland_sg) %>%
+st_as_sf() %>%
+  mutate(demand = 0, ID = row_number())
+
+tm_shape(grids) + 
+  tm_polygons(col='demand',
+            n = 7,
+            style = "quantile",
+            border.col = "black",
+            border.lwd = 1,
+            na.rm = TRUE)
+```
+```{r}
+tm_shape(mpsz_sz) + 
+  tm_polygons(col='Total',
+            n = 7,
+            style = "quantile",
+            border.col = "black",
+            border.lwd = 1,
+            na.rm = TRUE)
+```
+
+```{r}
+grids_on_sz <- st_join(grids, mpsz_sz, join = st_intersects)  %>%
+  mutate(intersect_area = st_area(x),
+         demand = intersect_area * pop_dens) %>%
+  st_drop_geometry()
+
+grids <- grids %>%
+  left_join(grids_on_sz %>%
+              group_by(ID) %>%
+              summarise(total_demand = sum(demand)),
+            by = "ID") %>%
+  mutate(demand = ifelse(is.na(total_demand), 0, total_demand)) %>%
+  select(-total_demand) %>%
+rename(geometry = x)
+```
+```{r}
+tm_shape(grids) + 
+  tm_polygons(col='demand',
+            n = 7,
+            style = "quantile",
+            border.col = "black",
+            na.rm = TRUE)
+```
+### Handling Points
+
+::: panel-tabset
+
+## Supermarkets
+```{r}
+supermarkets <- st_read("data/geospatial/SupermarketsKML.kml") %>% 
+  mutate(Match=str_match_all(Description,"<td>(.*?)</td>")) %>% 
+  mutate(Match=map(Match, ~ .[,2])) %>% 
+  mutate(Match=map(Match,setNames,c("LIC_NAME", "BLK_HOUSE", "STR_NAME", "UNIT_NO", "POSTCODE", "LIC_NO", "INC_CRC", "FMEL_UPD_D"))) %>% 
+  unnest_wider(Match) %>%
+  st_as_sf() %>% 
+  dplyr::select('LIC_NAME', 'geometry') %>% 
+  st_make_valid() %>%
+  st_zm() %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+any(is.na(supermarkets))
+```
+
+```{r}
+supermarkets$SUBTYPE <- ifelse(grepl("FAIRPRICE", supermarkets$LIC_NAME, ignore.case = TRUE), "FAIRPRICE",
+                     ifelse(grepl("COLD STORAGE", supermarkets$LIC_NAME, ignore.case = TRUE), "COLD STORAGE",
+                            ifelse(grepl("SHENG SIONG", supermarkets$LIC_NAME, ignore.case = TRUE), "SHENG SIONG", "OTHER")))
+
+write_rds(supermarkets, 'data/rds/supermarkets.rds')
+```
+
+```{r}
+tm_shape(mainland_sg) + 
+  tm_polygons() + 
+  tm_shape(supermarkets) + 
+  tm_dots(col = "SUBTYPE", size = 0.05)
+```
+
+## Markets and Food Centres
+
+```{r}
+marketandfc <- st_read("data/geospatial/NEAMarketandFoodCentreKML.kml") %>% 
+  mutate(Match=str_match_all(Description,"<td>(.*?)</td>")) %>% 
+  mutate(Match=map(Match, ~ .[,2])) %>% 
+  mutate(Match=map(Match,setNames,c("TOTAL_STALLS", "MP_STALLS", "CF_STALLS", "POSTAL_CODE", "OWNER", "TYPE", "LOCATION_CENTRE", "NAME_OF_CENTRE", "INC_CRC", "FMEL_UP_D"))) %>% 
+  unnest_wider(Match) %>%
+  st_as_sf() %>% dplyr::select("NAME_OF_CENTRE", "TYPE", "TOTAL_STALLS", "geometry") %>% 
+  st_make_valid() %>%
+  st_zm() %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+any(is.na(marketandfc))
+```
+
+```{r}
+marketandfc$SUBTYPE <- ifelse(marketandfc$TYPE == "HC", "HAWKER_CENTRE",
+                  ifelse(marketandfc$TYPE == "MHC", "MARKET_AND_HAWKER",
+                         ifelse(marketandfc$TYPE == "MK", "MARKET", NA)))
+marketandfc <- subset(marketandfc, select = -TYPE)
+
+marketandfc$TOTAL_STALLS <- as.numeric(marketandfc$TOTAL_STALLS)
+
+write_rds(marketandfc, 'data/rds/markets_and_food_centres.rds')
+```
+
+```{r}
+tm_shape(mainland_sg) + 
+  tm_polygons() + 
+tm_shape(marketandfc) + 
+  tm_dots(col = "SUBTYPE", group = "SUBTYPE", size = "TOTAL_STALLS")
+```
+
+
+## MRT
+
+```{r}
+mrt <- read.csv('data/aspatial/mrt.csv') %>%
+  st_as_sf(coords = c("lng", "lat"),
+                      crs = 4326) %>%
+  st_transform(crs = 3414) %>%
+  dplyr::select('name', 'geometry')
+
+write_rds(mrt, 'data/rds/mrt.rds')
+```
+
+```{r}
+any(is.na(mrt))
+```
+```{r}
+tm_shape(mainland_sg) + 
+  tm_polygons() + 
+tm_shape(mrt) + 
+  tm_dots(col = "red")
+```
+## Other POIs
+
+```{r}
+poi <- read.csv('data/aspatial/poi.csv') %>%
+  st_as_sf(coords = c("lng", "lat"),
+                      crs = 4326) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+poi2type <- function(pois, typ) {
+  poi <- pois[pois[[typ]] == 'True', ] %>%
+    dplyr::select('name', 'geometry')
+  write_rds(poi, paste('data/rds/poi_', typ, '.rds', sep=""))
+}
+```
+
+```{r}
+poi_types <- c("restaurant", "hospital", "lodging", "bank", "cafe", "convenience_store", "clothing_store", "atm", "school", "beauty_salon", "place_of_worship", "tourist_attraction", "doctor", "dentist", "gym", "night_club", "library")
+
+for (poi_t in poi_types) {
+  poi2type(poi, poi_t)
+}
+```
+
+:::
+
+## Accessibility Modelling
+
+```{r}
+grid <- read_rds('data/rds/grid_500_hexagon_sz.rds')
+points <- read_rds('data/rds/supermarkets.rds') %>%
+  mutate(capacity = 500)
+```
+
+::: panel-tabset
+
+## Hansen Method
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+exponent <- 2
+method <- "Hansen"
+
+centroid.coords <- st_coordinates(st_centroid(grid))
+points.coords <- st_coordinates(points)
+
+dm <- exp(distance(centroid.coords, points.coords, type = "euclidean") / 1000 * exponent)
+
+acc <- data.frame(ac(grid$demand,
+                          points$capacity,
+                          dm, 
+                          d0 = 250,
+                          power = 2, 
+                          family = method))
+
+colnames(acc) <- "acc"
+hexagon <- bind_cols(grid, as_tibble(acc))
+hexagon$acc[is.infinite(hexagon$acc)] <- NA
+
+mapex <- st_bbox(grid)
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+  tm_shape(grid) + 
+  tm_polygons() +
+  tm_shape(hexagon,
+           bbox = mapex) + 
+    tm_fill(col = "acc",
+            n = 5,
+            style = "quantile",
+            border.col = "black",
+            border.lwd = 1,
+            na.rm = TRUE) +
+  tm_shape(points) +
+    tm_symbols(size = 0.1) +
+    tm_layout(main.title = paste("Accessibility to supermarkets: Hansen method", sep=""),
+              main.title.position = "center",
+              main.title.size = 2,
+              legend.outside = FALSE,
+              legend.height = 0.45, 
+              legend.width = 3.0,
+              legend.format = list(digits = 6),
+              legend.position = c("right", "top"),
+              frame = TRUE) +
+    tm_compass(type="8star", size = 2) +
+    tm_scale_bar(width = 0.15) +
+    tm_grid(lwd = 0.1, alpha = 0.5)
+```
+
+## KD2SFCA Method
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+exponent <- 2
+method <- "KD2SFCA"
+
+centroid.coords <- st_coordinates(st_centroid(grid))
+points.coords <- st_coordinates(points)
+
+dm <- exp(distance(centroid.coords, points.coords, type = "euclidean") / 1000 * exponent)
+
+acc <- data.frame(ac(grid$demand,
+                          points$capacity,
+                          dm, 
+                          d0 = 250,
+                          power = 2, 
+                          family = method))
+
+colnames(acc) <- "acc"
+hexagon <- bind_cols(grid, as_tibble(acc))
+hexagon$acc[is.infinite(hexagon$acc)] <- NA
+
+mapex <- st_bbox(grid)
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+  tm_shape(grid) + 
+  tm_polygons() +
+  tm_shape(hexagon,
+           bbox = mapex) + 
+    tm_fill(col = "acc",
+            n = 5,
+            style = "quantile",
+            border.col = "black",
+            border.lwd = 1,
+            na.rm = TRUE) +
+  tm_shape(points) +
+    tm_symbols(size = 0.1) +
+    tm_layout(main.title = paste("Accessibility to supermarkets: KD2FCSA method", sep=""),
+              main.title.position = "center",
+              main.title.size = 2,
+              legend.outside = FALSE,
+              legend.height = 0.45, 
+              legend.width = 3.0,
+              legend.format = list(digits = 6),
+              legend.position = c("right", "top"),
+              frame = TRUE) +
+    tm_compass(type="8star", size = 2) +
+    tm_scale_bar(width = 0.15) +
+    tm_grid(lwd = 0.1, alpha = 0.5)
+```
+
+## SAM Method
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+exponent <- 2
+method <- "SAM"
+
+centroid.coords <- st_coordinates(st_centroid(grid))
+points.coords <- st_coordinates(points)
+
+dm <- exp(distance(centroid.coords, points.coords, type = "euclidean") / 1000 * exponent)
+
+acc <- data.frame(ac(grid$demand,
+                          points$capacity,
+                          dm, 
+                          d0 = 250,
+                          power = 2, 
+                          family = method))
+
+colnames(acc) <- "acc"
+hexagon <- bind_cols(grid, as_tibble(acc))
+hexagon$acc[is.infinite(hexagon$acc)] <- NA
+
+mapex <- st_bbox(grid)
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+  tm_shape(hexagon,
+           bbox = mapex) + 
+    tm_fill(col = "acc",
+            n = 5,
+            style = "quantile",
+            border.col = "black",
+            border.lwd = 1,
+            na.rm = TRUE) +
+  tm_shape(points) +
+    tm_symbols(size = 0.1) +
+    tm_layout(main.title = paste("Accessibility to supermarkets: SAM method", sep=""),
+              main.title.position = "center",
+              main.title.size = 2,
+              legend.outside = FALSE,
+              legend.height = 0.45, 
+              legend.width = 3.0,
+              legend.format = list(digits = 6),
+              legend.position = c("right", "top"),
+              frame = TRUE) +
+    tm_compass(type="8star", size = 2) +
+    tm_scale_bar(width = 0.15) +
+    tm_grid(lwd = 0.1, alpha = 0.5)
+```
+:::
+
+## All-In One For Shiny
+
+### Mapping to files
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+name2file <- new.env(hash=T, parent=emptyenv())
+
+name2file[["markets and food centres"]] <- "markets_and_food_centres.rds"
+name2file[["mrt"]] <- "mrt.rds"
+
+name2file[["atm"]] <- "poi_atm.rds"
+name2file[["bank"]] <- "poi_bank.rds"
+name2file[["beauty salon"]] <- "poi_beauty_salon.rds"
+name2file[["cafe"]] <- "poi_cafe.rds"
+name2file[["clothing store"]] <- "poi_clothing_store.rds"
+name2file[["convenience"]] <- "poi_convenience_store.rds"
+name2file[["dentist"]] <- "poi_dentist.rds"
+name2file[["doctor"]] <- "poi_doctor.rds"
+name2file[["gym"]] <- "poi_gym.rds"
+name2file[["hospital"]] <- "poi_hospital.rds"
+name2file[["library"]] <- "poi_library.rds"
+name2file[["lodging"]] <- "poi_lodging.rds"
+name2file[["night club"]] <- "poi_night_club.rds"
+name2file[["pow"]] <- "poi_place_of_worship.rds"
+name2file[["restaurant"]] <- "poi_restaurant.rds"
+name2file[["school"]] <- "poi_school.rds"
+name2file[["tourist"]] <- "poi_tourist_attraction.rds"
+
+name2file[["supermarkets"]] <- "supermarkets.rds"
+name2file[["bus"]] <- "osm_sg.rds"
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+
+plot_acc <- function(method, quantiles, grid_size, point_type, exponent, subz) {
+  grid <- read_rds(paste('data/rds/grid_', grid_size, '_hexagon', ifelse(subz, '_sz', '_pa'),'.rds', sep=""))
+  
+  points <- read_rds(paste('data/rds/', name2file[[point_type]], sep="")) %>%
+    mutate(capacity = 500)
+  
+  centroid.coords <- st_coordinates(st_centroid(grid))
+  points.coords <- st_coordinates(points)
+
+  dm <- exp(distance(centroid.coords, points.coords, type = "euclidean") / 1000 * exponent)
+
+  
+
+  acc <- data.frame(ac(grid$demand,
+                            points$capacity,
+                            dm, 
+                            d0 = 250,
+                            power = 2, 
+                            family = method))
+  
+  colnames(acc) <- "acc"
+  hexagon <- bind_cols(grid, as_tibble(acc))
+  hexagon$acc[is.infinite(hexagon$acc)] <- NA
+  
+  mapex <- st_bbox(grid)
+
+  tm <- tm_shape(grid) + 
+  tm_polygons() +
+  tm_shape(hexagon,
+           bbox = mapex) + 
+    tm_fill(col = "acc",
+            n = quantiles,
+            style = "quantile",
+            border.col = "black",
+            border.lwd = 1,
+            na.rm = TRUE) +
+  tm_shape(points) +
+    tm_symbols(size = 0.1) +
+    tm_layout(main.title = paste("Accessibility to ", point_type, ": ", method," method", sep=""),
+              main.title.position = "center",
+              main.title.size = 1,
+              legend.outside = FALSE,
+              legend.height = 0.5, 
+              legend.width = 0.5,
+              legend.format = list(digits = 3),
+              legend.position = c("right", "top"),
+              frame = FALSE) +
+    tm_compass(type="8star", size = 2) +
+    tm_scale_bar(width = 0.20) +
+    tm_grid(lwd = 0.1, alpha = 0.5)
+  
+  hexagon_acc <- st_join(hexagon, read_rds('data/rds/mpsz.rds') , join = st_intersects)
+  
+  region_bxp <- ggplot(data=hexagon_acc, 
+       aes(y = acc, 
+           x = REGION_N)) +
+  geom_boxplot() +
+  geom_point(stat="summary", 
+             fun.y="mean", 
+             colour ="red", 
+             size=2)
+  
+  plot_grid(tmap_grob(tm), region_bxp, nrow = 2, rel_heights = c(2, 1))
+}
+```
+
+https://stackoverflow.com/questions/66659389/combine-tmap-and-ggplot
+```{r}
+plot_acc("Hansen", 10, 500, "supermarkets", 2, TRUE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
