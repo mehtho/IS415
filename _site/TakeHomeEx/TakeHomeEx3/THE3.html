@@ -297,6 +297,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="overview-and-objectives" class="level2">
 <h2 class="anchored" data-anchor-id="overview-and-objectives">Overview and Objectives</h2>
+<p>In this takehome exercise, I will be prototyping my accessibility modelling module for the Geospatial Analytics Project.</p>
+<p>This module aims to - Model the accessibility to various amenties across Singapore - Show the distributions of accessibility to amenities across regions</p>
+<ul>
+<li>Choose between Hexagonal and Square Grids</li>
+<li>Change the desired grid size</li>
+<li>Choose different distance decay functions</li>
+<li>Choose between Hansen’s, KD2SFCA and SAM accessibility modelling methods</li>
+</ul>
 </section>
 <section id="data-wrangling" class="level2">
 <h2 class="anchored" data-anchor-id="data-wrangling">Data Wrangling</h2>
@@ -1005,15 +1013,15 @@ Geodetic CRS:  WGS 84</code></pre>
 <span id="cb44-38"><a href="#cb44-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
 <span id="cb44-39"><a href="#cb44-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to "</span>, point_type, <span class="st">": "</span>, method,<span class="st">" method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
 <span id="cb44-40"><a href="#cb44-40" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
-<span id="cb44-41"><a href="#cb44-41" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">2</span>,</span>
+<span id="cb44-41"><a href="#cb44-41" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">1</span>,</span>
 <span id="cb44-42"><a href="#cb44-42" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb44-43"><a href="#cb44-43" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
-<span id="cb44-44"><a href="#cb44-44" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">3.0</span>,</span>
-<span id="cb44-45"><a href="#cb44-45" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">6</span>),</span>
+<span id="cb44-43"><a href="#cb44-43" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.5</span>, </span>
+<span id="cb44-44"><a href="#cb44-44" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">0.5</span>,</span>
+<span id="cb44-45"><a href="#cb44-45" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">3</span>),</span>
 <span id="cb44-46"><a href="#cb44-46" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
-<span id="cb44-47"><a href="#cb44-47" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb44-47"><a href="#cb44-47" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
 <span id="cb44-48"><a href="#cb44-48" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb44-49"><a href="#cb44-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
+<span id="cb44-49"><a href="#cb44-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.20</span>) <span class="sc">+</span></span>
 <span id="cb44-50"><a href="#cb44-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span>
 <span id="cb44-51"><a href="#cb44-51" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb44-52"><a href="#cb44-52" aria-hidden="true" tabindex="-1"></a>  hexagon_acc <span class="ot">&lt;-</span> <span class="fu">st_join</span>(hexagon, <span class="fu">read_rds</span>(<span class="st">'data/rds/mpsz.rds'</span>) , <span class="at">join =</span> st_intersects)</span>
@@ -1021,13 +1029,13 @@ Geodetic CRS:  WGS 84</code></pre>
 <span id="cb44-54"><a href="#cb44-54" aria-hidden="true" tabindex="-1"></a>  region_bxp <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data=</span>hexagon_acc, </span>
 <span id="cb44-55"><a href="#cb44-55" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">y =</span> acc, </span>
 <span id="cb44-56"><a href="#cb44-56" aria-hidden="true" tabindex="-1"></a>           <span class="at">x =</span> REGION_N)) <span class="sc">+</span></span>
-<span id="cb44-57"><a href="#cb44-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb44-57"><a href="#cb44-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">outliers =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
 <span id="cb44-58"><a href="#cb44-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">stat=</span><span class="st">"summary"</span>, </span>
 <span id="cb44-59"><a href="#cb44-59" aria-hidden="true" tabindex="-1"></a>             <span class="at">fun.y=</span><span class="st">"mean"</span>, </span>
 <span id="cb44-60"><a href="#cb44-60" aria-hidden="true" tabindex="-1"></a>             <span class="at">colour =</span><span class="st">"red"</span>, </span>
 <span id="cb44-61"><a href="#cb44-61" aria-hidden="true" tabindex="-1"></a>             <span class="at">size=</span><span class="dv">2</span>)</span>
 <span id="cb44-62"><a href="#cb44-62" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-63"><a href="#cb44-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_grid</span>(region_bxp, <span class="fu">tmap_grob</span>(tm), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb44-63"><a href="#cb44-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_grid</span>(<span class="fu">tmap_grob</span>(tm), region_bxp, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">rel_heights =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>))</span>
 <span id="cb44-64"><a href="#cb44-64" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>

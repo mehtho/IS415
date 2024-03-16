@@ -19,6 +19,17 @@ execute:
 
 ## Overview and Objectives
 
+In this takehome exercise, I will be prototyping my accessibility modelling module for the Geospatial Analytics Project. 
+
+This module aims to 
+ -    Model the accessibility to various amenties across Singapore
+ -    Show the distributions of accessibility to amenities across regions
+ 
+ -    Choose between Hexagonal and Square Grids
+ -    Change the desired grid size
+ -    Choose different distance decay functions
+ -    Choose between Hansen’s, KD2SFCA and SAM accessibility modelling methods
+
 ## Data Wrangling
 
 ```{r}
@@ -618,7 +629,7 @@ plot_acc <- function(method, quantiles, grid_size, point_type, exponent, subz) {
   region_bxp <- ggplot(data=hexagon_acc, 
        aes(y = acc, 
            x = REGION_N)) +
-  geom_boxplot() +
+  geom_boxplot(outliers = FALSE) +
   geom_point(stat="summary", 
              fun.y="mean", 
              colour ="red", 
