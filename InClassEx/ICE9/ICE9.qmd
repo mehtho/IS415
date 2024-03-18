@@ -1,0 +1,20 @@
+---
+title: "In-Class Exercise 9: Geographically Weighted Predictive Modelling"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 03-18-2024
+description: |
+  Geographically Weighted Predictive Modelling
+categories:
+  - In-class Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+
