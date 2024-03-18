@@ -866,5 +866,47 @@
     "title": "Matt's IS415 Experience",
     "section": "",
     "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n        0 0     false"
+  },
+  {
+    "objectID": "InClassEx/ICE9/ICE9.html",
+    "href": "InClassEx/ICE9/ICE9.html",
+    "title": "In-Class Exercise 9: Geographically Weighted Predictive Modelling",
+    "section": "",
+    "text": "pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, tidymodels, \n               tidyverse, gtsummary, rpart, rpart.plot, ggstatsplot, performance)"
+  },
+  {
+    "objectID": "InClassEx/ICE9/ICE9.html#dependencies",
+    "href": "InClassEx/ICE9/ICE9.html#dependencies",
+    "title": "In-Class Exercise 9: Geographically Weighted Predictive Modelling",
+    "section": "",
+    "text": "pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, tidymodels, \n               tidyverse, gtsummary, rpart, rpart.plot, ggstatsplot, performance)"
+  },
+  {
+    "objectID": "InClassEx/ICE9/ICE9.html#importing-data",
+    "href": "InClassEx/ICE9/ICE9.html#importing-data",
+    "title": "In-Class Exercise 9: Geographically Weighted Predictive Modelling",
+    "section": "Importing Data",
+    "text": "Importing Data\n\nrs_sf &lt;- read_rds(\"data/rds/HDB_resale.rds\")"
+  },
+  {
+    "objectID": "InClassEx/ICE9/ICE9.html#split-data",
+    "href": "InClassEx/ICE9/ICE9.html#split-data",
+    "title": "In-Class Exercise 9: Geographically Weighted Predictive Modelling",
+    "section": "Split Data",
+    "text": "Split Data\n\nset.seed(1234)\nresale_split &lt;- initial_split(\n  rs_sf,\n  prop = 5/10,)\n\ntrain_sf &lt;- training(resale_split)\ntest_sf &lt;- testing(resale_split)\n\n\ntrain_df &lt;- train_sf %&gt;%\n  st_drop_geometry() %&gt;%\n  as.data.frame()\n\ntest_df &lt;- test_sf %&gt;%\n  st_drop_geometry() %&gt;%\n  as.data.frame()"
+  },
+  {
+    "objectID": "InClassEx/ICE9/ICE9.html#corr-matrix",
+    "href": "InClassEx/ICE9/ICE9.html#corr-matrix",
+    "title": "In-Class Exercise 9: Geographically Weighted Predictive Modelling",
+    "section": "Corr Matrix",
+    "text": "Corr Matrix\n\nrs_sf1 &lt;- rs_sf %&gt;%\n  st_drop_geometry()\n\nggcorrmat(rs_sf1[, 2:17])"
+  },
+  {
+    "objectID": "InClassEx/ICE9/ICE9.html#gwr",
+    "href": "InClassEx/ICE9/ICE9.html#gwr",
+    "title": "In-Class Exercise 9: Geographically Weighted Predictive Modelling",
+    "section": "GWR",
+    "text": "GWR\n\ntrain_sp &lt;- as_Spatial(train_sf)\ntrain_sp\n\nclass       : SpatialPointsDataFrame \nfeatures    : 7950 \nextent      : 11597.31, 42623.63, 28217.39, 48741.06  (xmin, xmax, ymin, ymax)\ncrs         : +proj=tmerc +lat_0=1.36666666666667 +lon_0=103.833333333333 +k=1 +x_0=28001.642 +y_0=38744.572 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs \nvariables   : 16\nnames       : RESALE_PRICE, FLOOR_AREA_SQM, STOREY_ORDER, REMAINING_LEASE_MTHS,          PROX_CBD,     PROX_ELDERLYCARE,        PROX_HAWKER,           PROX_MRT,          PROX_PARK,   PROX_GOOD_PRISCH,        PROX_MALL,     PROX_SUPERMARKET, WITHIN_350M_KINDERGARTEN, WITHIN_350M_CHILDCARE, WITHIN_350M_BUS, ... \nmin values  :       218000,             74,            1,                  555, 0.999393538715878, 1.98943787433087e-08, 0.0333358643817954, 0.0220407324774434, 0.0441643212802781, 0.0652540365486641,                0, 1.21715176356525e-07,                        0,                     0,               0, ... \nmax values  :      1186888,            126,           17,                 1164,  19.6500691667807,     3.30163731686804,   2.80329916478192,   2.13060636038504,   2.41313695915468,   10.6223726149914, 2.26056404492346,     1.57131703651196,                        7,                    20,              18, ... \n\n\n\ncoords &lt;- st_coordinates(rs_sf)\ncoords_train &lt;- st_coordinates(train_sf)\ncoords_test &lt;- st_coordinates(test_sf)\n\n\nset.seed(1234)\nrs_rp &lt;- rpart(formula = RESALE_PRICE ~\n               FLOOR_AREA_SQM + \n               STOREY_ORDER + \n               REMAINING_LEASE_MTHS + \n               PROX_CBD + \n               PROX_ELDERLYCARE +\n               PROX_HAWKER + \n               PROX_MRT + \n               PROX_PARK +\n               PROX_GOOD_PRISCH +\n               PROX_MALL +\n               PROX_SUPERMARKET +\n               WITHIN_350M_KINDERGARTEN + \n               WITHIN_350M_CHILDCARE + \n               WITHIN_350M_BUS + \n               WITHIN_1KM_PRISCH, \n             data=train_df)\n\n\nrpart.plot(rs_rp)\n\n\n\n\n\n\n\n\n\nset.seed(1234)\nrs_rf &lt;- ranger(formula = RESALE_PRICE ~\n               FLOOR_AREA_SQM + \n               STOREY_ORDER + \n               REMAINING_LEASE_MTHS + \n               PROX_CBD + \n               PROX_ELDERLYCARE +\n               PROX_HAWKER + \n               PROX_MRT + \n               PROX_PARK +\n               PROX_GOOD_PRISCH +\n               PROX_MALL +\n               PROX_SUPERMARKET +\n               WITHIN_350M_KINDERGARTEN + \n               WITHIN_350M_CHILDCARE + \n               WITHIN_350M_BUS + \n               WITHIN_1KM_PRISCH, \n             data=train_df,\n             importance='impurity')\nrs_rf\n\nRanger result\n\nCall:\n ranger(formula = RESALE_PRICE ~ FLOOR_AREA_SQM + STOREY_ORDER +      REMAINING_LEASE_MTHS + PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +      PROX_MRT + PROX_PARK + PROX_GOOD_PRISCH + PROX_MALL + PROX_SUPERMARKET +      WITHIN_350M_KINDERGARTEN + WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +      WITHIN_1KM_PRISCH, data = train_df, importance = \"impurity\") \n\nType:                             Regression \nNumber of trees:                  500 \nSample size:                      7950 \nNumber of independent variables:  15 \nMtry:                             3 \nTarget node size:                 5 \nVariable importance mode:         impurity \nSplitrule:                        variance \nOOB prediction error (MSE):       756236996 \nR squared (OOB):                  0.9472481 \n\n\n\nvi &lt;- as.data.frame(rs_rf$variable.importance)\nvi$variables &lt;- rownames(vi)\nvi &lt;- vi %&gt;%\n  rename(vi = \"rs_rf$variable.importance\")\n\n\nggplot(data = vi, \n       aes(x = vi,\n            y = reorder(variables, vi))) + \n  geom_bar(stat=\"identity\")\n\n\n\n\n\n\n\n\n\nrs_grf &lt;- read_rds(\"data/models/rs_grf.rds\")\n\n\ngrf_pred &lt;- predict.grf(rs_grf,\n                        test_df,\n                        x.var.name=\"X\",\n                        y.var.name=\"Y\",\n                        local.w=1,\n                        global.w=0)\n\n\ngrf_pred &lt;- read_rds(\"data/models/grf_pred.rds\")\ngrf_pred_df &lt;- as.data.frame(grf_pred)\n\n\ntest_pred &lt;- test_df %&gt;%\n  select(RESALE_PRICE) %&gt;%\n  cbind(grf_pred_df)\n\n\nrf_pred &lt;- predict(rs_rf, test_df)\n\n\nrf_pred_df &lt;- as.data.frame(rf_pred$predictions) %&gt;%\n  rename(rf_pred = \"rf_pred$predictions\")\n\n\ntest_pred &lt;- cbind(test_pred, rf_pred_df)\n\n\nmlr_pred &lt;- predict(rs_mlr, test_df)\n\n\nmlr_pred_df &lt;- as.data.frame(mlr_pred) %&gt;%\n  rename(mlr_pred = \"mlr_pred\")\n\n\ntest_pred &lt;- cbind(test_pred, mlr_pred)\n\n\nyardstick::rmse(test_pred, \n                RESALE_PRICE,\n                mlr_pred)\n\n# A tibble: 1 × 3\n  .metric .estimator .estimate\n  &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;\n1 rmse    standard      61617.\n\n\n\nmc &lt;- test_pred %&gt;%\n  pivot_longer(cols = c(2:4),\n               names_to = \"models\",\n               values_to = \"predicted\")\n\n\nggplot(data = test_pred,\n       aes(x = grf_pred,\n           y = RESALE_PRICE)) +\n  geom_point()"
   }
 ]

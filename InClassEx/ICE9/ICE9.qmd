@@ -17,4 +17,375 @@ execute:
   warning: false
 ---
 
+## Dependencies
+```{r}
+pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, tidymodels, 
+               tidyverse, gtsummary, rpart, rpart.plot, ggstatsplot, performance)
+```
+
+## Importing Data
+```{r}
+rs_sf <- read_rds("data/rds/HDB_resale.rds")
+```
+
+## Split Data
+```{r}
+set.seed(1234)
+resale_split <- initial_split(
+  rs_sf,
+  prop = 5/10,)
+
+train_sf <- training(resale_split)
+test_sf <- testing(resale_split)
+```
+
+```{r}
+train_df <- train_sf %>%
+  st_drop_geometry() %>%
+  as.data.frame()
+
+test_df <- test_sf %>%
+  st_drop_geometry() %>%
+  as.data.frame()
+```
+
+## Corr Matrix
+```{r}
+#| fig-width: 12
+#| fig-height: 12
+
+rs_sf1 <- rs_sf %>%
+  st_drop_geometry()
+
+ggcorrmat(rs_sf1[, 2:17])
+```
+
+# Drop Column
+```{r}
+train_df <- train_df %>% 
+  select(-c(PROX_CHAS))
+train_sf <- train_sf %>% 
+  select(-c(PROX_CHAS))
+test_df <- test_df %>% 
+  select(-c(PROX_CHAS))
+test_sf <- test_sf %>% 
+  select(-c(PROX_CHAS))
+```
+
+```{r}
+rs_mlr <- lm(formula = RESALE_PRICE ~
+               FLOOR_AREA_SQM + 
+               STOREY_ORDER + 
+               REMAINING_LEASE_MTHS + 
+               PROX_CBD + 
+               PROX_ELDERLYCARE +
+               PROX_HAWKER + 
+               PROX_MRT + 
+               PROX_PARK +
+               PROX_GOOD_PRISCH +
+               PROX_MALL +
+               PROX_SUPERMARKET +
+               WITHIN_350M_KINDERGARTEN + 
+               WITHIN_350M_CHILDCARE + 
+               WITHIN_350M_BUS + 
+               WITHIN_1KM_PRISCH, 
+             data=train_df)
+```
+
+```{r}
+summary(rs_mlr)
+```
+
+## GWR
+
+```{r}
+train_sp <- as_Spatial(train_sf)
+train_sp
+```
+
+```{r}
+coords <- st_coordinates(rs_sf)
+coords_train <- st_coordinates(train_sf)
+coords_test <- st_coordinates(test_sf)
+```
+
+
+```{r}
+set.seed(1234)
+rs_rp <- rpart(formula = RESALE_PRICE ~
+               FLOOR_AREA_SQM + 
+               STOREY_ORDER + 
+               REMAINING_LEASE_MTHS + 
+               PROX_CBD + 
+               PROX_ELDERLYCARE +
+               PROX_HAWKER + 
+               PROX_MRT + 
+               PROX_PARK +
+               PROX_GOOD_PRISCH +
+               PROX_MALL +
+               PROX_SUPERMARKET +
+               WITHIN_350M_KINDERGARTEN + 
+               WITHIN_350M_CHILDCARE + 
+               WITHIN_350M_BUS + 
+               WITHIN_1KM_PRISCH, 
+             data=train_df)
+```
+
+```{r}
+rpart.plot(rs_rp)
+```
+
+```{r}
+set.seed(1234)
+rs_rf <- ranger(formula = RESALE_PRICE ~
+               FLOOR_AREA_SQM + 
+               STOREY_ORDER + 
+               REMAINING_LEASE_MTHS + 
+               PROX_CBD + 
+               PROX_ELDERLYCARE +
+               PROX_HAWKER + 
+               PROX_MRT + 
+               PROX_PARK +
+               PROX_GOOD_PRISCH +
+               PROX_MALL +
+               PROX_SUPERMARKET +
+               WITHIN_350M_KINDERGARTEN + 
+               WITHIN_350M_CHILDCARE + 
+               WITHIN_350M_BUS + 
+               WITHIN_1KM_PRISCH, 
+             data=train_df,
+             importance='impurity')
+rs_rf
+```
+
+```{r}
+vi <- as.data.frame(rs_rf$variable.importance)
+vi$variables <- rownames(vi)
+vi <- vi %>%
+  rename(vi = "rs_rf$variable.importance")
+```
+
+```{r}
+ggplot(data = vi, 
+       aes(x = vi,
+            y = reorder(variables, vi))) + 
+  geom_bar(stat="identity")
+
+```
+
+
+```{r}
+rs_grf <- read_rds("data/models/rs_grf.rds")
+```
+
+
+```{r}
+#| eval: false
+grf_pred <- predict.grf(rs_grf,
+                        test_df,
+                        x.var.name="X",
+                        y.var.name="Y",
+                        local.w=1,
+                        global.w=0)
+```
+
+```{r}
+grf_pred <- read_rds("data/models/grf_pred.rds")
+grf_pred_df <- as.data.frame(grf_pred)
+```
+
+```{r}
+test_pred <- test_df %>%
+  select(RESALE_PRICE) %>%
+  cbind(grf_pred_df)
+```
+
+```{r}
+rf_pred <- predict(rs_rf, test_df)
+```
+
+```{r}
+rf_pred_df <- as.data.frame(rf_pred$predictions) %>%
+  rename(rf_pred = "rf_pred$predictions")
+```
+
+```{r}
+test_pred <- cbind(test_pred, rf_pred_df)
+```
+
+```{r}
+mlr_pred <- predict(rs_mlr, test_df)
+```
+
+```{r}
+mlr_pred_df <- as.data.frame(mlr_pred) %>%
+  rename(mlr_pred = "mlr_pred")
+```
+
+```{r}
+test_pred <- cbind(test_pred, mlr_pred)
+```
+
+```{r}
+yardstick::rmse(test_pred, 
+                RESALE_PRICE,
+                mlr_pred)
+```
+
+```{r}
+mc <- test_pred %>%
+  pivot_longer(cols = c(2:4),
+               names_to = "models",
+               values_to = "predicted")
+```
+
+
+```{r}
+ggplot(data = test_pred,
+       aes(x = grf_pred,
+           y = RESALE_PRICE)) +
+  geom_point()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
