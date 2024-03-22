@@ -104,6 +104,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -154,8 +183,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="dropdown-text">Hands-on Exercise 7</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="../../HandsOnEx/HE7/HE8.html">
+    <a class="dropdown-item" href="../../HandsOnEx/HE8/HE8.html">
  <span class="dropdown-text">Hands-on Exercise 8</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../HandsOnEx/HE9/HE9.html">
+ <span class="dropdown-text">Hands-on Exercise 9</span></a>
   </li>  
     </ul>
   </li>
@@ -210,6 +243,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li>
     <a class="dropdown-item" href="../../InClassEx/ICE8/ICE8.html">
  <span class="dropdown-text">In-class Exercises 8</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../InClassEx/ICE9/ICE9.html">
+ <span class="dropdown-text">In-class Exercises 9</span></a>
   </li>  
     </ul>
   </li>
@@ -298,19 +335,69 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="overview-and-objectives" class="level2">
 <h2 class="anchored" data-anchor-id="overview-and-objectives">Overview and Objectives</h2>
 <p>In this takehome exercise, I will be prototyping my accessibility modelling module for the Geospatial Analytics Project.</p>
-<p>This module aims to - Model the accessibility to various amenties across Singapore - Show the distributions of accessibility to amenities across regions</p>
+<p>This prototype module aims to</p>
 <ul>
-<li>Choose between Hexagonal and Square Grids</li>
-<li>Change the desired grid size</li>
-<li>Choose different distance decay functions</li>
-<li>Choose between Hansen’s, KD2SFCA and SAM accessibility modelling methods</li>
+<li><p>Model the accessibility to various amenties across Singapore</p></li>
+<li><p>Show the distributions of accessibility to amenities across regions</p></li>
+<li><p>Choose between Hexagonal and Square Grids</p></li>
+<li><p>Change the desired grid size</p></li>
+<li><p>Choose different distance decay functions</p></li>
+<li><p>Choose between Hansen’s, KD2SFCA and SAM accessibility modelling methods</p></li>
 </ul>
 </section>
 <section id="data-wrangling" class="level2">
 <h2 class="anchored" data-anchor-id="data-wrangling">Data Wrangling</h2>
+<section id="dependencies" class="level4">
+<h4 class="anchored" data-anchor-id="dependencies">Dependencies</h4>
+<p>Given that this application will be deployed on shiny, I tried to reduce the number of packages to only those that are absolutely necessary or provide sufficient value to the project.</p>
+<ul>
+<li><p>Tidyverse</p>
+<ul>
+<li>Includes common packages for datascience, particularly ggplot2, tibble and dplyr</li>
+</ul></li>
+<li><p>tmap</p>
+<ul>
+<li>Generates colorful and easy to use maps to help our users tell the stories that they want to</li>
+</ul></li>
+<li><p>sf</p>
+<ul>
+<li>Essential for handling spatial features</li>
+</ul></li>
+<li><p>smoothr</p>
+<ul>
+<li>Used to remove holes and slithers in geometry</li>
+</ul></li>
+<li><p>SpatialAcc</p>
+<ul>
+<li>The most promiently featured package in this project. SpatialAcc provides a set of spatial accessibility modelling methods.</li>
+</ul></li>
+<li><p>hash</p>
+<ul>
+<li>I use this to make simple key value pairs, which will map shorter parameter names to files. Using the right data structures can make my code simpler and cleaner</li>
+</ul></li>
+<li><p>cowplot</p>
+<ul>
+<li>Used to combine different types of plots, e.g.&nbsp;tmap and ggplot</li>
+</ul></li>
+</ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, tmap, sf, dplyr, smoothr, tmap, SpatialAcc, hash, ggplotify, cowplot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, tmap, sf, smoothr, SpatialAcc, hash, cowplot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="datasets" class="level4">
+<h4 class="anchored" data-anchor-id="datasets">Datasets</h4>
+</section>
+<section id="master-plan-subzone-dataset" class="level4">
+<h4 class="anchored" data-anchor-id="master-plan-subzone-dataset">Master Plan Subzone Dataset</h4>
+<p>The master plan subzone dataset contains Singapore’s geometry and the boundaries of each planning zone and subzone. These correspond with other aspatial datasets such as the population census.</p>
+<p>To prepare the MPSZ dataset, several steps are taken</p>
+<ul>
+<li><p>Parse the kml fields</p></li>
+<li><p>Remove the z coordinate</p></li>
+<li><p>Fix the CRS</p></li>
+<li><p>Fix invalid geometry</p></li>
+<li><p>Write it to an rds file</p></li>
+</ul>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>mpsz <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaKML.kml"</span>) <span class="sc">%&gt;%</span> </span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">str_match_all</span>(Description,<span class="st">"&lt;td&gt;(.*?)&lt;/td&gt;"</span>)) <span class="sc">%&gt;%</span> </span>
@@ -318,9 +405,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">map</span>(Match,setNames,<span class="fu">c</span>(<span class="st">"SUBZONE_NO"</span>,<span class="st">"SUBZONE_N"</span>,<span class="st">"SUBZONE_C"</span>, <span class="st">"CA_IND"</span>, <span class="st">"PLN_AREA_N"</span>, <span class="st">"PLN_AREA_C"</span>, <span class="st">"REGION_N"</span>, <span class="st">"REGION_C"</span>, <span class="st">"INC_CRC"</span>, <span class="st">"FMEL_UPD_D"</span>))) <span class="sc">%&gt;%</span> </span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest_wider</span>(Match) <span class="sc">%&gt;%</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>() <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="st">'Name'</span>, <span class="st">'geometry'</span>, <span class="st">'SUBZONE_NO'</span>, <span class="st">'SUBZONE_N'</span>, <span class="st">'PLN_AREA_N'</span>, <span class="st">'PLN_AREA_C'</span>, <span class="st">'REGION_N'</span>, <span class="st">'REGION_C'</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_make_valid</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_zm</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_zm</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_make_valid</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_rds</span>(<span class="st">'data/rds/mpsz.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `URA_MP19_SUBZONE_NO_SEA_PL' from data source 
@@ -334,10 +421,29 @@ z_range:       zmin: 0 zmax: 0
 Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
+<p>After parsing the mpsz dataset, we can now combine it with the population census of 2020 dataset.</p>
+<p><u>Disclaimer:</u></p>
+<p>The Population Census dataset, referred to as <code>pop2020</code> in this take home exercise was created by my teammate during the data wrangling process for our project. All data wrangling mentioned in this take-home exercise is my original work. Data that was not wrangled by me will be marked and imported as an rds.</p>
+</section>
+<section id="population-census-dataset-integration" class="level4">
+<h4 class="anchored" data-anchor-id="population-census-dataset-integration">Population Census Dataset Integration</h4>
+<p>In some accessibility modelling works, demand is naively and uniformly allocated across the relevant geometry, i.e allocating a constant demand over each part of the study area. This would cause the result to be similar to Kernel Density Estimation.</p>
+<p>To avoid this issue, and to go beyond naive demand estimation, I have decided to allocate ‘demand’ to each subzone or planning area according to the record population of the area in the population census dataset.</p>
+<p>This will be done by mapping the population estimations of the census to the corresponding polygons in the mpsz dataset. This will be conducted on two levels of granularity.</p>
+<ul>
+<li>Subzones</li>
+<li>Planning Areas</li>
+</ul>
+<p>To incorporate a demand estimation into accessibility modelling, I determine a population density estimate for every polygon.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true">Planning Area Level</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">Subzone Level</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>To prepare the dataset at the planning area level, we can - Extract the total population from the “Total” row, converted to a numerical value - Accumulate the collective populations and sub-polygons of every planning area</p>
+<ul>
+<li>Merge the mpsz and population datasets based on planning area names</li>
+<li>Derive a population density estimate, divide the population of the area by the area</li>
+</ul>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>pop2020_pa <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/rds/pop2020.rds'</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Total =</span> <span class="fu">as.numeric</span>(Total)) <span class="sc">%&gt;%</span></span>
@@ -359,6 +465,9 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<ul>
+<li>This process is similar to the aforementioned planning area population census integration.</li>
+</ul>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>pop2020_sz <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/rds/pop2020.rds'</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Total =</span> <span class="fu">as.numeric</span>(Total)) <span class="sc">%&gt;%</span></span>
@@ -381,8 +490,11 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 </div>
+</section>
 <section id="getting-mainland-singapore" class="level4">
 <h4 class="anchored" data-anchor-id="getting-mainland-singapore">Getting Mainland Singapore</h4>
+<p>Given that the outer islands are not relevant to accessibility, since traversing water is significantly different from land travel. The population of these island is also low enough that they are unlikely to affect the results of our modelling process.</p>
+<p><em>Reference: Matt’s TakeHome Exercise 1</em></p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>mainland_sg <span class="ot">&lt;-</span> <span class="fu">st_union</span>(mpsz_pa) <span class="sc">%&gt;%</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_cast</span>(<span class="st">"POLYGON"</span>)</span>
@@ -405,8 +517,18 @@ Geodetic CRS:  WGS 84</code></pre>
 </section>
 <section id="grid-generation-process" class="level2">
 <h2 class="anchored" data-anchor-id="grid-generation-process">Grid Generation Process</h2>
+<p>The accessibility modelling process requires a grid. This grids segment the relevant study area into polygons of various sizes, typically hexagons or squares. Hexagons have the added benefit of supporting diagonal adjacency.</p>
+<p>For the project module, I would like to provide grid options such as size and shape of the grid. Since the grid generation process is relatively unchanging but time consuming, the grids will be pre-calculated with several parameters and combined with other dynamic elements at runtime.</p>
+<p>The follow functions have been written with the project module in mind. This section will discuss the design of each of these functions before a technical demonstration of these functions.</p>
 <section id="function-to-add-demand" class="level4">
 <h4 class="anchored" data-anchor-id="function-to-add-demand">Function to add “demand”</h4>
+<p>A grid polygon, such as a square or hexagon, may overlap the singaporean mainland partially or overlap multiple sub-areas at once. Based on the concept of population density, a grid with a partial overlap with a subzone or planning area should have a lower population estimation than a grid with a full overlap. A grid’s population should also be a function of the populations of every zone it overlaps as well.</p>
+<p>Therefore, I have designed the following functions to allocate density to each grid polygon.</p>
+<p>Given the set of <span class="math inline">\(n\)</span> grid polygons <span class="math inline">\(G = \{g_0, g_1, ..., g_n\}\)</span>, and set of <span class="math inline">\(m\)</span> subzone or planning areas <span class="math inline">\(Z = \{z_0, z_1, ..., z_m\}\)</span>.</p>
+<p>The population of a grid <span class="math inline">\(g_i\)</span> is given as <span class="math inline">\(Pop(g_i)\)</span>, The density of a subzone or planning area <span class="math inline">\(z_i\)</span> is given as <span class="math inline">\(Dens(z_i)\)</span> The area of the intersection between a grid <span class="math inline">\(g_i\)</span> and subzone or planning area <span class="math inline">\(z_i\)</span> is given as <span class="math inline">\(AreaInt(g_i, z_i)\)</span></p>
+<p><span class="math inline">\(Pop(g_i) = \sum^m_{j=0} AreaInt(g_i, z_j) * Dens(z_j) \quad \forall g_i \in G\)</span></p>
+<p>This function can be compared to a weighted mean of populations, weighted by intersection area and is implemented below.</p>
+<p>The result is a grid with a field ‘demand’ corresponding to the result of this function.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>add_weights <span class="ot">&lt;-</span> <span class="cf">function</span>(grids, pop) {</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  joined <span class="ot">&lt;-</span> <span class="fu">st_join</span>(grids, pop, <span class="at">join =</span> st_intersects)  <span class="sc">%&gt;%</span></span>
@@ -426,6 +548,7 @@ Geodetic CRS:  WGS 84</code></pre>
 </section>
 <section id="make-a-grid-over-mainland-singapore" class="level4">
 <h4 class="anchored" data-anchor-id="make-a-grid-over-mainland-singapore">Make a grid over mainland Singapore</h4>
+<p>This function generates a grid over the bounding box of mainland singapore. However, most of the bounding box covers irrelevant areas, or the ocean. We reduce the grid, and cut grid polygons to fit the outline of mainland Singapore.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>sg_2_grid <span class="ot">&lt;-</span> <span class="cf">function</span>(sg, g_size, is_square, name, pop) {</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  grids <span class="ot">&lt;-</span> <span class="fu">st_make_grid</span>(sg, <span class="at">cellsize =</span> g_size, <span class="at">square =</span> is_square) <span class="sc">%&gt;%</span></span>
@@ -444,6 +567,7 @@ Geodetic CRS:  WGS 84</code></pre>
 </section>
 <section id="generate-the-grids-and-distance-matrices" class="level4">
 <h4 class="anchored" data-anchor-id="generate-the-grids-and-distance-matrices">Generate the grids and distance matrices</h4>
+<p>This wrapper function called the aforementioned functions to generate grids of different sizes and shapes and saves them as rds files to be loaded at runtime.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>grids_and_dist_matrices <span class="ot">&lt;-</span> <span class="cf">function</span>(sg, pop, g_size, is_square, subz) {</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  name <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">'data/rds/grid_'</span>, g_size, <span class="fu">ifelse</span>(is_square, <span class="st">"_square"</span>, <span class="st">"_hexagon"</span>), <span class="fu">ifelse</span>(subz, <span class="st">"_sz"</span>, <span class="st">"_pa"</span>), <span class="at">sep =</span> <span class="st">""</span>)</span>
@@ -454,20 +578,19 @@ Geodetic CRS:  WGS 84</code></pre>
 </section>
 <section id="writing-the-grids-with-population-as-demand" class="level4">
 <h4 class="anchored" data-anchor-id="writing-the-grids-with-population-as-demand">Writing the grids with population as demand</h4>
+<p>Multiple grids of varying sizes and shapes weighted by subzone or planning area populations can be easily generated by calling the functions as done below.</p>
 <div class="cell">
-<details class="code-fold">
-<summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># for(di in c(250, 500, 750, 1000)) {</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   grids_and_dist_matrices(mainland_sg, mpsz_sz, di, FALSE, TRUE)</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   grids_and_dist_matrices(mainland_sg, mpsz_sz, di, TRUE, TRUE)</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   grids_and_dist_matrices(mainland_sg, mpsz_pa, di, FALSE, FALSE)</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   grids_and_dist_matrices(mainland_sg, mpsz_pa, di, TRUE, FALSE)</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(di <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">250</span>, <span class="dv">500</span>, <span class="dv">750</span>, <span class="dv">1000</span>)) {</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grids_and_dist_matrices</span>(mainland_sg, mpsz_sz, di, <span class="cn">FALSE</span>, <span class="cn">TRUE</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grids_and_dist_matrices</span>(mainland_sg, mpsz_sz, di, <span class="cn">TRUE</span>, <span class="cn">TRUE</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grids_and_dist_matrices</span>(mainland_sg, mpsz_pa, di, <span class="cn">FALSE</span>, <span class="cn">FALSE</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grids_and_dist_matrices</span>(mainland_sg, mpsz_pa, di, <span class="cn">TRUE</span>, <span class="cn">FALSE</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="functional-demo" class="level3">
 <h3 class="anchored" data-anchor-id="functional-demo">Functional Demo</h3>
+<p>In this functional demo, each function and its code have been called sequentially to illustrate the flow of how the data wrangling results in useful information.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>demo <span class="ot">&lt;-</span> <span class="fu">grids_and_dist_matrices</span>(mainland_sg, mpsz_sz, <span class="dv">500</span>, <span class="cn">FALSE</span>, <span class="cn">TRUE</span>)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -492,6 +615,7 @@ Geodetic CRS:  WGS 84</code></pre>
 <h2 class="anchored" data-anchor-id="step-by-step-demo">Step by Step Demo</h2>
 <section id="generating-the-grid" class="level4">
 <h4 class="anchored" data-anchor-id="generating-the-grid">Generating the grid</h4>
+<p>Observe that the results of st_make_grid create a grid over the entire bounding box of the study area.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>grids <span class="ot">&lt;-</span> <span class="fu">st_make_grid</span>(mainland_sg, <span class="at">cellsize =</span> <span class="dv">500</span>, <span class="at">square =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(grids)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -503,6 +627,10 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 </div>
+<p>After using st_intersection to remove irrelvant hexagons and trim hexagons to fit the countours of mainland Singapore, we introduce the <code>demand</code> parameter to each hexagon. Each hexagon is also assigned a numerical identifier to make joining processes later easier. At this state, the demand is uniformly 0 since the population of each area has not been accounted for yet.</p>
+</section>
+<section id="trimming-the-grid" class="level4">
+<h4 class="anchored" data-anchor-id="trimming-the-grid">Trimming the Grid</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>grids <span class="ot">&lt;-</span> grids <span class="sc">%&gt;%</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_intersection</span>(mainland_sg) <span class="sc">%&gt;%</span></span>
@@ -524,6 +652,10 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 </div>
+</section>
+<section id="singapores-population-density" class="level4">
+<h4 class="anchored" data-anchor-id="singapores-population-density">Singapore’s Population Density</h4>
+<p>The population of Singapore can be seen to vary greatly throughout areas. For example, the central catchment area is unsurprisingly empty, while residential areas in the West, North and East contain most of Singapore’s population.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsz_sz) <span class="sc">+</span> </span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col=</span><span class="st">'Total'</span>,</span>
@@ -540,6 +672,10 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 </div>
+</section>
+<section id="combining-the-grid-and-population-data" class="level4">
+<h4 class="anchored" data-anchor-id="combining-the-grid-and-population-data">Combining the Grid and Population Data</h4>
+<p>Similar to the code above, we allocate population estimates to each grid. This grid can be used for accessibility modelling methods.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>grids_on_sz <span class="ot">&lt;-</span> <span class="fu">st_join</span>(grids, mpsz_sz, <span class="at">join =</span> st_intersects)  <span class="sc">%&gt;%</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">intersect_area =</span> <span class="fu">st_area</span>(x),</span>
@@ -553,19 +689,18 @@ Geodetic CRS:  WGS 84</code></pre>
 <span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">"ID"</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">demand =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(total_demand), <span class="dv">0</span>, total_demand)) <span class="sc">%&gt;%</span></span>
 <span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>total_demand) <span class="sc">%&gt;%</span></span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">rename</span>(<span class="at">geometry =</span> x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(grids) <span class="sc">+</span> </span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col=</span><span class="st">'demand'</span>,</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="dv">7</span>,</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">rename</span>(<span class="at">geometry =</span> x)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(grids) <span class="sc">+</span> </span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col=</span><span class="st">'demand'</span>,</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="dv">7</span>,</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE3_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE3_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -573,21 +708,31 @@ Geodetic CRS:  WGS 84</code></pre>
 </section>
 <section id="handling-points" class="level3">
 <h3 class="anchored" data-anchor-id="handling-points">Handling Points</h3>
+<p>To model the locations of amenities such as supermarkets, we need each amenity to be represented as a data point. As data regarding the size, or capacity of each facility is hard to come by, some types of amenities can have a fixed capacity.</p>
+<p>For markets and food centres, data includes the number of stalls, which could correlate with size and capacity.</p>
+<p>In this section, each dataset of point data is wrangled and the relevant columns extracted.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Supermarkets</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">Markets and Food Centres</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false">MRT</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-4" role="tab" aria-controls="tabset-2-4" aria-selected="false">Other POIs</a></li></ul>
 <div class="tab-content">
 <div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<p>Supermarket data processing includes the following steps:</p>
+<ol type="1">
+<li><p>Parse the KML data</p></li>
+<li><p>Extract the relevant rows</p></li>
+<li><p>Make valid, remove z coordinate, change CRS</p></li>
+<li><p>Remove invalid points</p></li>
+</ol>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>supermarkets <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/geospatial/SupermarketsKML.kml"</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">str_match_all</span>(Description,<span class="st">"&lt;td&gt;(.*?)&lt;/td&gt;"</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">map</span>(Match, <span class="sc">~</span> .[,<span class="dv">2</span>])) <span class="sc">%&gt;%</span> </span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">map</span>(Match,setNames,<span class="fu">c</span>(<span class="st">"LIC_NAME"</span>, <span class="st">"BLK_HOUSE"</span>, <span class="st">"STR_NAME"</span>, <span class="st">"UNIT_NO"</span>, <span class="st">"POSTCODE"</span>, <span class="st">"LIC_NO"</span>, <span class="st">"INC_CRC"</span>, <span class="st">"FMEL_UPD_D"</span>))) <span class="sc">%&gt;%</span> </span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest_wider</span>(Match) <span class="sc">%&gt;%</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="st">'LIC_NAME'</span>, <span class="st">'geometry'</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_make_valid</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_zm</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>supermarkets <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/geospatial/SupermarketsKML.kml"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">str_match_all</span>(Description,<span class="st">"&lt;td&gt;(.*?)&lt;/td&gt;"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">map</span>(Match, <span class="sc">~</span> .[,<span class="dv">2</span>])) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">map</span>(Match,setNames,<span class="fu">c</span>(<span class="st">"LIC_NAME"</span>, <span class="st">"BLK_HOUSE"</span>, <span class="st">"STR_NAME"</span>, <span class="st">"UNIT_NO"</span>, <span class="st">"POSTCODE"</span>, <span class="st">"LIC_NO"</span>, <span class="st">"INC_CRC"</span>, <span class="st">"FMEL_UPD_D"</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest_wider</span>(Match) <span class="sc">%&gt;%</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="st">'LIC_NAME'</span>, <span class="st">'geometry'</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_make_valid</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_zm</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `SUPERMARKETS' from data source 
   `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/TakeHomeEx/TakeHomeEx3/data/geospatial/SupermarketsKML.kml' 
@@ -599,13 +744,16 @@ Bounding box:  xmin: 103.6258 ymin: 1.24715 xmax: 104.0036 ymax: 1.461526
 z_range:       zmin: 0 zmax: 0
 Geodetic CRS:  WGS 84</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>supermarkets <span class="ot">&lt;-</span> <span class="fu">st_intersection</span>(supermarkets, mainland_sg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Check for NA values</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(supermarkets))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] FALSE</code></pre>
 </div>
 </div>
+<p>Categorise supermarkets by major brand. Since the name of each supermarket is determined by the license, we can expect that small variations will not affect this method.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>supermarkets<span class="sc">$</span>SUBTYPE <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">grepl</span>(<span class="st">"FAIRPRICE"</span>, supermarkets<span class="sc">$</span>LIC_NAME, <span class="at">ignore.case =</span> <span class="cn">TRUE</span>), <span class="st">"FAIRPRICE"</span>,</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                     <span class="fu">ifelse</span>(<span class="fu">grepl</span>(<span class="st">"COLD STORAGE"</span>, supermarkets<span class="sc">$</span>LIC_NAME, <span class="at">ignore.case =</span> <span class="cn">TRUE</span>), <span class="st">"COLD STORAGE"</span>,</span>
@@ -613,6 +761,7 @@ Geodetic CRS:  WGS 84</code></pre>
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(supermarkets, <span class="st">'data/rds/supermarkets.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Plot of the supermarkets across Singapore</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mainland_sg) <span class="sc">+</span> </span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span> </span>
@@ -621,13 +770,14 @@ Geodetic CRS:  WGS 84</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE3_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE3_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 </div>
 <div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<p>Markets and Food Centre geometry have been processed similarly to the supermarkets dataset, except that the <code>TOTAL_STALLS</code> parameter has been included to reflect the capacity of each facility.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>marketandfc <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/geospatial/NEAMarketandFoodCentreKML.kml"</span>) <span class="sc">%&gt;%</span> </span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Match=</span><span class="fu">str_match_all</span>(Description,<span class="st">"&lt;td&gt;(.*?)&lt;/td&gt;"</span>)) <span class="sc">%&gt;%</span> </span>
@@ -650,12 +800,14 @@ z_range:       zmin: 0 zmax: 0
 Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
+<p>Check for NA values</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">is.na</span>(marketandfc))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] FALSE</code></pre>
 </div>
 </div>
+<p>Allocating a simpler type variable to each facility, similar to the supermarkets</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>marketandfc<span class="sc">$</span>SUBTYPE <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(marketandfc<span class="sc">$</span>TYPE <span class="sc">==</span> <span class="st">"HC"</span>, <span class="st">"HAWKER_CENTRE"</span>,</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">ifelse</span>(marketandfc<span class="sc">$</span>TYPE <span class="sc">==</span> <span class="st">"MHC"</span>, <span class="st">"MARKET_AND_HAWKER"</span>,</span>
@@ -674,13 +826,14 @@ Geodetic CRS:  WGS 84</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE3_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE3_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 </div>
 <div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+<p>MRT stations have been processed simply, without any additional parameters. This is because the entire MRT system is somewhat interconnected and station capacity does not often causes bottlenecks as much as the capacity of the trains.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>mrt <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">'data/aspatial/mrt.csv'</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"lng"</span>, <span class="st">"lat"</span>),</span>
@@ -704,13 +857,14 @@ Geodetic CRS:  WGS 84</code></pre>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="THE3_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="THE3_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 </div>
 <div id="tabset-2-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-4-tab">
+<p>We found a large dataset consisting of many points of interest. We have extracted only the points of interest that may play a part in people’s routines. In this section, we choose only the relevant places, extract them, and save them for later use.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>poi <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">'data/aspatial/poi.csv'</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"lng"</span>, <span class="st">"lat"</span>),</span>
@@ -725,7 +879,7 @@ Geodetic CRS:  WGS 84</code></pre>
 <span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>poi_types <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"restaurant"</span>, <span class="st">"hospital"</span>, <span class="st">"lodging"</span>, <span class="st">"bank"</span>, <span class="st">"cafe"</span>, <span class="st">"convenience_store"</span>, <span class="st">"clothing_store"</span>, <span class="st">"atm"</span>, <span class="st">"school"</span>, <span class="st">"beauty_salon"</span>, <span class="st">"place_of_worship"</span>, <span class="st">"tourist_attraction"</span>, <span class="st">"doctor"</span>, <span class="st">"dentist"</span>, <span class="st">"gym"</span>, <span class="st">"night_club"</span>, <span class="st">"library"</span>)</span>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>poi_types <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"restaurant"</span>, <span class="st">"hospital"</span>, <span class="st">"lodging"</span>, <span class="st">"bank"</span>, <span class="st">"cafe"</span>, <span class="st">"convenience_store"</span>, <span class="st">"clothing_store"</span>, <span class="st">"atm"</span>, <span class="st">"school"</span>, <span class="st">"beauty_salon"</span>, <span class="st">"place_of_worship"</span>, <span class="st">"tourist_attraction"</span>, <span class="st">"doctor"</span>, <span class="st">"dentist"</span>, <span class="st">"gym"</span>, <span class="st">"library"</span>)</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (poi_t <span class="cf">in</span> poi_types) {</span>
 <span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">poi2type</span>(poi, poi_t)</span>
@@ -738,11 +892,62 @@ Geodetic CRS:  WGS 84</code></pre>
 </section>
 <section id="accessibility-modelling" class="level2">
 <h2 class="anchored" data-anchor-id="accessibility-modelling">Accessibility Modelling</h2>
+<p>Data preparation formed the larger part of this entire process. To save precious exectuion time in the final application, which may face resource constraints, we will load pre-prepared data during runtime.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/rds/grid_500_hexagon_sz.rds'</span>)</span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>points <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/rds/supermarkets.rds'</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">capacity =</span> <span class="dv">500</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>The accessibility method requires the following parameters</p>
+<ul>
+<li><p>Method</p>
+<ul>
+<li>SAM, Hansen, KD2SFCA</li>
+</ul></li>
+<li><p>Demands</p>
+<ul>
+<li>A vector with the demand of every grid. These have been previously allocated according to population densities.</li>
+</ul></li>
+<li><p>Capacities</p>
+<ul>
+<li>A vector with the capacity of every facility. This may be uniform, if a variable corresponding to the capacity of each facility is not recorded in the dataset.</li>
+</ul></li>
+<li><p>Distance Matrix</p>
+<ul>
+<li>The distance matrix derived by taking the euclidean distances from each grid to each facility.</li>
+</ul></li>
+</ul>
+<section id="distance-matrix-calculation" class="level4">
+<h4 class="anchored" data-anchor-id="distance-matrix-calculation">Distance Matrix Calculation</h4>
+<p>Although the distance matrices used in our application are based on euclidean distances, euclidean distances are not sufficient for accessibility modelling. For example, a walking distance of 200m is more than twice as difficult or unlikely than a 100m walk. As such, to model the difficulty of travel scaling exponentially with distance, the values of the distance matrix have been modified with a function inspired by the exponential decay function.</p>
+<p>Given a matrix of euclidean distances <span class="math inline">\(D\)</span>, where each element can be referred to as <span class="math inline">\(d_{ij}\)</span>,</p>
+<p>a modified distance matrix <span class="math inline">\(D'\)</span>, where each element is referred to as <span class="math inline">\(d'_{ij}\)</span>,</p>
+<p>and an exponent <span class="math inline">\(a\)</span>,</p>
+<p><span class="math inline">\(d'_{ij} = exp(d_{ij} / 1000 * a)\)</span></p>
+<p>In this system, <span class="math inline">\(a\)</span> can be increased to reflect increasing difficulty of travel.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">5</span>, <span class="at">length.out =</span> <span class="dv">100</span>)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, <span class="fu">exp</span>(<span class="dv">2</span> <span class="sc">*</span> x), <span class="at">type =</span> <span class="st">"l"</span>, <span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">xlab =</span> <span class="st">"x"</span>, <span class="at">ylab =</span> <span class="st">"y"</span>,</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Graph of Different Exponential Distance Functions"</span>)</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, <span class="fu">exp</span>(<span class="fl">2.5</span> <span class="sc">*</span> x), <span class="at">col =</span> <span class="st">"yellow"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, <span class="fu">exp</span>(<span class="fl">1.5</span> <span class="sc">*</span> x), <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, <span class="fu">exp</span>(<span class="dv">1</span> <span class="sc">*</span> x), <span class="at">col =</span> <span class="st">"green"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topleft"</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"y = exp(2x)"</span>, <span class="st">"y = exp(1.5x)"</span>, <span class="st">"y = exp(1x)"</span>, <span class="st">"y = exp(2.5x)"</span>),</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"blue"</span>, <span class="st">"red"</span>, <span class="st">"green"</span>, <span class="st">"yellow"</span>), <span class="at">lty =</span> <span class="dv">1</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a><span class="fu">grid</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="THE3_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Using this function and adjusting the exponent is important. For example, if the difficulty of travel is too low, i.e it does not increase enough over distance, accessibility will instead inversely correlate more to the number of other people in the grid competing for the closest facilities.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true">Hansen Method</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false">KD2SFCA Method</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-3" role="tab" aria-controls="tabset-3-3" aria-selected="false">SAM Method</a></li></ul>
 <div class="tab-content">
@@ -750,55 +955,54 @@ Geodetic CRS:  WGS 84</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>exponent <span class="ot">&lt;-</span> <span class="dv">2</span></span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>method <span class="ot">&lt;-</span> <span class="st">"Hansen"</span></span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>centroid.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(<span class="fu">st_centroid</span>(grid))</span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>points.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(points)</span>
-<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>dm <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">distance</span>(centroid.coords, points.coords, <span class="at">type =</span> <span class="st">"euclidean"</span>) <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> exponent)</span>
-<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">ac</span>(grid<span class="sc">$</span>demand,</span>
-<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>                          points<span class="sc">$</span>capacity,</span>
-<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>                          dm, </span>
-<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>                          <span class="at">d0 =</span> <span class="dv">250</span>,</span>
-<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">power =</span> <span class="dv">2</span>, </span>
-<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>                          <span class="at">family =</span> method))</span>
-<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(acc) <span class="ot">&lt;-</span> <span class="st">"acc"</span></span>
-<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>hexagon <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(grid, <span class="fu">as_tibble</span>(acc))</span>
-<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a>hexagon<span class="sc">$</span>acc[<span class="fu">is.infinite</span>(hexagon<span class="sc">$</span>acc)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>mapex <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(grid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>exponent <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>method <span class="ot">&lt;-</span> <span class="st">"Hansen"</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>centroid.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(<span class="fu">st_centroid</span>(grid))</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>points.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(points)</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>dm <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">distance</span>(centroid.coords, points.coords, <span class="at">type =</span> <span class="st">"euclidean"</span>) <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> exponent)</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">ac</span>(grid<span class="sc">$</span>demand,</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>                          points<span class="sc">$</span>capacity,</span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>                          dm, </span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>                          <span class="at">power =</span> <span class="dv">2</span>, </span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">family =</span> method))</span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(acc) <span class="ot">&lt;-</span> <span class="st">"acc"</span></span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a>hexagon <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(grid, <span class="fu">as_tibble</span>(acc))</span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a>hexagon<span class="sc">$</span>acc[<span class="fu">is.infinite</span>(hexagon<span class="sc">$</span>acc)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a>mapex <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(grid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="cell">
 <details class="code-fold">
 <summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(grid) <span class="sc">+</span> </span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(hexagon,</span>
-<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">bbox =</span> mapex) <span class="sc">+</span> </span>
-<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"acc"</span>,</span>
-<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="dv">5</span>,</span>
-<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
-<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
-<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.lwd =</span> <span class="dv">1</span>,</span>
-<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(points) <span class="sc">+</span></span>
-<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
-<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to supermarkets: Hansen method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
-<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
-<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">2</span>,</span>
-<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
-<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">3.0</span>,</span>
-<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">6</span>),</span>
-<span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
-<span id="cb38-21"><a href="#cb38-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb38-22"><a href="#cb38-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb38-23"><a href="#cb38-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
-<span id="cb38-24"><a href="#cb38-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(grid) <span class="sc">+</span> </span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(hexagon,</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">bbox =</span> mapex) <span class="sc">+</span> </span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"acc"</span>,</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="dv">5</span>,</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.lwd =</span> <span class="dv">1</span>,</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(points) <span class="sc">+</span></span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to supermarkets: Hansen method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">1</span>,</span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
+<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">3.0</span>,</span>
+<span id="cb39-19"><a href="#cb39-19" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">6</span>),</span>
+<span id="cb39-20"><a href="#cb39-20" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
+<span id="cb39-21"><a href="#cb39-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb39-22"><a href="#cb39-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb39-23"><a href="#cb39-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
+<span id="cb39-24"><a href="#cb39-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -813,55 +1017,55 @@ Geodetic CRS:  WGS 84</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>exponent <span class="ot">&lt;-</span> <span class="dv">2</span></span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>method <span class="ot">&lt;-</span> <span class="st">"KD2SFCA"</span></span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>centroid.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(<span class="fu">st_centroid</span>(grid))</span>
-<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>points.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(points)</span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>dm <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">distance</span>(centroid.coords, points.coords, <span class="at">type =</span> <span class="st">"euclidean"</span>) <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> exponent)</span>
-<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">ac</span>(grid<span class="sc">$</span>demand,</span>
-<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>                          points<span class="sc">$</span>capacity,</span>
-<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>                          dm, </span>
-<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>                          <span class="at">d0 =</span> <span class="dv">250</span>,</span>
-<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">power =</span> <span class="dv">2</span>, </span>
-<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>                          <span class="at">family =</span> method))</span>
-<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(acc) <span class="ot">&lt;-</span> <span class="st">"acc"</span></span>
-<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a>hexagon <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(grid, <span class="fu">as_tibble</span>(acc))</span>
-<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a>hexagon<span class="sc">$</span>acc[<span class="fu">is.infinite</span>(hexagon<span class="sc">$</span>acc)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb39-19"><a href="#cb39-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-20"><a href="#cb39-20" aria-hidden="true" tabindex="-1"></a>mapex <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(grid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>exponent <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>method <span class="ot">&lt;-</span> <span class="st">"KD2SFCA"</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>centroid.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(<span class="fu">st_centroid</span>(grid))</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>points.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(points)</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>dm <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">distance</span>(centroid.coords, points.coords, <span class="at">type =</span> <span class="st">"euclidean"</span>) <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> exponent)</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">ac</span>(grid<span class="sc">$</span>demand,</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>                          points<span class="sc">$</span>capacity,</span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>                          dm, </span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>                          <span class="at">d0 =</span> <span class="dv">250</span>,</span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">power =</span> <span class="dv">2</span>, </span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>                          <span class="at">family =</span> method))</span>
+<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(acc) <span class="ot">&lt;-</span> <span class="st">"acc"</span></span>
+<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a>hexagon <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(grid, <span class="fu">as_tibble</span>(acc))</span>
+<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a>hexagon<span class="sc">$</span>acc[<span class="fu">is.infinite</span>(hexagon<span class="sc">$</span>acc)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb40-19"><a href="#cb40-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-20"><a href="#cb40-20" aria-hidden="true" tabindex="-1"></a>mapex <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(grid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="cell">
 <details class="code-fold">
 <summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(grid) <span class="sc">+</span> </span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(hexagon,</span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">bbox =</span> mapex) <span class="sc">+</span> </span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"acc"</span>,</span>
-<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="dv">5</span>,</span>
-<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
-<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
-<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.lwd =</span> <span class="dv">1</span>,</span>
-<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(points) <span class="sc">+</span></span>
-<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
-<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to supermarkets: KD2FCSA method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
-<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
-<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">2</span>,</span>
-<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
-<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">3.0</span>,</span>
-<span id="cb40-19"><a href="#cb40-19" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">6</span>),</span>
-<span id="cb40-20"><a href="#cb40-20" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
-<span id="cb40-21"><a href="#cb40-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb40-22"><a href="#cb40-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb40-23"><a href="#cb40-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
-<span id="cb40-24"><a href="#cb40-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(grid) <span class="sc">+</span> </span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(hexagon,</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">bbox =</span> mapex) <span class="sc">+</span> </span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"acc"</span>,</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="dv">5</span>,</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.lwd =</span> <span class="dv">1</span>,</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(points) <span class="sc">+</span></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to supermarkets: KD2FCSA method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">2</span>,</span>
+<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
+<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">3.0</span>,</span>
+<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">6</span>),</span>
+<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
+<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb41-23"><a href="#cb41-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
+<span id="cb41-24"><a href="#cb41-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -873,56 +1077,59 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 <div id="tabset-3-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-3-tab">
+<p>The result of the SAM method appears to be somewhat unintuitive and unlike “heatmaps” or KDE-like visualisations.</p>
+<p>Some areas in with lower populations show a higher accessibility to facilities than the more populous areas. This is explainable, as the spatial accessibility measures account for demand as well as capacity. Low demand with similarly capacity would imply much higher accessiblity.</p>
+<p>Conversely, for an area with a high population and demand but small capacity, the euclidean distance to the facility may be small but the accessibility result will be low.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>exponent <span class="ot">&lt;-</span> <span class="dv">2</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>method <span class="ot">&lt;-</span> <span class="st">"SAM"</span></span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>centroid.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(<span class="fu">st_centroid</span>(grid))</span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>points.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(points)</span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>dm <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">distance</span>(centroid.coords, points.coords, <span class="at">type =</span> <span class="st">"euclidean"</span>) <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> exponent)</span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">ac</span>(grid<span class="sc">$</span>demand,</span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>                          points<span class="sc">$</span>capacity,</span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>                          dm, </span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>                          <span class="at">d0 =</span> <span class="dv">250</span>,</span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">power =</span> <span class="dv">2</span>, </span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>                          <span class="at">family =</span> method))</span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(acc) <span class="ot">&lt;-</span> <span class="st">"acc"</span></span>
-<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>hexagon <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(grid, <span class="fu">as_tibble</span>(acc))</span>
-<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>hexagon<span class="sc">$</span>acc[<span class="fu">is.infinite</span>(hexagon<span class="sc">$</span>acc)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a>mapex <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(grid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>exponent <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>method <span class="ot">&lt;-</span> <span class="st">"SAM"</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>centroid.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(<span class="fu">st_centroid</span>(grid))</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>points.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(points)</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>dm <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">distance</span>(centroid.coords, points.coords, <span class="at">type =</span> <span class="st">"euclidean"</span>) <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> exponent)</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">ac</span>(grid<span class="sc">$</span>demand,</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>                          points<span class="sc">$</span>capacity,</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>                          dm, </span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>                          <span class="at">d0 =</span> <span class="dv">250</span>,</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">power =</span> <span class="dv">2</span>, </span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>                          <span class="at">family =</span> method))</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(acc) <span class="ot">&lt;-</span> <span class="st">"acc"</span></span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>hexagon <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(grid, <span class="fu">as_tibble</span>(acc))</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>hexagon<span class="sc">$</span>acc[<span class="fu">is.infinite</span>(hexagon<span class="sc">$</span>acc)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>mapex <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(grid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="cell">
 <details class="code-fold">
 <summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(hexagon,</span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">bbox =</span> mapex) <span class="sc">+</span> </span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"acc"</span>,</span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="dv">5</span>,</span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
-<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
-<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.lwd =</span> <span class="dv">1</span>,</span>
-<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(points) <span class="sc">+</span></span>
-<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
-<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to supermarkets: SAM method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
-<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
-<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">2</span>,</span>
-<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
-<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">3.0</span>,</span>
-<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">6</span>),</span>
-<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
-<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
-<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(hexagon,</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">bbox =</span> mapex) <span class="sc">+</span> </span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"acc"</span>,</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> <span class="dv">5</span>,</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.lwd =</span> <span class="dv">1</span>,</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(points) <span class="sc">+</span></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to supermarkets: SAM method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">2</span>,</span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">3.0</span>,</span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">6</span>),</span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
+<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
+<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -936,112 +1143,142 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 </section>
+</section>
 <section id="all-in-one-for-shiny" class="level2">
 <h2 class="anchored" data-anchor-id="all-in-one-for-shiny">All-In One For Shiny</h2>
+<p>To prepare our code for deployment with Shiny, we have compiled the following functions and variables, which will use some pre-prepared files to speed up computation.</p>
 <section id="mapping-to-files" class="level3">
 <h3 class="anchored" data-anchor-id="mapping-to-files">Mapping to files</h3>
+<p>I have used a map to easily manage variable names and file names.</p>
 <div class="cell">
-<details class="code-fold">
-<summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>name2file <span class="ot">&lt;-</span> <span class="fu">new.env</span>(<span class="at">hash=</span>T, <span class="at">parent=</span><span class="fu">emptyenv</span>())</span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"markets and food centres"</span>]] <span class="ot">&lt;-</span> <span class="st">"markets_and_food_centres.rds"</span></span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"mrt"</span>]] <span class="ot">&lt;-</span> <span class="st">"mrt.rds"</span></span>
-<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"atm"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_atm.rds"</span></span>
-<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"bank"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_bank.rds"</span></span>
-<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"beauty salon"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_beauty_salon.rds"</span></span>
-<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"cafe"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_cafe.rds"</span></span>
-<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"clothing store"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_clothing_store.rds"</span></span>
-<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"convenience"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_convenience_store.rds"</span></span>
-<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"dentist"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_dentist.rds"</span></span>
-<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"doctor"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_doctor.rds"</span></span>
-<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"gym"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_gym.rds"</span></span>
-<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"hospital"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_hospital.rds"</span></span>
-<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"library"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_library.rds"</span></span>
-<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"lodging"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_lodging.rds"</span></span>
-<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"night club"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_night_club.rds"</span></span>
-<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"pow"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_place_of_worship.rds"</span></span>
-<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"restaurant"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_restaurant.rds"</span></span>
-<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"school"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_school.rds"</span></span>
-<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"tourist"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_tourist_attraction.rds"</span></span>
-<span id="cb43-23"><a href="#cb43-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-24"><a href="#cb43-24" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"supermarkets"</span>]] <span class="ot">&lt;-</span> <span class="st">"supermarkets.rds"</span></span>
-<span id="cb43-25"><a href="#cb43-25" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"bus"</span>]] <span class="ot">&lt;-</span> <span class="st">"osm_sg.rds"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>name2file <span class="ot">&lt;-</span> <span class="fu">new.env</span>(<span class="at">hash=</span>T, <span class="at">parent=</span><span class="fu">emptyenv</span>())</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"markets and food centres"</span>]] <span class="ot">&lt;-</span> <span class="st">"markets_and_food_centres.rds"</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"mrt"</span>]] <span class="ot">&lt;-</span> <span class="st">"mrt.rds"</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"atm"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_atm.rds"</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"bank"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_bank.rds"</span></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"beauty salon"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_beauty_salon.rds"</span></span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"cafe"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_cafe.rds"</span></span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"clothing store"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_clothing_store.rds"</span></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"convenience"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_convenience_store.rds"</span></span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"dentist"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_dentist.rds"</span></span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"doctor"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_doctor.rds"</span></span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"gym"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_gym.rds"</span></span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"hospital"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_hospital.rds"</span></span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"library"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_library.rds"</span></span>
+<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"lodging"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_lodging.rds"</span></span>
+<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"pow"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_place_of_worship.rds"</span></span>
+<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"restaurant"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_restaurant.rds"</span></span>
+<span id="cb44-20"><a href="#cb44-20" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"school"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_school.rds"</span></span>
+<span id="cb44-21"><a href="#cb44-21" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"tourist"</span>]] <span class="ot">&lt;-</span> <span class="st">"poi_tourist_attraction.rds"</span></span>
+<span id="cb44-22"><a href="#cb44-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-23"><a href="#cb44-23" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"supermarkets"</span>]] <span class="ot">&lt;-</span> <span class="st">"supermarkets.rds"</span></span>
+<span id="cb44-24"><a href="#cb44-24" aria-hidden="true" tabindex="-1"></a>name2file[[<span class="st">"bus"</span>]] <span class="ot">&lt;-</span> <span class="st">"osm_sg.rds"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell">
-<details class="code-fold">
-<summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>plot_acc <span class="ot">&lt;-</span> <span class="cf">function</span>(method, quantiles, grid_size, point_type, exponent, subz) {</span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  grid <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">paste</span>(<span class="st">'data/rds/grid_'</span>, grid_size, <span class="st">'_hexagon'</span>, <span class="fu">ifelse</span>(subz, <span class="st">'_sz'</span>, <span class="st">'_pa'</span>),<span class="st">'.rds'</span>, <span class="at">sep=</span><span class="st">""</span>))</span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>  points <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">paste</span>(<span class="st">'data/rds/'</span>, name2file[[point_type]], <span class="at">sep=</span><span class="st">""</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">capacity =</span> <span class="dv">500</span>)</span>
-<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>  centroid.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(<span class="fu">st_centroid</span>(grid))</span>
-<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>  points.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(points)</span>
-<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>  dm <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">distance</span>(centroid.coords, points.coords, <span class="at">type =</span> <span class="st">"euclidean"</span>) <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> exponent)</span>
-<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>  acc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">ac</span>(grid<span class="sc">$</span>demand,</span>
-<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>                            points<span class="sc">$</span>capacity,</span>
-<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a>                            dm, </span>
-<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a>                            <span class="at">d0 =</span> <span class="dv">250</span>,</span>
-<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a>                            <span class="at">power =</span> <span class="dv">2</span>, </span>
-<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a>                            <span class="at">family =</span> method))</span>
-<span id="cb44-20"><a href="#cb44-20" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-21"><a href="#cb44-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(acc) <span class="ot">&lt;-</span> <span class="st">"acc"</span></span>
-<span id="cb44-22"><a href="#cb44-22" aria-hidden="true" tabindex="-1"></a>  hexagon <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(grid, <span class="fu">as_tibble</span>(acc))</span>
-<span id="cb44-23"><a href="#cb44-23" aria-hidden="true" tabindex="-1"></a>  hexagon<span class="sc">$</span>acc[<span class="fu">is.infinite</span>(hexagon<span class="sc">$</span>acc)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb44-24"><a href="#cb44-24" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-25"><a href="#cb44-25" aria-hidden="true" tabindex="-1"></a>  mapex <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(grid)</span>
-<span id="cb44-26"><a href="#cb44-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-27"><a href="#cb44-27" aria-hidden="true" tabindex="-1"></a>  tm <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(grid) <span class="sc">+</span> </span>
-<span id="cb44-28"><a href="#cb44-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
-<span id="cb44-29"><a href="#cb44-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(hexagon,</span>
-<span id="cb44-30"><a href="#cb44-30" aria-hidden="true" tabindex="-1"></a>           <span class="at">bbox =</span> mapex) <span class="sc">+</span> </span>
-<span id="cb44-31"><a href="#cb44-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"acc"</span>,</span>
-<span id="cb44-32"><a href="#cb44-32" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> quantiles,</span>
-<span id="cb44-33"><a href="#cb44-33" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
-<span id="cb44-34"><a href="#cb44-34" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
-<span id="cb44-35"><a href="#cb44-35" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.lwd =</span> <span class="dv">1</span>,</span>
-<span id="cb44-36"><a href="#cb44-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb44-37"><a href="#cb44-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(points) <span class="sc">+</span></span>
-<span id="cb44-38"><a href="#cb44-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
-<span id="cb44-39"><a href="#cb44-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to "</span>, point_type, <span class="st">": "</span>, method,<span class="st">" method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
-<span id="cb44-40"><a href="#cb44-40" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
-<span id="cb44-41"><a href="#cb44-41" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">1</span>,</span>
-<span id="cb44-42"><a href="#cb44-42" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb44-43"><a href="#cb44-43" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.5</span>, </span>
-<span id="cb44-44"><a href="#cb44-44" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">0.5</span>,</span>
-<span id="cb44-45"><a href="#cb44-45" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">3</span>),</span>
-<span id="cb44-46"><a href="#cb44-46" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
-<span id="cb44-47"><a href="#cb44-47" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
-<span id="cb44-48"><a href="#cb44-48" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb44-49"><a href="#cb44-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.20</span>) <span class="sc">+</span></span>
-<span id="cb44-50"><a href="#cb44-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span>
-<span id="cb44-51"><a href="#cb44-51" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-52"><a href="#cb44-52" aria-hidden="true" tabindex="-1"></a>  hexagon_acc <span class="ot">&lt;-</span> <span class="fu">st_join</span>(hexagon, <span class="fu">read_rds</span>(<span class="st">'data/rds/mpsz.rds'</span>) , <span class="at">join =</span> st_intersects)</span>
-<span id="cb44-53"><a href="#cb44-53" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-54"><a href="#cb44-54" aria-hidden="true" tabindex="-1"></a>  region_bxp <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data=</span>hexagon_acc, </span>
-<span id="cb44-55"><a href="#cb44-55" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">y =</span> acc, </span>
-<span id="cb44-56"><a href="#cb44-56" aria-hidden="true" tabindex="-1"></a>           <span class="at">x =</span> REGION_N)) <span class="sc">+</span></span>
-<span id="cb44-57"><a href="#cb44-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">outliers =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
-<span id="cb44-58"><a href="#cb44-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">stat=</span><span class="st">"summary"</span>, </span>
-<span id="cb44-59"><a href="#cb44-59" aria-hidden="true" tabindex="-1"></a>             <span class="at">fun.y=</span><span class="st">"mean"</span>, </span>
-<span id="cb44-60"><a href="#cb44-60" aria-hidden="true" tabindex="-1"></a>             <span class="at">colour =</span><span class="st">"red"</span>, </span>
-<span id="cb44-61"><a href="#cb44-61" aria-hidden="true" tabindex="-1"></a>             <span class="at">size=</span><span class="dv">2</span>)</span>
-<span id="cb44-62"><a href="#cb44-62" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb44-63"><a href="#cb44-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_grid</span>(<span class="fu">tmap_grob</span>(tm), region_bxp, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">rel_heights =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>))</span>
-<span id="cb44-64"><a href="#cb44-64" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-</div>
+<section id="accessibility-modelling-function-for-shiny" class="level4">
+<h4 class="anchored" data-anchor-id="accessibility-modelling-function-for-shiny">Accessibility Modelling Function for Shiny</h4>
+<p>For deployment on Shiny, I have combined all of the relevant functions into one function accepting all of the relevant parameters for easy deploymento on Shiny.</p>
+<p>To combine the visualisations of maps and histograms, I use cowplot, inspired in the following method.</p>
 <p>https://stackoverflow.com/questions/66659389/combine-tmap-and-ggplot</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_acc</span>(<span class="st">"Hansen"</span>, <span class="dv">10</span>, <span class="dv">500</span>, <span class="st">"supermarkets"</span>, <span class="dv">2</span>, <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>plot_acc <span class="ot">&lt;-</span> <span class="cf">function</span>(method, quantiles, grid_size, point_type, exponent, subz) {</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>  grid <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">paste</span>(<span class="st">'data/rds/grid_'</span>, grid_size, <span class="st">'_hexagon'</span>, <span class="fu">ifelse</span>(subz, <span class="st">'_sz'</span>, <span class="st">'_pa'</span>),<span class="st">'.rds'</span>, <span class="at">sep=</span><span class="st">""</span>))</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  points <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="fu">paste</span>(<span class="st">'data/rds/'</span>, name2file[[point_type]], <span class="at">sep=</span><span class="st">""</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">capacity =</span> <span class="dv">500</span>)</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>  centroid.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(<span class="fu">st_centroid</span>(grid))</span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>  points.coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(points)</span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>  dm <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">distance</span>(centroid.coords, points.coords, <span class="at">type =</span> <span class="st">"euclidean"</span>) <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> exponent)</span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>  acc <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">ac</span>(grid<span class="sc">$</span>demand,</span>
+<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>                            points<span class="sc">$</span>capacity,</span>
+<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>                            dm, </span>
+<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a>                            <span class="at">d0 =</span> <span class="dv">250</span>,</span>
+<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a>                            <span class="at">power =</span> <span class="dv">2</span>, </span>
+<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>                            <span class="at">family =</span> method))</span>
+<span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(acc) <span class="ot">&lt;-</span> <span class="st">"acc"</span></span>
+<span id="cb45-22"><a href="#cb45-22" aria-hidden="true" tabindex="-1"></a>  hexagon <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(grid, <span class="fu">as_tibble</span>(acc))</span>
+<span id="cb45-23"><a href="#cb45-23" aria-hidden="true" tabindex="-1"></a>  hexagon<span class="sc">$</span>acc[<span class="fu">is.infinite</span>(hexagon<span class="sc">$</span>acc)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb45-24"><a href="#cb45-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-25"><a href="#cb45-25" aria-hidden="true" tabindex="-1"></a>  mapex <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(grid)</span>
+<span id="cb45-26"><a href="#cb45-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-27"><a href="#cb45-27" aria-hidden="true" tabindex="-1"></a>  tm <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(grid) <span class="sc">+</span> </span>
+<span id="cb45-28"><a href="#cb45-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
+<span id="cb45-29"><a href="#cb45-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(hexagon,</span>
+<span id="cb45-30"><a href="#cb45-30" aria-hidden="true" tabindex="-1"></a>           <span class="at">bbox =</span> mapex) <span class="sc">+</span> </span>
+<span id="cb45-31"><a href="#cb45-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_fill</span>(<span class="at">col =</span> <span class="st">"acc"</span>,</span>
+<span id="cb45-32"><a href="#cb45-32" aria-hidden="true" tabindex="-1"></a>            <span class="at">n =</span> quantiles,</span>
+<span id="cb45-33"><a href="#cb45-33" aria-hidden="true" tabindex="-1"></a>            <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
+<span id="cb45-34"><a href="#cb45-34" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.col =</span> <span class="st">"black"</span>,</span>
+<span id="cb45-35"><a href="#cb45-35" aria-hidden="true" tabindex="-1"></a>            <span class="at">border.lwd =</span> <span class="dv">1</span>,</span>
+<span id="cb45-36"><a href="#cb45-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb45-37"><a href="#cb45-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(points) <span class="sc">+</span></span>
+<span id="cb45-38"><a href="#cb45-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_symbols</span>(<span class="at">size =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb45-39"><a href="#cb45-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste</span>(<span class="st">"Accessibility to "</span>, point_type, <span class="st">": "</span>, method,<span class="st">" method"</span>, <span class="at">sep=</span><span class="st">""</span>),</span>
+<span id="cb45-40"><a href="#cb45-40" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
+<span id="cb45-41"><a href="#cb45-41" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="dv">1</span>,</span>
+<span id="cb45-42"><a href="#cb45-42" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.outside =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb45-43"><a href="#cb45-43" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.height =</span> <span class="fl">0.5</span>, </span>
+<span id="cb45-44"><a href="#cb45-44" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.width =</span> <span class="fl">0.5</span>,</span>
+<span id="cb45-45"><a href="#cb45-45" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.format =</span> <span class="fu">list</span>(<span class="at">digits =</span> <span class="dv">3</span>),</span>
+<span id="cb45-46"><a href="#cb45-46" aria-hidden="true" tabindex="-1"></a>              <span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"top"</span>),</span>
+<span id="cb45-47"><a href="#cb45-47" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb45-48"><a href="#cb45-48" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb45-49"><a href="#cb45-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.20</span>) <span class="sc">+</span></span>
+<span id="cb45-50"><a href="#cb45-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span>
+<span id="cb45-51"><a href="#cb45-51" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-52"><a href="#cb45-52" aria-hidden="true" tabindex="-1"></a>  hexagon_acc <span class="ot">&lt;-</span> <span class="fu">st_join</span>(hexagon, <span class="fu">read_rds</span>(<span class="st">'data/rds/mpsz.rds'</span>) , <span class="at">join =</span> st_intersects)</span>
+<span id="cb45-53"><a href="#cb45-53" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-54"><a href="#cb45-54" aria-hidden="true" tabindex="-1"></a>  region_bxp <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data=</span>hexagon_acc, </span>
+<span id="cb45-55"><a href="#cb45-55" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">y =</span> acc, </span>
+<span id="cb45-56"><a href="#cb45-56" aria-hidden="true" tabindex="-1"></a>           <span class="at">x =</span> REGION_N)) <span class="sc">+</span></span>
+<span id="cb45-57"><a href="#cb45-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">outliers =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb45-58"><a href="#cb45-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">stat=</span><span class="st">"summary"</span>, </span>
+<span id="cb45-59"><a href="#cb45-59" aria-hidden="true" tabindex="-1"></a>             <span class="at">fun.y=</span><span class="st">"mean"</span>, </span>
+<span id="cb45-60"><a href="#cb45-60" aria-hidden="true" tabindex="-1"></a>             <span class="at">colour =</span><span class="st">"red"</span>, </span>
+<span id="cb45-61"><a href="#cb45-61" aria-hidden="true" tabindex="-1"></a>             <span class="at">size=</span><span class="dv">2</span>)</span>
+<span id="cb45-62"><a href="#cb45-62" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-63"><a href="#cb45-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_grid</span>(<span class="fu">tmap_grob</span>(tm), region_bxp, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">rel_heights =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>))</span>
+<span id="cb45-64"><a href="#cb45-64" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="example-invocation" class="level4">
+<h4 class="anchored" data-anchor-id="example-invocation">Example Invocation</h4>
+<p>The method above accepts the following parameters:</p>
+<ul>
+<li><p>Method:</p>
+<ul>
+<li>Which accessibility modelling family to use, e.g.&nbsp;SAM, Hansen</li>
+</ul></li>
+<li><p>Quantiles</p>
+<ul>
+<li>Number of quantiles to generate in the resulting tmap</li>
+</ul></li>
+<li><p>Grid Size</p>
+<ul>
+<li>250m, 500m, or 1km. Size of each grid polygon</li>
+</ul></li>
+<li><p>Exponent</p>
+<ul>
+<li>Exponent for the exponential distance decay function</li>
+</ul></li>
+<li><p>Subzone</p>
+<ul>
+<li>Whether to visualise based on subzone or planning area populations</li>
+</ul></li>
+</ul>
+<p>The result is a map with accessibility and barplots of accessibility in each region, i.e.&nbsp;central, east, north, north-east and west</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_acc</span>(<span class="st">"Hansen"</span>, <span class="dv">10</span>, <span class="dv">500</span>, <span class="st">"supermarkets"</span>, <span class="dv">2</span>, <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1059,6 +1296,7 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 
 
+</section>
 </section>
 </section>
 
