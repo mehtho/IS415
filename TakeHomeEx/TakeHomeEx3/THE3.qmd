@@ -263,7 +263,7 @@ add_weights <- function(grids, pop) {
 
 This function generates a grid over the bounding box of mainland Singapore. However, most of the bounding box covers irrelevant areas, or the ocean. We reduce the grid, and cut grid polygons to fit the outline of mainland Singapore.
 
-References: https://r-spatial.github.io/sf/reference/st_make_grid.html 
+References: https://r-spatial.github.io/sf/reference/st_make_grid.html
 
 ```{r}
 sg_2_grid <- function(sg, g_size, is_square, name, pop) {
@@ -285,8 +285,7 @@ sg_2_grid <- function(sg, g_size, is_square, name, pop) {
 
 This wrapper function called the aforementioned functions to generate grids of different sizes and shapes and saves them as rds files to be loaded at runtime.
 
-References: 
-https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist https://www.rdocumentation.org/packages/geosphere/versions/1.5-18/topics/centroid
+References: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist https://www.rdocumentation.org/packages/geosphere/versions/1.5-18/topics/centroid
 
 ```{r}
 grids_and_dist_matrices <- function(sg, pop, g_size, is_square, subz) {
@@ -948,4 +947,4 @@ However, the elements within this view and their layouts have been created by me
 
 The modifiable parameters within this prototype corresponds to the parameters used in the unified R function shown in the accessibility modelling section. More may be added as deemed necessary later during development.
 
-![](images/Screenshot 2024-03-22 at 18.50.06.png)
+![](images/Screenshot 2024-03-22 at 19.21.23.png)
