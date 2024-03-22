@@ -75,6 +75,30 @@ pacman::p_load(tidyverse, tmap, sf, smoothr, SpatialAcc, hash, cowplot)
 
 #### Datasets
 
+#### Spatial
+
+-   [Supermarkets (2019)](https://beta.data.gov.sg/datasets/d_8a77ee0446716b2ce475a587004afc73/view)
+
+    -   Government Data on Supermarkets. This dataset contains the license names of each supermarket, ensuring a certain degree of standardisation and allows us to check the distribution of different supermarket types in Singapore.
+
+-   [Markets & Food Centres (2023)](https://beta.data.gov.sg/collections/1389/datasets/d_b5f8a5a4584b6e537c0ab81a48ca3497/view)
+
+    -   Government Data on Wet Markets and Food Centres, including Hawker Centres. This dataset contains data on the type and number of stalls in each location.
+
+-   [Master Plan 2019 Subzones (2019)](https://beta.data.gov.sg/datasets/d_0900fdcfdb4666fe2a630f37a532fc06/view)
+
+    -   Geospatial data consisting of Singapore’s planning areas, subzones, and boundaries. This dataset will be used to define the boundaries of singapore and its subregions and mapped to the data in the population census.
+
+-   [Land & Transport Singapore (LTSG) dataset (2022)](https://github.com/BlueSkyLT/siteselect_sg/tree/main)
+
+    -   An extensive dataset containing the locations of various points of interest around Singapore. For this dataset, only points relevant to daily life for the average person will be considered.
+
+#### Aspatial
+
+-   [Singapore Census of Population (2020)](https://www.singstat.gov.sg/-/media/files/publications/cop2020/sr2/excel/t88-91.ashx)
+
+    -   Population of various neighbourhoods and the distribution of age groups within. The distribution of age groups will not be used in this segment. Only the total population will be considered for each region.
+
 #### Master Plan Subzone Dataset
 
 The master plan subzone dataset contains Singapore's geometry and the boundaries of each planning zone and subzone. These correspond with other aspatial datasets such as the population census.
@@ -237,7 +261,9 @@ add_weights <- function(grids, pop) {
 
 #### Make a grid over mainland Singapore
 
-This function generates a grid over the bounding box of mainland singapore. However, most of the bounding box covers irrelevant areas, or the ocean. We reduce the grid, and cut grid polygons to fit the outline of mainland Singapore.
+This function generates a grid over the bounding box of mainland Singapore. However, most of the bounding box covers irrelevant areas, or the ocean. We reduce the grid, and cut grid polygons to fit the outline of mainland Singapore.
+
+References: https://r-spatial.github.io/sf/reference/st_make_grid.html 
 
 ```{r}
 sg_2_grid <- function(sg, g_size, is_square, name, pop) {
@@ -258,6 +284,9 @@ sg_2_grid <- function(sg, g_size, is_square, name, pop) {
 #### Generate the grids and distance matrices
 
 This wrapper function called the aforementioned functions to generate grids of different sizes and shapes and saves them as rds files to be loaded at runtime.
+
+References: 
+https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist https://www.rdocumentation.org/packages/geosphere/versions/1.5-18/topics/centroid
 
 ```{r}
 grids_and_dist_matrices <- function(sg, pop, g_size, is_square, subz) {
@@ -909,4 +938,14 @@ plot_acc("Hansen", 10, 500, "supermarkets", 2, TRUE)
 
 ## Prototype Shiny View
 
-![](images/Screenshot 2024-03-22 at 18.43.31.png)
+[Disclaimer:]{.underline}
+
+The colour scheme, fonts, and everything that would be part of a css file have been created by my teammate.
+
+However, the elements within this view and their layouts have been created by me.
+
+#### Prototype View
+
+The modifiable parameters within this prototype corresponds to the parameters used in the unified R function shown in the accessibility modelling section. More may be added as deemed necessary later during development.
+
+![](images/Screenshot 2024-03-22 at 18.50.06.png)

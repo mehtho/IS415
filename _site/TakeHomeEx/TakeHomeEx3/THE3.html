@@ -287,6 +287,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#mapping-to-files" id="toc-mapping-to-files" class="nav-link" data-scroll-target="#mapping-to-files">Mapping to files</a></li>
   </ul></li>
+  <li><a href="#prototype-shiny-view" id="toc-prototype-shiny-view" class="nav-link" data-scroll-target="#prototype-shiny-view">Prototype Shiny View</a></li>
   </ul>
 </nav>
     </div>
@@ -386,6 +387,36 @@ window.Quarto = {
 </section>
 <section id="datasets" class="level4">
 <h4 class="anchored" data-anchor-id="datasets">Datasets</h4>
+</section>
+<section id="spatial" class="level4">
+<h4 class="anchored" data-anchor-id="spatial">Spatial</h4>
+<ul>
+<li><p><a href="https://beta.data.gov.sg/datasets/d_8a77ee0446716b2ce475a587004afc73/view">Supermarkets (2019)</a></p>
+<ul>
+<li>Government Data on Supermarkets. This dataset contains the license names of each supermarket, ensuring a certain degree of standardisation and allows us to check the distribution of different supermarket types in Singapore.</li>
+</ul></li>
+<li><p><a href="https://beta.data.gov.sg/collections/1389/datasets/d_b5f8a5a4584b6e537c0ab81a48ca3497/view">Markets &amp; Food Centres (2023)</a></p>
+<ul>
+<li>Government Data on Wet Markets and Food Centres, including Hawker Centres. This dataset contains data on the type and number of stalls in each location.</li>
+</ul></li>
+<li><p><a href="https://beta.data.gov.sg/datasets/d_0900fdcfdb4666fe2a630f37a532fc06/view">Master Plan 2019 Subzones (2019)</a></p>
+<ul>
+<li>Geospatial data consisting of Singapore’s planning areas, subzones, and boundaries. This dataset will be used to define the boundaries of singapore and its subregions and mapped to the data in the population census.</li>
+</ul></li>
+<li><p><a href="https://github.com/BlueSkyLT/siteselect_sg/tree/main">Land &amp; Transport Singapore (LTSG) dataset (2022)</a></p>
+<ul>
+<li>An extensive dataset containing the locations of various points of interest around Singapore. For this dataset, only points relevant to daily life for the average person will be considered.</li>
+</ul></li>
+</ul>
+</section>
+<section id="aspatial" class="level4">
+<h4 class="anchored" data-anchor-id="aspatial">Aspatial</h4>
+<ul>
+<li><p><a href="https://www.singstat.gov.sg/-/media/files/publications/cop2020/sr2/excel/t88-91.ashx">Singapore Census of Population (2020)</a></p>
+<ul>
+<li>Population of various neighbourhoods and the distribution of age groups within. The distribution of age groups will not be used in this segment. Only the total population will be considered for each region.</li>
+</ul></li>
+</ul>
 </section>
 <section id="master-plan-subzone-dataset" class="level4">
 <h4 class="anchored" data-anchor-id="master-plan-subzone-dataset">Master Plan Subzone Dataset</h4>
@@ -548,7 +579,8 @@ Geodetic CRS:  WGS 84</code></pre>
 </section>
 <section id="make-a-grid-over-mainland-singapore" class="level4">
 <h4 class="anchored" data-anchor-id="make-a-grid-over-mainland-singapore">Make a grid over mainland Singapore</h4>
-<p>This function generates a grid over the bounding box of mainland singapore. However, most of the bounding box covers irrelevant areas, or the ocean. We reduce the grid, and cut grid polygons to fit the outline of mainland Singapore.</p>
+<p>This function generates a grid over the bounding box of mainland Singapore. However, most of the bounding box covers irrelevant areas, or the ocean. We reduce the grid, and cut grid polygons to fit the outline of mainland Singapore.</p>
+<p>References: https://r-spatial.github.io/sf/reference/st_make_grid.html</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>sg_2_grid <span class="ot">&lt;-</span> <span class="cf">function</span>(sg, g_size, is_square, name, pop) {</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  grids <span class="ot">&lt;-</span> <span class="fu">st_make_grid</span>(sg, <span class="at">cellsize =</span> g_size, <span class="at">square =</span> is_square) <span class="sc">%&gt;%</span></span>
@@ -568,6 +600,7 @@ Geodetic CRS:  WGS 84</code></pre>
 <section id="generate-the-grids-and-distance-matrices" class="level4">
 <h4 class="anchored" data-anchor-id="generate-the-grids-and-distance-matrices">Generate the grids and distance matrices</h4>
 <p>This wrapper function called the aforementioned functions to generate grids of different sizes and shapes and saves them as rds files to be loaded at runtime.</p>
+<p>References: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist https://www.rdocumentation.org/packages/geosphere/versions/1.5-18/topics/centroid</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>grids_and_dist_matrices <span class="ot">&lt;-</span> <span class="cf">function</span>(sg, pop, g_size, is_square, subz) {</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  name <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">'data/rds/grid_'</span>, g_size, <span class="fu">ifelse</span>(is_square, <span class="st">"_square"</span>, <span class="st">"_hexagon"</span>), <span class="fu">ifelse</span>(subz, <span class="st">"_sz"</span>, <span class="st">"_pa"</span>), <span class="at">sep =</span> <span class="st">""</span>)</span>
@@ -1294,9 +1327,20 @@ Geodetic CRS:  WGS 84</code></pre>
 </div>
 </div>
 </div>
-
-
 </section>
+</section>
+</section>
+<section id="prototype-shiny-view" class="level2">
+<h2 class="anchored" data-anchor-id="prototype-shiny-view">Prototype Shiny View</h2>
+<p><u>Disclaimer:</u></p>
+<p>The colour scheme, fonts, and everything that would be part of a css file have been created by my teammate.</p>
+<p>However, the elements within this view and their layouts have been created by me.</p>
+<section id="prototype-view" class="level4">
+<h4 class="anchored" data-anchor-id="prototype-view">Prototype View</h4>
+<p>The modifiable parameters within this prototype corresponds to the parameters used in the unified R function shown in the accessibility modelling section. More may be added as deemed necessary later during development.</p>
+<p><img src="images/Screenshot 2024-03-22 at 18.50.06.png" class="img-fluid"></p>
+
+
 </section>
 </section>
 
