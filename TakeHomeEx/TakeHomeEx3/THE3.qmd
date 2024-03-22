@@ -906,3 +906,7 @@ The result is a map with accessibility and barplots of accessibility in each reg
 ```{r}
 plot_acc("Hansen", 10, 500, "supermarkets", 2, TRUE)
 ```
+
+## Prototype Shiny View
+
+![](images/Screenshot 2024-03-22 at 18.43.31.png)
