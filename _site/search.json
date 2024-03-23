@@ -919,49 +919,49 @@
   {
     "objectID": "HandsOnEx/HE10/HE10.html",
     "href": "HandsOnEx/HE10/HE10.html",
-    "title": "Hands-On Exercise 10: GModelling Geographical Accessibility",
+    "title": "Hands-On Exercise 10: Modelling Geographical Accessibility",
     "section": "",
     "text": "pacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)"
   },
   {
     "objectID": "HandsOnEx/HE10/HE10.html#dependencies",
     "href": "HandsOnEx/HE10/HE10.html#dependencies",
-    "title": "Hands-On Exercise 10: GModelling Geographical Accessibility",
+    "title": "Hands-On Exercise 10: Modelling Geographical Accessibility",
     "section": "",
     "text": "pacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)"
   },
   {
     "objectID": "HandsOnEx/HE10/HE10.html#geospatial-data-wrangling",
     "href": "HandsOnEx/HE10/HE10.html#geospatial-data-wrangling",
-    "title": "Hands-On Exercise 10: GModelling Geographical Accessibility",
+    "title": "Hands-On Exercise 10: Modelling Geographical Accessibility",
     "section": "Geospatial Data Wrangling",
     "text": "Geospatial Data Wrangling\n\nImporting Data\n\nmpsz &lt;- st_read(dsn = \"data/geospatial\", layer = \"MP14_SUBZONE_NO_SEA_PL\")\n\nReading layer `MP14_SUBZONE_NO_SEA_PL' from data source \n  `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/HandsOnEx/HE10/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 323 features and 15 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33\nProjected CRS: SVY21\n\nhexagons &lt;- st_read(dsn = \"data/geospatial\", layer = \"hexagons\") \n\nReading layer `hexagons' from data source \n  `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/HandsOnEx/HE10/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 3125 features and 6 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 21506.33 xmax: 50010.26 ymax: 50256.33\nProjected CRS: SVY21 / Singapore TM\n\neldercare &lt;- st_read(dsn = \"data/geospatial\", layer = \"ELDERCARE\") \n\nReading layer `ELDERCARE' from data source \n  `/Users/matthewho/Work/Y3S2/IS415/Website/IS415/HandsOnEx/HE10/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 120 features and 19 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 14481.92 ymin: 28218.43 xmax: 41665.14 ymax: 46804.9\nProjected CRS: SVY21 / Singapore TM\n\n\n\n\nChanging CRS\n\nmpsz &lt;- st_transform(mpsz, 3414)\neldercare &lt;- st_transform(eldercare, 3414)\nhexagons &lt;- st_transform(hexagons, 3414)\n\nst_crs(mpsz)\n\nCoordinate Reference System:\n  User input: EPSG:3414 \n  wkt:\nPROJCRS[\"SVY21 / Singapore TM\",\n    BASEGEOGCRS[\"SVY21\",\n        DATUM[\"SVY21\",\n            ELLIPSOID[\"WGS 84\",6378137,298.257223563,\n                LENGTHUNIT[\"metre\",1]]],\n        PRIMEM[\"Greenwich\",0,\n            ANGLEUNIT[\"degree\",0.0174532925199433]],\n        ID[\"EPSG\",4757]],\n    CONVERSION[\"Singapore Transverse Mercator\",\n        METHOD[\"Transverse Mercator\",\n            ID[\"EPSG\",9807]],\n        PARAMETER[\"Latitude of natural origin\",1.36666666666667,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8801]],\n        PARAMETER[\"Longitude of natural origin\",103.833333333333,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8802]],\n        PARAMETER[\"Scale factor at natural origin\",1,\n            SCALEUNIT[\"unity\",1],\n            ID[\"EPSG\",8805]],\n        PARAMETER[\"False easting\",28001.642,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8806]],\n        PARAMETER[\"False northing\",38744.572,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8807]]],\n    CS[Cartesian,2],\n        AXIS[\"northing (N)\",north,\n            ORDER[1],\n            LENGTHUNIT[\"metre\",1]],\n        AXIS[\"easting (E)\",east,\n            ORDER[2],\n            LENGTHUNIT[\"metre\",1]],\n    USAGE[\n        SCOPE[\"Cadastre, engineering survey, topographic mapping.\"],\n        AREA[\"Singapore - onshore and offshore.\"],\n        BBOX[1.13,103.59,1.47,104.07]],\n    ID[\"EPSG\",3414]]\n\n\n\n\nCleaning Attribute Fields\n\neldercare &lt;- eldercare %&gt;%\n  select(fid, ADDRESSPOS) %&gt;%\n  mutate(capacity = 100)\n\nhexagons &lt;- hexagons %&gt;%\n  select(fid) %&gt;%\n  mutate(demand = 100)"
   },
   {
     "objectID": "HandsOnEx/HE10/HE10.html#aspatial-data-wrangling",
     "href": "HandsOnEx/HE10/HE10.html#aspatial-data-wrangling",
-    "title": "Hands-On Exercise 10: GModelling Geographical Accessibility",
+    "title": "Hands-On Exercise 10: Modelling Geographical Accessibility",
     "section": "Aspatial Data Wrangling",
     "text": "Aspatial Data Wrangling\n\nImporting Data\n\nODMatrix &lt;- read_csv(\"data/aspatial/OD_Matrix.csv\", skip = 0)\n\n\n\nTidying Distance Matrix\n\ndistmat &lt;- ODMatrix %&gt;%\n  select(origin_id, destination_id, total_cost) %&gt;%\n  spread(destination_id, total_cost)%&gt;%\n  select(c(-c('origin_id')))\n\ndistmat_km &lt;- as.matrix(distmat/1000)"
   },
   {
     "objectID": "HandsOnEx/HE10/HE10.html#accessiblity-modelling-with-hansen-method",
     "href": "HandsOnEx/HE10/HE10.html#accessiblity-modelling-with-hansen-method",
-    "title": "Hands-On Exercise 10: GModelling Geographical Accessibility",
+    "title": "Hands-On Exercise 10: Modelling Geographical Accessibility",
     "section": "Accessiblity modelling with Hansen Method",
     "text": "Accessiblity modelling with Hansen Method\n\nComputing Accessibility\n\nacc_Hansen &lt;- data.frame(ac(hexagons$demand,\n                            eldercare$capacity,\n                            distmat_km, \n                            power = 0.5, \n                            family = \"Hansen\"))\n\ncolnames(acc_Hansen) &lt;- \"accHansen\"\nacc_Hansen &lt;- tbl_df(acc_Hansen)\nhexagon_Hansen &lt;- bind_cols(hexagons, acc_Hansen)\n\n\n\nVisualisation\n\nmapex &lt;- st_bbox(hexagons)\n\ntmap_mode(\"plot\")\ntm_shape(hexagon_Hansen,\n         bbox = mapex) + \n  tm_fill(col = \"accHansen\",\n          n = 10,\n          style = \"quantile\",\n          border.col = \"black\",\n          border.lwd = 1) +\ntm_shape(eldercare) +\n  tm_symbols(size = 0.1) +\n  tm_layout(main.title = \"Accessibility to eldercare: Hansen method\",\n            main.title.position = \"center\",\n            main.title.size = 2,\n            legend.outside = FALSE,\n            legend.height = 0.45, \n            legend.width = 3.0,\n            legend.format = list(digits = 6),\n            legend.position = c(\"right\", \"top\"),\n            frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scale_bar(width = 0.15) +\n  tm_grid(lwd = 0.1, alpha = 0.5)\n\n\n\n\n\n\n\n\n\n\nStatistical Graphic Visualisation\n\nhexagon_Hansen &lt;- st_join(hexagon_Hansen, mpsz, \n                          join = st_intersects)\n\nggplot(data=hexagon_Hansen, \n       aes(y = log(accHansen), \n           x= REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat=\"summary\", \n             fun.y=\"mean\", \n             colour =\"red\", \n             size=2)"
   },
   {
     "objectID": "HandsOnEx/HE10/HE10.html#kd2sfca-method",
     "href": "HandsOnEx/HE10/HE10.html#kd2sfca-method",
-    "title": "Hands-On Exercise 10: GModelling Geographical Accessibility",
+    "title": "Hands-On Exercise 10: Modelling Geographical Accessibility",
     "section": "KD2SFCA Method",
     "text": "KD2SFCA Method\n\nacc_KD2SFCA &lt;- data.frame(ac(hexagons$demand,\n                            eldercare$capacity,\n                            distmat_km, \n                            d0 = 50,\n                            power = 2, \n                            family = \"KD2SFCA\"))\n\ncolnames(acc_KD2SFCA) &lt;- \"accKD2SFCA\"\nacc_KD2SFCA &lt;- tbl_df(acc_KD2SFCA)\nhexagon_KD2SFCA &lt;- bind_cols(hexagons, acc_KD2SFCA)\n\ntmap_mode(\"plot\")\ntm_shape(hexagon_KD2SFCA,\n         bbox = mapex) + \n  tm_fill(col = \"accKD2SFCA\",\n          n = 10,\n          style = \"quantile\",\n          border.col = \"black\",\n          border.lwd = 1) +\ntm_shape(eldercare) +\n  tm_symbols(size = 0.1) +\n  tm_layout(main.title = \"Accessibility to eldercare: KD2SFCA method\",\n            main.title.position = \"center\",\n            main.title.size = 2,\n            legend.outside = FALSE,\n            legend.height = 0.45, \n            legend.width = 3.0,\n            legend.format = list(digits = 6),\n            legend.position = c(\"right\", \"top\"),\n            frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scale_bar(width = 0.15) +\n  tm_grid(lwd = 0.1, alpha = 0.5)\n\n\n\n\n\n\n\n\n\nhexagon_KD2SFCA &lt;- st_join(hexagon_KD2SFCA, mpsz, \n                          join = st_intersects)\n\nggplot(data=hexagon_KD2SFCA, \n       aes(y = accKD2SFCA, \n           x= REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat=\"summary\", \n             fun.y=\"mean\", \n             colour =\"red\", \n             size=2)"
   },
   {
     "objectID": "HandsOnEx/HE10/HE10.html#sam-method",
     "href": "HandsOnEx/HE10/HE10.html#sam-method",
-    "title": "Hands-On Exercise 10: GModelling Geographical Accessibility",
+    "title": "Hands-On Exercise 10: Modelling Geographical Accessibility",
     "section": "SAM Method",
     "text": "SAM Method\n\nacc_SAM &lt;- data.frame(ac(hexagons$demand,\n                         eldercare$capacity,\n                         distmat_km, \n                         d0 = 50,\n                         power = 2, \n                         family = \"SAM\"))\n\ncolnames(acc_SAM) &lt;- \"accSAM\"\nacc_SAM &lt;- tbl_df(acc_SAM)\nhexagon_SAM &lt;- bind_cols(hexagons, acc_SAM)\n\ntmap_mode(\"plot\")\ntm_shape(hexagon_SAM,\n         bbox = mapex) + \n  tm_fill(col = \"accSAM\",\n          n = 10,\n          style = \"quantile\",\n          border.col = \"black\",\n          border.lwd = 1) +\ntm_shape(eldercare) +\n  tm_symbols(size = 0.1) +\n  tm_layout(main.title = \"Accessibility to eldercare: SAM method\",\n            main.title.position = \"center\",\n            main.title.size = 2,\n            legend.outside = FALSE,\n            legend.height = 0.45, \n            legend.width = 3.0,\n            legend.format = list(digits = 3),\n            legend.position = c(\"right\", \"top\"),\n            frame = TRUE) +\n  tm_compass(type=\"8star\", size = 2) +\n  tm_scale_bar(width = 0.15) +\n  tm_grid(lwd = 0.1, alpha = 0.5)\n\n\n\n\n\n\n\n\n\nhexagon_SAM &lt;- st_join(hexagon_SAM, mpsz, \n                       join = st_intersects)\n\nggplot(data=hexagon_SAM, \n       aes(y = accSAM, \n           x= REGION_N)) +\n  geom_boxplot() +\n  geom_point(stat=\"summary\", \n             fun.y=\"mean\", \n             colour =\"red\", \n             size=2)"
   },

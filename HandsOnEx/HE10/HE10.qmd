@@ -1,5 +1,5 @@
 ---
-title: "Hands-On Exercise 10: GModelling Geographical Accessibility"
+title: "Hands-On Exercise 10: Modelling Geographical Accessibility"
 author:
   - name: Matthew Ho
     url: https://www.linkedin.com/in/matthewhoyiwen/
