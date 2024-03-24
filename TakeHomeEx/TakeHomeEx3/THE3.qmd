@@ -17,6 +17,8 @@ execute:
   warning: false
 ---
 
+*Update:* The prototype has been deployed on <https://matthewhosmu.shinyapps.io/G1T7-WhatTown/>
+
 ## Overview and Objectives
 
 In this takehome exercise, I will be prototyping my accessibility modelling module for the Geospatial Analytics Project.
@@ -947,4 +949,4 @@ However, the elements within this view and their layouts have been created by me
 
 The modifiable parameters within this prototype corresponds to the parameters used in the unified R function shown in the accessibility modelling section. More may be added as deemed necessary later during development.
 
-![](images/Screenshot 2024-03-22 at 19.21.23.png)
+![](images/Screenshot%202024-03-22%20at%2019.21.23.png)
