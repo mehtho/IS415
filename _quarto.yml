@@ -52,6 +52,8 @@ website:
           href: InClassEx/ICE8/ICE8.html
         - text: "In-class Exercises 9"
           href: InClassEx/ICE9/ICE9.html
+        - text: "In-class Exercises 10"
+          href: InClassEx/ICE10/ICE10.html
     right:
       - href: index.qmd
         text: Home
