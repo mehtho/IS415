@@ -1,0 +1,87 @@
+---
+title: "Hands-On Exercise 11: Calibrating Spatial Interaction Models with R"
+author:
+  - name: Matthew Ho
+    url: https://www.linkedin.com/in/matthewhoyiwen/
+date: 03-30-2024
+date-modified: last-modified
+description: |
+  Calibrating Spatial Interaction Models with R
+categories:
+  - Hands-On Exercise
+format:
+  html:
+    toc: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+---
+
+#### Dependencies
+
+```{r}
+pacman::p_load(tmap, sf, sp,
+               performance, reshape2,
+               ggpubr, tidyverse)
+```
+
+#### Loading Data
+
+```{r}
+mpsz <- read_rds("data/rds/mpsz.rds")
+mpsz_sp <- as(mpsz, "Spatial")
+```
+
+```{r}
+dist <- spDists(mpsz_sp, 
+                longlat = FALSE)
+head(dist, n=c(10, 10))
+```
+
+#### Rename Columns
+
+```{r}
+sz_names <- mpsz$SUBZONE_C
+
+colnames(dist) <- paste0(sz_names)
+rownames(dist) <- paste0(sz_names)
+```
+
+#### Pivot Distance Value
+
+```{r}
+distPair <- melt(dist) %>%
+  rename(dist = value)
+head(distPair, 10)
+```
+
+#### Update Intra-Zonal Distances
+
+```{r}
+distPair %>%
+  filter(dist > 0) %>%
+  summary()
+
+distPair$dist <- ifelse(distPair$dist == 0,
+                        50, distPair$dist)
+
+distPair %>%
+  summary()
+```
+
+```{r}
+distPair <- distPair %>%
+  rename(orig = Var1,
+         dest = Var2)
+write_rds(distPair, "data/rds/distPair.rds") 
+distPair <- read_rds("data/rds/distPair.rds")
+```
+
+#### Flow Data
+
+Todo: Continue when data is uploaded
+
+```{r}
+od_data_fii <- read_csv("data/aspatial/origin_destination_bus_202210.csv")
+```
