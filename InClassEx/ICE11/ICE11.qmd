@@ -19,6 +19,7 @@ execute:
 
 ## Dependencies
 ```{r}
+#| eval: FALSE
 devtools::install_github("LukeCe/spflow")
 ```
 
@@ -32,12 +33,36 @@ mpsz_flow <- read_rds("data/rds/mpsz_flow.rds")
 mpsz_var <- read_rds("data/rds/mpsz_var.rds")
 ```
 
+```{r}
+#| eval: FALSE
+mpsz_net <- spflow_network(
+  id_net = "sg",
+  node_neighbourhood = nb2mat(mpsz_nb$by_contiguity),
+  node_data = mpsz_var,
+  node_key_column = "SZ_CODE"
+)
+
+mpsz_net
+```
+
+```{r}
+#| eval: FALSE
+mpsz_net_pairs <- spflow_network_pair(
+  id_orig_net = "sg",
+  id_dest_net = "sg",
+  pair_data = mpsz_flow,
+  orig_key_column = "ORIGIN_SZ",
+  dest_key_column = "DESTIN_SZ"
+)
+
+mpsz_net_pairs
+```
 
 
-
-
-
-
-
+```{r}
+#| eval: FALSE
+mpsz_multi_net <- spflow_network_multi(mpsz_net, mpsz_net_pairs)
+mpsz_multi_net
+```
 
 
