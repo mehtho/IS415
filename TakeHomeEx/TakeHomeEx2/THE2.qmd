@@ -271,7 +271,7 @@ tm_shape(dengue_sf) +
   tm_dots(col = "red")
 ```
 
-![](images/Screenshot 2024-02-28 at 17.14.46.png)
+![](images/Screenshot%202024-02-28%20at%2017.14.46.png)
 
 #### Checking the Geometry
 
@@ -395,7 +395,7 @@ tm_shape(dengue_vils_gb_vc_epi) +
 
 Overall, the number of cases appears to be quite uneven, with some outliers. As such, quantile breaks may be more suitable here. However, the default of 5 does not seem to be enough, since I want more granularity in the regions with fewer cases, so I used n=10.
 
-I would have liked a population estimate for each village to do some normalisation, but there wasn't one here. 
+I would have liked a population estimate for each village to do some normalisation, but there wasn't one here.
 
 ```{r}
 dengue_vils_gb_vc_sortby_count <- dengue_vils_gb_vc %>%
@@ -449,6 +449,7 @@ wm_q.count <- dengue_vils_gb_vc$count
 ```
 
 #### Computing Centroids
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code"
@@ -463,6 +464,7 @@ summary(unlist(k1dists))
 ```
 
 #### Inverse Distance Neighbours and Weights
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code"
@@ -580,7 +582,7 @@ dengue_vils_gb_vc <- dengue_vils_gb_vc %>%
 
 From this map, we can observe statistically significant spatial autocorrelation in some central regions and the north-western region. In the case of the north-western regions, the significant local Moran's I statistics tell us that for these areas with fewer infections, they were likely influenced by their neighbours' lack of infections.
 
-Local Moran's I shines in meeting the objective of identifying interesting "outliers", where dengue cases may not transmit intuitively across regions. Just above the centre of the map, there is a lighter region with fewer cases, and it was highlighted with a statistically significant Moran's I of between -1 and 0. 
+Local Moran's I shines in meeting the objective of identifying interesting "outliers", where dengue cases may not transmit intuitively across regions. Just above the centre of the map, there is a lighter region with fewer cases, and it was highlighted with a statistically significant Moran's I of between -1 and 0.
 
 This means that it stands out from its neighbours. In this case, it is because it had fewer dengue cases. I posit that this could have occurred for some of the following reasons
 
@@ -593,6 +595,7 @@ From this analysis, we can also observe several groups of regions near the centr
 
 ::: panel-tabset
 ## With P-Values
+
 ```{r}
 m1 <- tm_shape(dengue_vils_gb_vc) +
   tm_fill(col = "ii", 
@@ -619,6 +622,7 @@ tmap_arrange(m1,
 ```
 
 ## Without P-Values
+
 ```{r}
 m1 <- tm_shape(dengue_vils_gb_vc) +
   tm_polygons() +
@@ -665,10 +669,9 @@ dengue_vils_gb_vc$quadrant <- quadrant
 
 From this map, we can clearly identify the regions that statistically significant spatial autocorrelation with their surrounding regions. The reasoning and observations follow the previous sections, but this map has it much clearer. In this map, it is also easier to identify the "ring" of regions with higher spatial autocorrelation and dengue cases.
 
-If I were to link this observation back to Singapore, it could show a limitation of data collection. 
+If I were to link this observation back to Singapore, it could show a limitation of data collection.
 
-Suppose the CBD was infested with dengue carrying mosquitoes. Apart from the few wealthy enough to live in that highly priced area, we may see a similar pattern of HIGH-HIGH regions in the suburbs. From my intuition, if I were collecting data and had produced this analysis quickly, I would proceed to try to figure out where people in the HIGH-HIGH region traveled to regularly, perhaps for work or other activities. 
-
+Suppose the CBD was infested with dengue carrying mosquitoes. Apart from the few wealthy enough to live in that highly priced area, we may see a similar pattern of HIGH-HIGH regions in the suburbs. From my intuition, if I were collecting data and had produced this analysis quickly, I would proceed to try to figure out where people in the HIGH-HIGH region traveled to regularly, perhaps for work or other activities.
 
 ```{r}
 lisa_sig <- dengue_vils_gb_vc  %>%
@@ -693,9 +696,9 @@ tmap_arrange(m1,
              ncol=2)
 ```
 
-### 6.5 Hot and Cold Spot Analysis with Local Gi*
+### 6.5 Hot and Cold Spot Analysis with Local Gi\*
 
-The local Gi* algorithm is an extension of the local Moran's I statistic, but it also focuses more on "hot" and "cold" spots compared to the local Moran's I, which is more about spatial autocorrelation alone. 
+The local Gi\* algorithm is an extension of the local Moran's I statistic, but it also focuses more on "hot" and "cold" spots compared to the local Moran's I, which is more about spatial autocorrelation alone.
 
 ```{r}
 #| code-fold: true
@@ -717,18 +720,19 @@ hcsa.ad <- dengue_vils_gb_vc %>%
          "gi_star" = ifelse(is.na(`p_sim`), NA, `gi_star`))
 ```
 
-Comparing the results using different neighbour and weight calculations, it is clear that fixed distances have resulted in too much smoothing, which caused the central region to become a hotspot, even though it is not. 
+Comparing the results using different neighbour and weight calculations, it is clear that fixed distances have resulted in too much smoothing, which caused the central region to become a hotspot, even though it is not.
 
 However, the adaptive distances make the observed ring of clusters around the central region clearer and highlight the colder spots in the north and south.
 
-The maps are quite similar in terms of highlighted areas, but the meanings are quite different. In these plots, the hot spots, the ring around the central region, are clearly identified compared to the cold spots in the north and south. 
+The maps are quite similar in terms of highlighted areas, but the meanings are quite different. In these plots, the hot spots, the ring around the central region, are clearly identified compared to the cold spots in the north and south.
 
-Each method can be used to tell a different story. If I were investigating the relationships between regions, I would choose Local Moran's, but use Local Gi* to identify hot and cold spots.
+Each method can be used to tell a different story. If I were investigating the relationships between regions, I would choose Local Moran's, but use Local Gi\* to identify hot and cold spots.
 
 However, both methods do not tell much of a story about the past, and perhaps the future.
 
 ::: panel-tabset
 ## Queen's Neighbours
+
 ```{r}
 tmap_mode("plot")
 tm_shape(hcsa) +
@@ -737,6 +741,7 @@ tm_shape(hcsa) +
 ```
 
 ## Inverse Distance Weights, Fixed Distance
+
 ```{r}
 tmap_mode("plot")
 tm_shape(hcsa.fd) +
@@ -745,6 +750,7 @@ tm_shape(hcsa.fd) +
 ```
 
 ## Inverse Distance Weights, Adaptive Distance, n=8
+
 ```{r}
 tmap_mode("plot")
 tm_shape(hcsa.ad) +
@@ -755,16 +761,17 @@ tm_shape(hcsa.ad) +
 
 ## 7.0 Emerging Hotspot Analysis
 
-In this section, we can analyse hot and spot spots, as well which type of hot/cold spot they are. The type of spot tells interesting stories, such as the emergence of new hotspots, or oscillating hotspots, which could suggest the long-term ineffectiveness of control measures. 
+In this section, we can analyse hot and spot spots, as well which type of hot/cold spot they are. The type of spot tells interesting stories, such as the emergence of new hotspots, or oscillating hotspots, which could suggest the long-term ineffectiveness of control measures.
 
-Since the emerging hotspot analysis uses the Mann-Kendall test with the local Gi* statistic, I consider the following 3 points
+Since the emerging hotspot analysis uses the Mann-Kendall test with the local Gi\* statistic, I consider the following 3 points
 
 -   Data is not collected seasonally (Yes, it was collected weekly)
 
 -   No covariates except what was plotted
-    -   This is a hard one. Human population definitely affects the number of Dengue cases, or mosquito biting options. 
+
+    -   This is a hard one. Human population definitely affects the number of Dengue cases, or mosquito biting options.
     -   However, in many forms of data science, we have to work within our limitations (often times our data)
-    
+
 -   One point per time period (Yes)
 
 ### 7.1 Choosing Time Horizons
@@ -812,7 +819,7 @@ all_colors <- c("#FF5733", "#66CDAA", "#BA55D3", "#20B2AA", "#DC143C", "#4169E1"
 
 ```
 
-The rule of "Do not repeat yourself" applies in R too. I have learnt from my previous takehome exercise and will use functions for repeated analysis to avoid duplicated code. 
+The rule of "Do not repeat yourself" applies in R too. I have learnt from my previous takehome exercise and will use functions for repeated analysis to avoid duplicated code.
 
 I use inverse distance here since the size of polygons differ greatly. The adaptive method proved accentuate patterns while remaining factual, so I will use those metrics here.
 
@@ -889,40 +896,40 @@ ehsa_4_spt(spt, 50, twvsz)
 
 ### 7.3 Reading the EHSA Maps
 
-In week 35, when cases were picking up, we see two regions that would later form the previously mentioned ring of hotspots. The north remains dominated by cold spots, and the southern region had no patterns detected. This could be due to a lack of data in the regions, due to few observed cases at the time. 
+In week 35, when cases were picking up, we see two regions that would later form the previously mentioned ring of hotspots. The north remains dominated by cold spots, and the southern region had no patterns detected. This could be due to a lack of data in the regions, due to few observed cases at the time.
 
 When looking at the classification histogram, there were few hotspots, with most being without any patterns or labelled as a cold spot.
 
-Week 39 marks the week with the most cases, or the peak of the outbreak. The peripheral regions were still relatively unaffected, being labelled cold spots. However, the outbreak can be seen to be focused in the aforementioned ring. This tells us the the infections spread quickly in these areas up to the peak of the outbreak. 
+Week 39 marks the week with the most cases, or the peak of the outbreak. The peripheral regions were still relatively unaffected, being labelled cold spots. However, the outbreak can be seen to be focused in the aforementioned ring. This tells us the the infections spread quickly in these areas up to the peak of the outbreak.
 
 Initially, from the first maps I saw in the EDA, I thought that infections would have cropped up everywhere, since dengue has a significant time between infection and symptoms. The analysis thus far surprised me, since it seems that the people within the urban area did not quickly spread the disease to other regions. Perhaps the pattern would be different for something with more direct infections, such as COVID-19.
 
-By week 45, cases can have been said to have slowed down. We see mostly cold spots and no-pattern, and the northwestern region becomes and intensifying coldspot, meaning they have remained a cold spot 90% of the time and are getting even colder. Interestingly, the ring has become a sporadic hotspot, meaning they are still hotspots, but have not always been a hotspot, but never a cold spot, as expected. 
+By week 45, cases can have been said to have slowed down. We see mostly cold spots and no-pattern, and the northwestern region becomes and intensifying coldspot, meaning they have remained a cold spot 90% of the time and are getting even colder. Interestingly, the ring has become a sporadic hotspot, meaning they are still hotspots, but have not always been a hotspot, but never a cold spot, as expected.
 
-Finally, by week 50, the colors fade from the periphery and patterns emerge in the most cental regions. The central regions and some of the north become oscillating hotspots. Interestingly, the spread of Dengue cases continued into the northeast and east as new hotspots. 
-
+Finally, by week 50, the colors fade from the periphery and patterns emerge in the most cental regions. The central regions and some of the north become oscillating hotspots. Interestingly, the spread of Dengue cases continued into the northeast and east as new hotspots.
 
 ## 8.0 Conclusions
-The spread of dengue fever over these 20 weeks, forming the main part of the 2023 dengue outbreak, has been quite different from what I expected. 
 
-EDA told a simple story of an infection concentrated in the more populous regions before radiating out the more suburban areas. 
+The spread of dengue fever over these 20 weeks, forming the main part of the 2023 dengue outbreak, has been quite different from what I expected.
+
+EDA told a simple story of an infection concentrated in the more populous regions before radiating out the more suburban areas.
 
 Local measures of spatial autocorrelation also identfied areas that formed clusters of dengue cases as well as those which resisted the plight faced by their neighbours.
 
-Emerging hotspot analysis over various segments of time also showed me the progression of the dengue outbreak at various stages. I found this tool especially interesting, since the naive equivalent mechanism to identify this pattern would be staring at many facet maps before producing some conjecture. 
+Emerging hotspot analysis over various segments of time also showed me the progression of the dengue outbreak at various stages. I found this tool especially interesting, since the naive equivalent mechanism to identify this pattern would be staring at many facet maps before producing some conjecture.
 
-The outbreak's pace was different from expected, concentrating quickly in urban areas but slow to move outwards. I was especially interesting to see new hotspots forming in the outer regions even at week 50, in a sort of slow ripple. 
+The outbreak's pace was different from expected, concentrating quickly in urban areas but slow to move outwards. I was especially interesting to see new hotspots forming in the outer regions even at week 50, in a sort of slow ripple.
 
-From an epidemiology standpoint, using statistical methods to back up one's story and ensuing actions to protect the public has some innate flaws, but far fewer than random conjecture. Although the underlying algorithms and code are difficult to explain to the layperson, the resulting maps are surprisingly easy to understand. 
+From an epidemiology standpoint, using statistical methods to back up one's story and ensuing actions to protect the public has some innate flaws, but far fewer than random conjecture. Although the underlying algorithms and code are difficult to explain to the layperson, the resulting maps are surprisingly easy to understand.
 
-This is especially important when the spread of the disease does not align with intuition, since ineffective controls waste resources and undermine public trust. 
+This is especially important when the spread of the disease does not align with intuition, since ineffective controls waste resources and undermine public trust.
 
-I think the biggest conclusion, however, is that data is scarce. The location of dengue cases in the dataset are probably not exactly where the mosquito bit its victim. We therefore had to rely on an approximation instead. 
+I think the biggest conclusion, however, is that data is scarce. The location of dengue cases in the dataset are probably not exactly where the mosquito bit its victim. We therefore had to rely on an approximation instead.
 
-The average citizen is aware that the government has immense amounts of data, but they may be unaware that having that data in a usable format for analysis is infrequent. Moving forward, I think that collecting data is important, but having the means to process this data and storing it in a consistent format is equally as important, since unorganised data is effectively useless. 
+The average citizen is aware that the government has immense amounts of data, but they may be unaware that having that data in a usable format for analysis is infrequent. Moving forward, I think that collecting data is important, but having the means to process this data and storing it in a consistent format is equally as important, since unorganised data is effectively useless.
 
 ## 9.0 Takeaways
-As someone who is pursuing research, I know that collecting data is difficult and sometimes tedious. Automation can come at the cost of accuracy and consistency. Seeing these difficulties in small-scale data collection, the fact that this dengue dataset exists at all amazes me. It has overcome not only the barriers to data collection, but the barriers to public availability, which is usually large due to concerns over organisations and erring on the side of caution. 
 
-Although I am still sore about not being able to analyse the spread of different serotypes, I think this exercise has gone much smoother than expected, despite learning R 7 weeks ago. I am able to make my code a bit cleaner and use R functions more confidently. If the documentation for libraries can be brought up to the same standard as many python libraries, I might consider using it more often. 
+As someone who is pursuing research, I know that collecting data is difficult and sometimes tedious. Automation can come at the cost of accuracy and consistency. Seeing these difficulties in small-scale data collection, the fact that this dengue dataset exists at all amazes me. It has overcome not only the barriers to data collection, but the barriers to public availability, which is usually large due to concerns over organisations and erring on the side of caution.
 
+Although I am still sore about not being able to analyse the spread of different serotypes, I think this exercise has gone much smoother than expected, despite learning R 7 weeks ago. I am able to make my code a bit cleaner and use R functions more confidently. If the documentation for libraries can be brought up to the same standard as many python libraries, I might consider using it more often.
